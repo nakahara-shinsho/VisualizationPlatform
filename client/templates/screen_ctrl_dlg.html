@@ -1,0 +1,33 @@
+  <label id='errorMessage' style="display:block; text-align: center; color: red;">    </label>
+  <label>Please input a unique id: </label>
+  <input type="text" name="name" class="form-control" value=<%=id%> >
+  
+  <label>Please input description in brief: </label>
+  <textarea name="description" rows='4' cols='50' class="form-control"></textarea>
+  
+  <% if(isNewScreen)  { %>
+  <label>Please select maximum columns: </label>
+  <select name="maxColumns" class="form-control">
+        <option value=2 selected>2 columns</option>
+        <option value=3 > 3 columns</option>
+        <option value=4>4 columns</option>
+        <option value=5>5 columns</option>
+        <option value=6>6 columns</option>
+        <option value=7>7 columns</option>
+        <option value=10>10 columns</option>
+        <option value=20>20 columns</option>
+        <option value=30>30 columns</option>
+        <option value=50>50 columns</option>
+        <option value=100>100 columns</option>
+  </select>
+
+  <label>Please select margin between charts: </label>
+  <select name="margin" class="form-control">
+        <option value=2>2 pixels</option>
+        <option value=3>3 pixels</option>
+        <option value=4>4 pixels</option>
+        <option value=5 selected>5 pixels</option>
+        <option value=6>6 pixels</option>
+  </select>
+
+  <% } %>

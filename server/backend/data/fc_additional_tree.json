@@ -1,0 +1,112 @@
+{
+    "source": 0,
+    "target": 1,
+    "value": 19,
+    "children": [
+        {
+            "source": 1,
+            "target": 4,
+            "value": 14,
+            "children": [
+                {
+                    "source": 4,
+                    "target": 26,
+                    "value": 8,
+                    "children": [
+                        {
+                            "source": 26,
+                            "target": 15,
+                            "value": 8,
+                            "children": [
+                                {
+                                    "source": 15,
+                                    "target": 21,
+                                    "value": 6
+                                }
+                            ]
+                        },
+                        {
+                            "source": 26,
+                            "target": 11,
+                            "value": 6
+                        }
+                    ]
+                },
+                {
+                    "source": 4,
+                    "target": 19,
+                    "value": 6
+                }
+            ]
+        },
+        {
+            "source": 26,
+            "target": 3,
+            "value": 150
+        },
+        {
+            "source": 36,
+            "target": 37,
+            "value": 19,
+            "children": [
+                {
+                    "source": 37,
+                    "target": 2,
+                    "value": 14,
+                    "children": [
+                        {
+                            "source": 2,
+                            "target": 18,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 30,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 18,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 31,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 19,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 33,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 20,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 12,
+                            "value": 8
+                        },
+                        {
+                            "source": 2,
+                            "target": 32,
+                            "value": 6
+                        }
+                    ]
+                },
+                {
+                    "source": 6,
+                    "target": 2,
+                    "value": 6
+                }
+            ]
+        }
+    ]
+}

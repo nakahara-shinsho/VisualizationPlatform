@@ -1,0 +1,21 @@
+
+path.domain {
+    fill: none;
+    stroke: #c8c8c8;
+}
+
+text#caption{
+    font-size : 20pt;
+}
+
+path.pie.focus{
+    fill-opacity:0.7;
+}
+path.pie{
+    fill-opacity:1;
+}
+
+tr.bold{
+    font-weight:bold;
+    font-size: 12pt;
+}

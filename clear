@@ -1,0 +1,13 @@
+MG_NAME="xinxiao/docker-vispla"
+CTR_NAME="vispla"
+
+#remove the current container and image
+docker stop $CTR_NAME
+docker rmi $IMG_NAME
+
+#remove all stopped containers.
+ docker rm $(docker ps -a -q)
+ 
+ #remove all untagged images
+ docker rmi $(docker images | grep "^<none>" | awk "{print $3}")
+ 

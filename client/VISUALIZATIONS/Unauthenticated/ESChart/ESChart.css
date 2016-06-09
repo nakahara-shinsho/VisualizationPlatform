@@ -1,0 +1,49 @@
+.eschart {
+  board: 0px soild gray;
+  margin: 0;
+}
+
+.eschart svg {
+  font: 10px sans-serif;
+  background: #fff;
+}
+
+.eschart .axis path,
+.eschart .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.eschart .axis text {
+  font-family: sans-serif;
+  font-size: 8px;
+}
+
+.eschart .brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+.eschart .line {
+  stroke: #000;
+  stroke-width: 1;
+}
+
+.eschart .srect {
+  stroke: steelblue;
+  fill: steelblue;
+  fill-opacity: .3;
+}
+
+.eschart .rect {
+  stroke: pink;
+  fill: orange;
+}
+
+
+.eschart .annotation {
+  font-size: 1.5em;
+  stroke: none;
+}

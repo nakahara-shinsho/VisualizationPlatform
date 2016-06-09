@@ -1,0 +1,36 @@
+.variableaccesspatternchart .rect_access_pattern{
+  fill-opacity: .5;
+  pointer-events: all;
+  stroke: none;
+}
+
+.variableaccesspatternchart path {
+  fill: #4682B4;
+}
+
+.variableaccesspatternchart text.instructions {
+  font-size: 16px;
+}
+
+.variableaccesspatternchart path.line {
+  fill: none;
+  stroke: #000;
+  stroke-width: .5px;
+}
+
+.variableaccesspatternchart .axis line {
+  fill: none;
+  stroke: black;
+  shape-rendering: crispEdges;
+}
+
+.variableaccesspatternchart .domain {
+  fill: none; 
+  stroke: black; 
+  stroke-width: 1;
+}
+
+.variableaccesspatternchart rect.extent {
+  fill-opacity: 0.2;
+  stroke-opacity: 0.2;
+}

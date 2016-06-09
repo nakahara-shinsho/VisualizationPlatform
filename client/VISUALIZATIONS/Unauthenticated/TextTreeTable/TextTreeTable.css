@@ -1,0 +1,107 @@
+/* base */
+.texttreetable table, td, p {
+  font-family: "Lucida Grande",Verdana,Arial,Helvetica,sans-serif !important;
+}
+
+.texttreetable table {
+  font-size: 1em;
+    align: center;
+}
+
+.texttreetable th {
+  background-color: #DDDDDD;
+    color: black;
+}
+
+.texttreetable th, td {
+  padding: 1px 2px;
+	text-align: left;
+    vertical-align: top;
+}
+
+.texttreetable .a td {
+  background: none repeat scroll 0 0 #F9F9F9;
+}
+
+.texttreetable .a:hover td {
+  background-color: #CAEDFF;
+}
+
+.texttreetable a {
+  font-weight: bold;
+    text-decoration:underline;
+    color: #0066CC;
+}
+
+.texttreetable a:hover, a:visited {
+  color: #003399;
+    cursor: pointer;
+}
+
+.texttreetable a:link, #navcol a:link, #navcol a:visited, #bodycol a:link, #breadcrumbs a:visited {
+  color: #0066CC;
+    text-decoration: none;
+}
+
+/* layout */
+
+/* module */
+.texttreetable .folder-close {
+  background: url("img/folderClosed.gif") no-repeat scroll 0 0 transparent;
+    float: left;
+    height: 16px;
+    padding-right: 3px;
+    width: 26px;
+}
+
+.texttreetable .folder-open {
+  background: url("img/folderOpen.gif") no-repeat scroll 0 0 transparent;
+    float: left;
+    height: 16px;
+    padding-right: 3px;
+    width: 26px;
+}
+
+.texttreetable .doc {
+  background: url("img/iconText.gif") no-repeat scroll 0 0 transparent;
+    float: left;
+    height: 20px;
+    /* margin-left: 20px; */
+    padding-right: 3px;
+    width: 16px;
+}
+
+.texttreetable .tier1 {
+  margin-left: 0;
+}
+.texttreetable .tier2 {
+  margin-left: 1.5em;
+}
+.texttreetable .tier3 {
+  margin-left: 3em;
+}
+.texttreetable .tier4 {
+  margin-left: 4.5em;
+}
+.texttreetable .tier5 {
+  margin-left: 6em;
+}
+.texttreetable .tier6 {
+  margin-left: 7.5em;
+}
+.texttreetable .tier7 {
+  margin-left: 9em;
+}
+.texttreetable .tier8 {
+  margin-left: 10.5em;
+}
+.texttreetable .tier9 {
+  margin-left: 12em;
+}
+.texttreetable .tier10 {
+  margin-left: 13.5em;
+}
+
+/* state */
+
+/* theme */

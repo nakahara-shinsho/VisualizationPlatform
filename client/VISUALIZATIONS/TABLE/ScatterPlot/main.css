@@ -1,0 +1,52 @@
+
+.scatterplot svg {
+  font: 10px sans-serif;
+  padding: 10px;
+}
+
+.scatterplot .axis {
+  shape-rendering: geometricPrecision;
+}
+
+.scatterplot .axis line {
+  stroke: #555;
+  stroke-dasharray: 1 5;
+  opacity: 0.3;
+}
+
+.scatterplot .axis path {
+  display: none;
+}
+
+.scatterplot .frame {
+  fill: none;
+  stroke: #ddd;
+  opacity: 0.3
+}
+
+.scatterplot circle.hideme {
+  fill: #666 !important;
+  fill-opacity: .6 !important;
+}
+
+.scatterplot .extent {
+  fill: #000;
+  fill-opacity: .125;
+  stroke: #fff;
+}
+
+.scatterplot .cell rect.background {
+  fill: none;
+  fill-opacity: .9;
+}
+
+.scatterplot .y.axis line {
+  stroke: #ddd;
+   stroke-width: 1px;
+}
+
+.scatterplot .x.axis line {
+  stroke: #ddd;
+   stroke-width: 1px;
+}
+

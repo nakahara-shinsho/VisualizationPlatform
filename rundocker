@@ -1,0 +1,8 @@
+IMG_NAME="docker-vispla"
+CTR_NAME="vispla"
+
+docker stop $CTR_NAME
+docker rm $CTR_NAME
+
+docker run --name $CTR_NAME -i -t -d  -p 58003:8003 $IMG_NAME  
+#tail -f /dev/null

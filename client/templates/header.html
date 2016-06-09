@@ -1,0 +1,54 @@
+<div class="container-fluid">
+  <div class="row header">
+    <!--div class="col-md-3" style="font-size:160%; text-align:center">
+      Polyspector&#0153; Visualization Platform
+    </div-->
+    
+    <div class="col-md-9 col-lg-9 col-sm-9  col-xs-9 buttons-container">
+    <% if(logged_in){ %>  
+      <button class="event-home" title='ホーム・スクリーンに戻る'>
+        <i class="fa fa-home ic-header-button" ></i>
+      </button>
+      <button class="event-data-selection" title='データを選択する'>
+        <i class="fa fa-list ic-header-button" ></i>
+      </button>
+      <button class="event-tool-selection" title='ツールを選択する'>
+        <i class="fa fa-map-o ic-header-button"></i>
+      </button>
+      <button class="event-tool-editor" title='ツールを編集する'>
+        <i class="fa fa-table ic-header-button" ></i>
+      </button>
+      <button class="event-database" title='バーチャルテーブルを編集する'>
+        <i class="fa fa-database ic-header-button" ></i>
+      </button>
+      <button class="event-breadcrumb" title='ツール・マップを表示する'>
+        <i class='fa ic-header-button'></i>
+      </button>
+      <button class="event-screen">
+        <i class='fa ic-header-button' title='スクリーン・サマリーを表示する'></i>
+      </button>
+    <% } %>
+    </div>
+    <!--div class="col-md-3" style="font-size:130%;">
+        <button class="event-breadcrumb">
+            <i class=''></i>
+        </button>
+        <button class="event-screen">
+            <i class=''></i>
+        </button>
+    </div-->
+    <div class='col-md-3 col-lg-3 col-sm-3  col-xs-3 accesses-container'>
+    <% if(logged_in){ %>
+      Hi <span style="color: #0066CC"><%= user.userId %></span>
+      <button class="event-signout" title='Click to Logout'>
+      <i class="fa fa-sign-out ic-header-button" ></i>
+      </button>
+      <button class="event-access" title=' Click to access management'>
+      <i class="fa fa-key ic-header-button" ></i>
+      </button>
+    <% } else { %>
+      <!--i class="fa fa-user-plus ic-header-button"></i-->
+    <% } %>
+  </div>
+</div>
+<div class="clearfix"></div>

@@ -1,0 +1,45 @@
+
+<div class="topic-name "> Data mapping:</div>
+<div class="dimensions-mapping">
+  <div class="columns">
+    <% Object.keys(_dataTypes_).forEach(function(column) { %>
+    <span class="label label-primary column-name" data-header-no="" draggable="true"> 
+      <span class="col-name"><%= column %></span>
+      <span class="col-type"><%= _dataTypes_[column] %></span>      
+    </span>    
+    <% }); %>
+  </div>
+  
+  <div class="dimensions">
+    <% Object.keys(_chart_).forEach( function(onedim) {%> <!-- loop for each datamapper prop -->
+    <div class='dimension' name=<%= onedim %> >
+      <center>
+        <span class="dim-name"><%= _chart_[onedim].label %></span>
+        <%  if($.isArray(_chart_[onedim].map2)) { %>
+        <span class="dim-type"><%= _chart_[onedim].type + 'Array' %></span>
+        <% } else { %>
+        <span class="dim-type"><%= _chart_[onedim].type %></span>
+        <% } //if-else-end %>
+      </center>
+      <div class="container"> <!-- inital mapped values for Array   --> 
+        <% if($.isArray(_chart_[onedim].map2)) { %>
+          <% _chart_[onedim].map2.forEach(function(column) { %>
+          <span class="label label-primary column-name" data-header-no="" draggable="true"> 
+            <span class="col-name"><%= column %></span>
+            <span class="col-type"><%= _chart_[onedim].type %></span>      
+          </span>
+          <% }); %>
+        <% } else if(!_.isEmpty(_chart_[onedim].map2)) { %> <!-- inital mapped values for non-Array --> 
+          <span class="label label-primary column-name" data-header-no="" draggable="true"> 
+            <span class="col-name"><%= _chart_[onedim].map2 %></span>
+            <span class="col-type"><%= _chart_[onedim].type %></span>  
+          </span>
+        <% } //if-else-end %>
+      </div>
+    </div>
+    <% }); //forEach end %>
+  </div>
+</div>
+
+<div class="topic-name">Colors mapping:</div>
+<div class="color-mapping container-fluid"></div>

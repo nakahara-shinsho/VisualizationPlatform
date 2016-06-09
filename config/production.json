@@ -1,0 +1,28 @@
+{
+  "RabbitMQ": {
+    "server": {
+      "host": "localhost",
+      "port": 5672
+    }
+  },
+  "Http": {
+    "server": {
+      "host": "localhost",
+      "port": 8003
+    },
+    "session" :{
+    	"sessionSecret": "polyspector",
+      "cookieSecret": "polyspector",
+      "cookieMaxAge": 31536000000
+    },
+    "client": {
+      "path": "client-release",
+      "mode": "prod"
+    }
+  },
+  "FrontEnd": {
+   "database": {
+     "name": "sample"
+   }
+  }
+}

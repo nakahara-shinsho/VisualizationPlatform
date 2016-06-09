@@ -1,0 +1,78 @@
+{
+    "name" : "Polyspector", "type" : "directory", 
+    "children" : [
+        {
+            "name" : "css" , "type" : "directory", 
+            "children" : [
+                {"name" : "changeimpactchart", "type" : "directory",
+                 "children": [{"name" : "changeimpactchart.css", "type" : "file", "size" : "10kb"}]},                
+                {"name" : "chart.css", "type" : "file", "size" : "15kb"},
+                {"name" : "contextmenu.css", "type" : "file", "size" : "10kb"},
+                {"name" : "popup.css", "type" : "file", "size" : "10kb"},
+                {"name" : "sankeychart.css", "type" : "file", "size" : "10kb"},
+                {"name" : "sqlike.css", "type" : "file", "size" : "10kb"},
+                {"name" : "style.css", "type" : "file", "size" : "10kb"},
+                {"name" : "tooltip.css", "type" : "file", "size" : "10kb"},
+                {"name" : "treetable.css", "type" : "file", "size" : "10kb"}
+            ]
+        },
+        {
+            "name" : "data" , "type" : "directory", 
+            "children" : [
+                {
+                    "name" : "sourcecode", "type" : "directory", 
+                    "children" : [
+                        {"name" : "fftmisc.c", "type" : "file", "size" : "15kb"},
+                        {"name" : "fourierf.c", "type" : "file", "size" : "15kb"},
+                        {"name" : "main.c", "type" : "file", "size" : "15kb"}
+                    ]
+                },
+                {"name" : "TextTreeTable.json", "type" : "file", "size" : "15kb"},
+                {"name" : "cis_marks.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "cis_tree.json", "type" : "file", "size" : "10kb"},
+                {"name" : "fc_additional_tree.json", "type" : "file", "size" : "10kb"},
+                {"name" : "fc_links.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "fc_nodes.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "gc_gantt.json", "type" : "file", "size" : "10kb"},
+                {"name" : "gc_task.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "gc_task_new.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "gc_tree", "type" : "file", "size" : "10kb"},
+                {"name" : "gc_tree_details.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "gc_tree_details_new.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "gc_tree_new.json", "type" : "file", "size" : "10kb"},
+                {"name" : "scs_tree.json", "type" : "file", "size" : "10kb"},
+                {"name" : "scs_tree_details.csv", "type" : "file", "size" : "10kb"},
+                {"name" : "treetable.json", "type" : "file", "size" : "10kb"}
+            ]
+        },
+        {
+            "name" : "js", "type" : "directory", 
+            "children" : [
+                {
+                    "name" : "ChangeImpactChart", "type" : "directory", 
+                    "children" : [
+                        {"name" : "ChangeImpactChart.js", "type" : "file", "size" : "15kb"}
+                    ]
+                },
+                {
+                    "name" : "FlowChartWidget", "type" : "directory", 
+                    "children" : [
+                        {"name" : "FlowChartWidget.js", "type" : "file", "size" : "15kb"}
+                    ]
+                },
+                {
+                    "name" : "GanttChart", "type" : "directory", 
+                    "children" : [
+                        {"name" : "GanttChart.js", "type" : "file", "size" : "15kb"}
+                    ]
+                }, 
+                {"name" : "AxisSelectable.js", "type" : "file", "size" : "15kb"},
+                {"name" : "CustomTooltip.js", "type" : "file", "size" : "15kb"},
+                {"name" : "Polyspector.js", "type" : "file", "size" : "15kb"},
+                {"name" : "Transit.js", "type" : "file", "size" : "15kb"}
+            ]
+        },
+        {"name" : "index.html", "type" : "file", "size" : "20kb"},
+        {"name" : "source_code.html", "type" : "file", "size" : "16kb"}
+    ]    
+}

@@ -1,0 +1,50 @@
+/*
+    Created on : Oct 24, 2013, 4:13:34 PM
+    Author     : hienbt
+*/
+.changeimpactchart .cic {
+  display: block;
+  margin: auto;
+  margin-top: 60px;
+  font-size: 11px;
+  stroke: #DDD;
+}
+.changeimpactchart .cic rect{
+  stroke: #eee;
+  fill: #aaa;
+  fill-opacity: .5;
+}
+.changeimpactchart .cic g.rect {
+}
+.changeimpactchart .cic g.line {
+}
+.changeimpactchart .cic rect:hover{
+  stroke: black;
+}
+.changeimpactchart .cic rect.parent {
+  cursor: pointer;
+}
+.changeimpactchart .cic rect.child {
+  cursor: crosshair;
+}
+.changeimpactchart .cic rect.other {
+  cursor: crosshair;
+}
+.changeimpactchart .cic text {
+  pointer-events: none;
+}
+.changeimpactchart .cic marker {
+  fill: red;
+  stroke: red;
+  stroke-width: 1px;
+}
+.changeimpactchart .cic .link {
+  fill: none;
+  stroke: black;
+  stroke-width: 1px;
+}
+.changeimpactchart .cis-link {
+  fill: none;
+  stroke: black;
+  stroke-width: 1px;
+}

@@ -1,0 +1,19 @@
+/* base */
+.memoryaccessfrequency .pane {
+  fill-opacity: 1;
+  pointer-events: all;
+  stroke: none;
+}
+
+.memoryaccessfrequency #memory_access_frequency .axis line {
+  fill: none;
+  stroke: #DDD;
+  shape-rendering: crispEdges;
+}
+/* layout */
+
+/* module */
+
+/* state */
+
+/* theme */

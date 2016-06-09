@@ -1,0 +1,44 @@
+.memoryaddresschart rect.extent {
+  fill-opacity: 0.2;
+  stroke-opacity: 0.2;
+}
+
+.memoryaddresschart #chart-container {
+  background: none repeat scroll 0 0 rgba(255, 255, 255, 255);
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+  margin: 0 auto 50px;
+  padding: 20px 30px;
+  width: 1000px;
+}
+.memoryaddresschart #chart-container h2 {
+  color: #444444;
+  font-size: 24px;
+  font-weight: 300;
+  margin: 0 0 10px;
+  padding: 10px;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.memoryaddresschart path {
+  fill: steelblue;
+}
+.memoryaddresschart text.instructions {
+  font-size: 16px;
+}
+.memoryaddresschart .leftchart div{
+  font: 10px sans-serif;
+  background-color: steelblue;
+  text-align: right;
+  padding: 3px;
+  margin: 1px;
+  color: red;
+}
+.memoryaddresschart .leftchart rect{
+  stroke: white;
+  fill: steelblue;
+}
+.memoryaddresschart .domain{
+  fill: none; 
+  stroke: black; 
+  stroke-width: 1; 
+}

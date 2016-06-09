@@ -1,0 +1,37 @@
+.ganttchartswc {
+  board: 0px soild gray;
+  margin: 0;
+}
+
+.ganttchartswc svg {
+  font: 10px sans-serif;
+  background: #fff;
+}
+
+.ganttchartswc .axis path,
+.ganttchartswc .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.ganttchartswc .brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+.ganttchartswc line[class^="grp_"] {
+  stroke: #000;
+  stroke-width: 1;
+}
+.ganttchartswc .rect {
+  stroke: white;
+  fill: steelblue;
+  fill-opacity: .2;
+}
+
+.ganttchartswc .annotation {
+  font-size: 1.5em;
+  stroke: none;
+}

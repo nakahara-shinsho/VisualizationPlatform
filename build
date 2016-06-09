@@ -1,0 +1,14 @@
+ IMG_NAME="docker-vispla"
+ CTR_NAME="vispla"
+ PROXY="http://proxy.toshiba.co.jp:8080"
+
+docker stop $CTR_NAME
+docker rm $CTR_NAME
+docker rmi $IMG_NAME
+
+docker build --rm=true --force-rm=true \
+--build-arg http_proxy=$PROXY  \
+--build-arg https_proxy=$PROXY \
+-t $IMG_NAME .
+
+docker run --name $CTR_NAME -i -t -d  -p 58003:8003 $IMG_NAME 

@@ -1,0 +1,74 @@
+
+.background path {
+  fill: none;
+  stroke: #212121;
+  shape-rendering: crispEdges;
+}
+
+.foreground path {
+  fill: none;
+  stroke: steelblue;
+}
+
+
+h2#metrics.parallelcoordinates{
+    color: #f89406;
+}
+
+h2#parameter.palallelcoordinates{
+}
+
+
+.brush .extent {
+  fill-opacity: .3;
+  stroke: #fff;
+  shape-rendering: crispEdges;
+  stroke-width: 2px;
+}
+
+.axis line,
+.axis path {
+  fill: none;
+  stroke: #aaa;
+}
+
+g#metrics text{
+    fill:#f89406;
+    font-weight:normal;
+    font-size: 4px;
+}
+
+g#metrics-focus text{
+    fill:#f89406;
+    font-weight:bold;
+    font-size: 4px;
+}
+
+.axis#metrics path{
+    stroke:#f89406;
+    stroke-weight:1;
+}
+
+.axis#metrics-focus path{
+    stroke:#f89406;
+    stroke-width:3;
+}
+
+g#parameter text{
+    font-weight:normal;
+    font-size: 4px;
+}
+
+g#parameter-focus text{
+    font-weight:bold;
+    font-size: 4px;
+}
+
+.axis#parameter path{
+    stroke-width:1;
+}
+
+.axis#parameter-focus path{
+    stroke-width:3;
+}
+

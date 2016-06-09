@@ -1,0 +1,78 @@
+
+
+
+//left
+ .screens {
+  display: flex;
+  height: 100%;
+  flex-grow: 1;
+  flex-shrink: 1;
+  align-self: stretch;
+  align-content: stretch;
+}
+
+.screens::-webkit-scrollbar {
+  display: none;
+}
+
+ .screens .imglist {
+  flex: auto;
+  padding:10px;
+}
+
+ .screens .imglist figure {
+  display: block;
+	float: left;
+  width: 25%;
+	padding: 1px;
+} 
+
+ .screens .imglist figure img {
+  display: block;
+  width: 100%;
+  text-align: center;
+  cursor: crosshair;
+}
+
+//right
+ .editor {
+  position: absolute;
+  top: 0
+  left: 0
+  width: 30%;
+  height: 100%;
+}
+
+ .editor .head {
+    position: absolute;
+    height: 150px;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+.editor::-webkit-scrollbar {
+  display: none; 
+}
+
+ .editor .graph-guide { 
+  overflow:hidden;
+  white-space:nowrap;
+}
+
+.editor .button-container { 
+  overflow:hidden;
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.editor .graph-container {
+  width: 100%;
+  height: 100%;
+  padding: 150px 0 0;
+}
+
+.editor .graph-container canvas {
+  display: none;
+}
+

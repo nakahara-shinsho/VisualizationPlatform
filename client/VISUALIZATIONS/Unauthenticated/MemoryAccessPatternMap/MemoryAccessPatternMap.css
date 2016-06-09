@@ -1,0 +1,10 @@
+.memoryaccesspatternmap rect.extent {
+  fill-opacity: 0.2;
+  stroke-opacity: 0.2;
+}
+
+.memoryaccesspatternmap .domain {
+  fill: none; 
+  stroke: black; 
+  stroke-width: 1;
+}

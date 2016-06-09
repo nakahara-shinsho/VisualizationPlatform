@@ -1,0 +1,17 @@
+
+text.legend-caption{
+    font-size: 20px;
+}
+
+
+g.legend.select{
+    opacity: 1.0;
+}
+
+g.legend:hover{
+    opacity: 0.7;
+}
+
+g.legend.unselect{
+    opacity: 0.5;
+}

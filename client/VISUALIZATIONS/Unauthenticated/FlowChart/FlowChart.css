@@ -1,0 +1,37 @@
+/* module */
+.flowchart path[class^='highlighted_flowlink']{
+  fill: none;
+  stroke: orangered;
+  stroke-opacity: .75;
+}
+.flowchart path[class^='hide_flowlink']{
+  fill: none;
+  stroke: slategray;
+  stroke-opacity: 0.3;
+}
+
+.flowchart .flownode rect {
+  cursor: pointer;
+  fill-opacity: .8;
+  shape-rendering: crispEdges;
+}
+
+.flowchart .flownode rect:hover{
+  fill-opacity: 1.0;
+  shape-rendering: crispEdges;
+}
+
+.flowchart .flownode text {
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff;
+}
+
+.flowchart .flowlink{
+  fill: none;
+  stroke: slategray;
+  stroke-opacity: .5;
+}
+
+.flowchart .treelink{
+  visibility: hidden;
+}

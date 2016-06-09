@@ -1,0 +1,85 @@
+charts.gridster li {
+  list-style: none;
+}
+
+charts.gridster li .board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+  display: flex;
+  flex-flow: column;
+}
+
+charts.gridster li .board .caption {
+  flex: 0 1 28px;
+  text-align: center;
+  line-height: 28px;
+  font-size: 18px;
+  color: #999
+  background-color:#1E1E1F;
+}
+
+charts.gridster li .board .chart { //svg container
+  flex: 1 1 auto;
+  display: flex; //legend or control panel may be inserted on the right of chart area
+  position: relative;
+  background-color: #272b30;
+  z-index: 2;
+}
+
+charts.gridster li .board .chart > svg { //svg 
+  display: inline-block;
+  position: absolute;
+  z-index: 3;
+}
+ 
+charts.gridster li .board .chart svg text {  
+  fill:#c8c8c8;
+}
+
+charts.gridster li .board .chart-buttons.left {
+   left: 0px;
+}
+charts.gridster li .board .chart-buttons.right {
+   right: 0px;
+}
+
+charts.gridster li .board .chart-buttons {
+   position: absolute;
+   font-size: 20px;
+   font-weight bold;
+   //color  #008080
+   background-color: Transparent;
+   //background: rgba(255, 255, 255, 0.75 );
+   z-index: 5;
+   text-align: center;
+   top: 0px;
+   padding: 0px 1px 0px 1px; 
+   opacity: 0.1;
+}
+
+charts.gridster li .board .chart-buttons:hover {
+   opacity: 1;
+}
+
+charts.gridster li .board .chart-buttons button {
+   background-color: Transparent;
+   background-repeat:no-repeat;
+   border: none;
+   cursor:pointer;
+   overflow: hidden;
+   outline:none;
+   padding-left : 3px;
+}
+
+charts.gridster li .board .chart-buttons button:not([disabled]) i:hover {
+   cursor pointer
+   color Chocolate
+}
+
+charts.gridster li .board .chart-buttons button:disabled {
+    color: #888
+}
+
