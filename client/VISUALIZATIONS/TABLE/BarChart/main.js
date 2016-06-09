@@ -42,6 +42,8 @@ define(["util/CustomTooltip",
     this.io.designManager()
       .setControl("xaxisCaption", {type:"regx", name:"X AXIS Caption", value:"__DEFAULT__"});
     this.io.designManager()
+      .setControl("xaxisCaptionFontsize", {type:"regx", name:"X AXIS Caption Font-Size", value:11});
+    this.io.designManager()
       .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y-AXIS"});
     this.io.designManager()
       .setControl("yaxisticknum", {type:"regx", name:"Y AXIS TICKS NUM", value: 3});
@@ -55,6 +57,7 @@ define(["util/CustomTooltip",
     this.io.designManager().setControl("yaxisRangeMinManual", {type:"regx", name:"Y AXIS Min (Manual)", value: 0});
     this.io.designManager()
       .setControl("xaxisLabelFocus", {type:"selection", name:"X Axis Label Focused By Value ", range:[], value: []});
+    this.io.designManager().setControl("rectClickable"  , {type:"radio", name:"RECTANGLE CLICKBLE ",range:["ON", "OFF"], value:"OFF"});
   };
 
   /**
@@ -529,6 +532,8 @@ define(["util/CustomTooltip",
       .attr("dx",".5em")
       .attr("dy","-.3em")
       .attr("transform","rotate(90)")
+      .attr("font-size",
+            self.io.designManager().getValue("xaxisCaptionFontsize")+"pt" )
       .style("fill", function(d){
         var refiner = self.io.dataManager().getRowRefiner(d);
         var array = refiner[self.io.dataManager().getMapperProps("xaxis").map2];
@@ -887,14 +892,16 @@ define(["util/CustomTooltip",
    */
   BarChart.prototype.clickRect = function(d){
     var self = this;
-    var selectedLegends = self.io.dataManager().getColumnRefiner();
-    var pos = selectedLegends.indexOf(d.name) ;
-    if(pos !== -1){
-      selectedLegends.splice(pos,1);
-    }else{
-      selectedLegends.push(d.name);
+    if(self.io.designManager().getValue("rectClickable") === "ON"){
+      var selectedLegends = self.io.dataManager().getColumnRefiner();
+      var pos = selectedLegends.indexOf(d.name) ;
+      if(pos !== -1){
+        selectedLegends.splice(pos,1);
+      }else{
+        selectedLegends.push(d.name);
+      }
+      self.io.dataManager().setColumnRefiner(selectedLegends);
     }
-    self.io.dataManager().setColumnRefiner(selectedLegends);
   };
  /**
    * mode Selector by user
