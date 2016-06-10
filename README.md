@@ -19,17 +19,17 @@
 
 ## Boot (default)
 ```
- node PORT=8888 start server/start.js
- node start server/backend/worker_for_datalist.js
+ node server/start.js PORT=8888 start 
+ node server/backend/worker_for_datalist.js start 
  // sample
- node start server/backend/workers_default.js
+ node server/backend/workers_default.js start
 ```
 ## Boot (using forever)
 ```
- forever  PORT=8888 start server/start.js
- forever start server/backend/worker_for_datalist.js
+ forever server/start.js  PORT=8888 start 
+ forever server/backend/worker_for_datalist.js start 
  // sample
- forever start server/backend/workers_default.js
+ forever server/backend/workers_default.js start 
 ```
 ## Access
   Please access http://IP_ADDRESS:PORT Using Google Chrome.
