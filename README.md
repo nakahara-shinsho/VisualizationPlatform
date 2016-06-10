@@ -17,13 +17,19 @@
  npm install sqlite3
 ```
 
-## Boot
+## Boot (default)
 ```
- forever DB=matsuzaki.db PORT=8888 start server/start.js
- forever server/backend/worker_for_datalist.js
+ node PORT=8888 start server/start.js
+ node start server/backend/worker_for_datalist.js
  // sample
- forever server/backend/workers_default.js
+ node start server/backend/workers_default.js
 ```
-
+## Boot (using forever)
+```
+ forever  PORT=8888 start server/start.js
+ forever start server/backend/worker_for_datalist.js
+ // sample
+ forever start server/backend/workers_default.js
+```
 ## Access
-Please access http://IP_ADDRESS:PORT Using Google Chrome.
+  Please access http://IP_ADDRESS:PORT Using Google Chrome.
