@@ -40,20 +40,23 @@ define(["util/CustomTooltip",
                                 value:"linear"});
     /// X Axis
     this.io.designManager()
-      .setControl("xaxisCaption", {type:"regx", name:"X AXIS Caption", value:"__DEFAULT__"});
+      .setControl("xaxisCaption", {type:"regx", name:"X AXIS Caption", value:""});
     this.io.designManager()
       .setControl("xaxisticktype", {type: "radio", name: " X AXIS Label Format", range:["dec", "hex"],value:"dec"});
     this.io.designManager()
       .setControl("xaxisticknum", {type: "regx", name: " X AXIS Tick Number", value:4});
     /// Y Axis
     this.io.designManager()
-      .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y-AXIS"});
+      .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y AXIS"});
     this.io.designManager()
       .setControl("yaxisticknum", {type: "regx", name: " Y AXIS Tick Number", value:4});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
     this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
     this.io.designManager().setControl("yaxisRangeMinManual", {type:"regx", name:"Y AXIS Min (Manual)", value: 0});
+
+    /// Action
+    this.io.designManager().setControl("mouseActionMode"  , {type:"radio", name:"Mouse Action Mode",range:["CLICK", "BRUSH"], value:"CLICK"});
   };
   /**
     * update chart according with changed of interface variables
@@ -81,8 +84,8 @@ define(["util/CustomTooltip",
   LineChart.prototype.render = function (containerWidth, containerHeight) {
     var self = this;
     self.initialize(containerWidth, containerHeight);
-    if(self.io.designManager().getValue("xaxisCaption") == "__DEFAULT__"){
-      self.io.designManager().setValue("xaxisCaption", self.io.dataManager().getMapperProps("xaxis").map2);
+    if(self.io.designManager().getValue("xaxisCaption") == "" ){
+      self.io.designManager().setValue("xaxisCaption", self.io.dataManager().getMapper('xaxis'));
     }
     self.createHeader();
     var data = self.transformData(true);
@@ -138,7 +141,8 @@ define(["util/CustomTooltip",
       range   : {max:"auto", min:"auto"},
       caption : {height:20, top:20, left:"auto"},
       scrollbar: {height:25},
-      axis    : {height:25}
+      axis    : {height:25},
+      margin  : 5
     };
 
     /** Tooltip **/
@@ -165,7 +169,8 @@ define(["util/CustomTooltip",
     this.ySvg         = undefined;
     this.axisWidth = containerWidth -
       this.layout.yaxis.width -
-      this.layout.main.margin.right;
+      this.layout.main.margin.right -
+      this.xConfig.margin;
 
     this.axisHeight   = containerHeight -
       this.layout.top -
@@ -316,8 +321,12 @@ define(["util/CustomTooltip",
     // 2. Transform Data
     var labelData = {};
     var selectedLegends = self.getSelectedLegends(refresh);
+    var data = self.io.dataManager().getFilteredRows();
+    if(data.length === 0){
+      data = self.io.dataManager().getData();
+    }
     selectedLegends.forEach(function(key){
-      labelData[key] = self.io.dataManager().getData().map(function(d){
+      labelData[key] = data.map(function(d){
         return {x     : +d[self.io.dataManager().getMapperProps("xaxis").map2],
                 value : +d[key]};
       });
@@ -357,7 +366,9 @@ define(["util/CustomTooltip",
     // 3. Draw Tooltips
     self.drawTooltip(data);
     // 4. Draw Brush
-    self.drawBrush();
+    if(self.io.designManager().getValue("mouseActionMode") == "BRUSH"){
+      self.drawBrush();
+    }
   };
 
  /**
@@ -376,8 +387,14 @@ define(["util/CustomTooltip",
 
     function drawXAxis(){
       /// 1.Range
-      console.log("[WARNING]:: only xRange Auto Mode");
-      var xRange= self.io.dataManager().getDataRange(self.io.dataManager().getMapperProps("xaxis").map2);
+      var xcolumn = self.io.dataManager().getMapper("xaxis");
+      var filteredRows = self.io.dataManager().getFilteredRows();
+      var xRange;
+      if(self._mode === "drilldown"){
+        xRange = self.io.dataManager().getFilteredDataRange(xcolumn, filteredRows);
+      }else{
+        xRange= self.io.dataManager().getDataRange(xcolumn);
+      }
       self.x = d3.scale.linear().range([0,self.axisWidth]).domain([xRange[0],xRange[1]]);
       /// 2.Tick
       var xAxis = d3.svg.axis().scale(self.x).orient("bottom")
@@ -546,9 +563,11 @@ define(["util/CustomTooltip",
         self.tooltip.hide();
       })
       .on("click", function(){
-        var pos = parseInt(self.x.invert(d3.mouse(this)[0]));
-        self.io.dataManager()
-          .setRowRefiner(self.io.dataManager().getMapperProps("xaxis").map2, pos);
+        if(self.io.designManager().getValue("mouseActionMode") == "CLICK"){
+          var pos = parseInt(self.x.invert(d3.mouse(this)[0]));
+          self.io.dataManager()
+            .setRowRefiner(self.io.dataManager().getMapperProps("xaxis").map2, pos);
+        }
       });
     function createTableData(xValue){
       var tableData = []; // key,color,value
@@ -600,6 +619,9 @@ define(["util/CustomTooltip",
          })
          .on("brushend", function(){
            d3.event.sourceEvent.stopPropagation();
+           var filter = {}, xcol = self.io.dataManager().getMapper('xaxis');
+           filter[xcol] = brush.empty() ? null : brush.extent();
+           self.io.dataManager().setRowRefiner(filter);
          });
    self.svg.append("g")
      .attr("class","x brush")
@@ -623,7 +645,8 @@ define(["util/CustomTooltip",
       self.xConfig.scrollbar.height;
     self.axisWidth = self.containerWidth -
       self.layout.yaxis.width -
-      self.layout.main.margin.right;
+      self.layout.main.margin.right -
+      self.xConfig.margin;
 
     self.createHeader();
     var data = self.transformData();
