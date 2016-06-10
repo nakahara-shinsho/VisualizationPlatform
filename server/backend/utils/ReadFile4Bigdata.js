@@ -17,7 +17,7 @@ function ReadFile4Bigdata () {
         jsonarray = (format=='csv')? d3.csv.parse(table):
                     (format=='tsv')? d3.tsv.parse(table): table;
     
-    var header = Object.keys(jsonarray[0]),
+    var header = Object.keys(jsonarray[0]).filter(function(column){return column.endsWith(".number");}),
         types  = this.types(jsonarray, header),
         ranges = this.ranges(jsonarray, header, types);
     
@@ -25,7 +25,7 @@ function ReadFile4Bigdata () {
     this.response._table_.types  = types;   //not change with options
     this.response._table_.ranges = ranges; //not change with options
     this.response._table_.big = BIG.ROW;
-    //this.response._table_.family = null;
+    
     this.aggregator = new Aggregator(jsonarray, types);
     
     return this;
@@ -34,16 +34,17 @@ function ReadFile4Bigdata () {
   this.types = function(jsonarray, header) {
     var types = {};
     header.forEach(function(column){
-       types[column] =  column.endsWith(".number")? 'number' :
+       /*types[column] =  column.endsWith(".number")? 'number' :
                         column.endsWith(".string")? 'string' :
-                        column.endsWith(".date")? 'date' : 'string'; 
+                        column.endsWith(".date")? 'date' : 'string'; */
+        types[column] = 'number';
     });
     
     jsonarray.forEach(function(row, index, array){
       for(var column in types) {
-        if(types[column] =='number') {
+        //if(types[column] =='number') {
           row[column] = +row[column];
-        }
+        //}
       }
     });   
     
@@ -60,7 +61,8 @@ function ReadFile4Bigdata () {
       } else {
         ranges[column]=d3.map(jsonarray, function(d){
            return d[column];
-        }).keys();  
+        }).keys();
+        //ranges[column] = ['dummy1', 'dummy2', 'dummy3'];  
       }
     });
     

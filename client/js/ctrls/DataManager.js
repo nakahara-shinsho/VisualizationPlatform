@@ -17,6 +17,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  var DataManager = function(boardModel, chartCtrl){
+     // this._get_data_time = {};
       this._model = boardModel;
       this._ctrl  = chartCtrl;
       this._data = {_default_table_key_: '_table_', _$mapper_props_:{}, _infer_: {} };
@@ -151,7 +152,7 @@ define(['ctrl/COMMON'], function (COMMON) {
         }
       }
  };
-  
+ 
  DataManager.prototype.getMapperProps = function(prop) {
       var self = this, value,
           dataMapper = $.extend(true, {}, this.getData('_$mapper_props_'));//deep clone
@@ -454,7 +455,7 @@ DataManager.prototype.clearAll = function(key, value) {
             var BreakException={};
             Object.keys(table[0]).forEach(function(key) {
                 types[key] = 'number';
-                try{
+                try {
                 table.forEach(function(row) {
                     if(! $.isNumeric(row[key])) {
                     throw BreakException;
@@ -588,7 +589,7 @@ DataManager.prototype.clearAll = function(key, value) {
                             timeout: 30000, //3 seconds 
                             url: this._dataset_url_root + virtualTable,
                             data: conditions };
-      
+      var startTime = new Date().getTime();
       conditions._context_ = $.extend(true, {}, window.framework.context, screenContext);
       conditions._select_= this.getRenderingColumns(); //this.getColumnRefiner();
       conditions._extra_select_= this._readExtraColumnRefiner();
@@ -641,7 +642,7 @@ DataManager.prototype.clearAll = function(key, value) {
                    self._setInferData('_big_', value.big);
                 }
               });
-        
+              console.log('Get '+ virtualTable +' in ' + (new Date().getTime() - startTime)+ ' milliseconds!');
               return deferred.resolve();
             })
             .fail(function(jqXHR, textStatus) {
@@ -671,13 +672,18 @@ DataManager.prototype.clearAll = function(key, value) {
     }
   };
   
-  /* link&update related functions  SRART */
   //update chart with changing refining parameters
-  DataManager.prototype.updateChart = function(subkey, options) {
-    var chartInst = this._ctrl.chartInstance(), vobj = {};
-    vobj[subkey] = options;
+  DataManager.prototype.updateChart = function(key, options) {
+    var chartInst = this._ctrl.chartInstance();
+    for(var prop in this.getMapperProps()) {
+       if(_.isEmpty(this.getMapper(prop)) ) { //stop even if one mapping item is not still set.
+         return;
+       }
+    }
     
-    if(this._isDeepUpdate(subkey, (options.constructor==Array)? options:_.keys(options)) ) {
+    var vobj = {};
+    vobj[key] = options;
+    if(this._isDeepUpdate(key, (options.constructor==Array)? options:_.keys(options)) ) {
        //TBD: will the existed data need to be cleared? -- same Virtual Table
        this.getDataFromServer(this._model.get('vtname')).done(
          function() {
@@ -849,11 +855,19 @@ DataManager.prototype.clearAll = function(key, value) {
     
     var isdeep = false, 
         big= this._getInferData('_big_'),
-        data_columns = _.keys(this.getData()[0]);
+        data_columns = _.keys(this.getData()[0]),
+        render_columns = this.getRenderingColumns();
     
     //pre-condifion -- BIG.COLUMN/BIG.ROW will not use the only-server-columns for coloring
     
     if(subkey) { //called with changed refiner parameters
+      
+      //have all the necessary data been got?
+      for(var i= render_columns.length; i--;){
+         if(!data_columns.includes(render_columns[i])) {
+           return true;
+         }
+      }
       
       if(this._ctrl.isHighlightMode()) {
           return false; //unnecessary to update the data from server --having got all data
@@ -880,7 +894,7 @@ DataManager.prototype.clearAll = function(key, value) {
         case BIG.NONE: break;
         default: break;
       }
-    } else { //switch MODE:
+    } else { //switching MODE
       isdeep = (big !== BIG.NONE);
     }
     

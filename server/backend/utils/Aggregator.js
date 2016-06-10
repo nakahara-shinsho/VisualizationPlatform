@@ -1,12 +1,15 @@
 //status-less or statusful ?-- status-less
 function Aggregator(jsonarray, types) {
   var self = this,
-      LIMIT_NUM_OF_COLUMNS = 32,
-      d3 = require('d3'),
+      LIMIT_NUM_OF_COLUMNS = 20, //max=32
+      //d3 = require('d3'),
       _ = require('underscore'),
       crossfilter = require('crossfilter'),
-      $  = require('jquery-deferred'),
-      keys = Object.keys(jsonarray[0]).splice(0, LIMIT_NUM_OF_COLUMNS); //the maximum number of dimensions is 16  
+      //$  = require('jquery-deferred'),
+      keys = Object.keys(jsonarray[0]).filter(function(column){
+        return types[column]=='number';
+      });
+       //.splice(0, LIMIT_NUM_OF_COLUMNS); //the maximum number of dimensions is 16  
   
   this.crossfilter = crossfilter(jsonarray);
   this.dimensions = {};
@@ -20,11 +23,12 @@ function Aggregator(jsonarray, types) {
   });
   
   this.clear = function() {
-    for(var column in this.dimensions) {
-      this.dimensions[column].filterAll();
-    }
     if(this.grouping) {
       this.grouping.dispose();
+      this.grouping = null;
+    }
+    for(var column in this.dimensions) {
+      this.dimensions[column].filterAll();
     }
   };
   
@@ -32,38 +36,37 @@ function Aggregator(jsonarray, types) {
     try {
       var spks = options._spk_  || {},
           refiner  =  options._where_  || {},
-          selector =  /*options._select_ ||*/ keys;         
+          selector = /* options._select_*/ keys ;
+              
       var currentArray = {};
-      //add new dimension which are not still existed   
       
+      //add new dimension which are not still existed   
+      //
+      if(_.isEmpty(selector)) {
+        return currentArray;
+      }
+            
       //refining
       var refiner_keys = Object.keys(refiner);
       refiner_keys.forEach(function(column){
         if(types[column]=='number') {
-          self.dimensions[column].filterRange([+refiner[column][0], +refiner[column][1]]);
+          if(refiner[column][0] && refiner[column][1]){ //why it is set to null?
+            
+            var left = +refiner[column][0], right = +refiner[column][1];
+            /*self.dimensions[column].filterFunction(function(d) {
+              return d[column] >= left && d[column]< right;
+            });*/
+            self.dimensions[column].filterRange([left, right]);
+          }
         } else {
           self.dimensions[column].filterFunction(function(d){
             return refiner[column].indexOf(d) >= 0;
           });
         }
       });
-      
-      
-            
-      //if(!spks ) { //spks do not exist --> sampling is unnecessary
-      //  return currentArray;
-      //}
-      
+ 
       var vsize = 1, spks_keys = Object.keys(spks);
-     /* spks_keys.forEach(function(pk){
-        vsize *= +spks[pk];
-      });
-      
-      //if the size of filtered records is less than vsize, then return without sampling
-      if(vsize >= currentArray.length) { //small data --> samlping is necessary
-        return currentArray;
-      }
-      */
+     
       if(currentArray.length < 128*128) { //small data --> samlping is necessary
         currentArray= this.dimensions[keys[0]].top(Infinity);
         return currentArray;

@@ -13,6 +13,7 @@
     "cookie-session": "*",
     "crossfilter": "^1.3.12",
     "csurf": "*",
+    "d3": "^3.5.17",
     "debug": "*",
     "ejs": "*",
     "errorhandler": "*",
