@@ -48,14 +48,14 @@ function Aggregator(jsonarray, types) {
         }
       });
       
-      currentArray= this.dimensions[keys[0]].top(Infinity);
+      
             
       //if(!spks ) { //spks do not exist --> sampling is unnecessary
       //  return currentArray;
       //}
       
       var vsize = 1, spks_keys = Object.keys(spks);
-      spks_keys.forEach(function(pk){
+     /* spks_keys.forEach(function(pk){
         vsize *= +spks[pk];
       });
       
@@ -63,7 +63,12 @@ function Aggregator(jsonarray, types) {
       if(vsize >= currentArray.length) { //small data --> samlping is necessary
         return currentArray;
       }
-
+      */
+      if(currentArray.length < 128*128) { //small data --> samlping is necessary
+        currentArray= this.dimensions[keys[0]].top(Infinity);
+        return currentArray;
+      }
+      
       //sampling
       this.grouping = null;
       if(spks_keys.length ==1 ) {
@@ -75,23 +80,22 @@ function Aggregator(jsonarray, types) {
         });
       } else
       if(spks_keys.length == 2 ) {
-        var pk0=spks_keys[0],  size0 = +spks[pk0],
-            min0 = this.dimensions[pk0].top(1)[0][pk0],
-            max0 = this.dimensions[pk0].bottom(1)[0][pk0];
-        var pk1=spks_keys[1],  size1 = +spks[pk1],
-            min1 = this.dimensions[pk1].top(1)[0][pk1],
-            max1 = this.dimensions[pk1].bottom(1)[0][pk1];
+        var pk0=spks_keys[0],  size0 = +spks[pk0] /2,
+            max0 = this.dimensions[pk0].top(1)[0][pk0],
+            min0 = this.dimensions[pk0].bottom(1)[0][pk0];
+        var pk1=spks_keys[1],  size1 = +spks[pk1] /2,
+            max1 = this.dimensions[pk1].top(1)[0][pk1],
+            min1 = this.dimensions[pk1].bottom(1)[0][pk1];
         var combsKey = pk0 +'|'+ pk1;
         if(!this.dimensions[combsKey]) {
           this.dimensions[combsKey] = self.crossfilter.dimension(function(d){
-            return  Math.floor(size0* (d - min0) /(max0-min0)) + '.' + 
-                    Math.floor(size1* (d - min1) /(max1-min1));
+            return  Math.floor(size0* (d[pk0] - min0) /(max0-min0)) + '.' + 
+                    Math.floor(size1* (d[pk1] - min1) /(max1-min1));
           });
         }
-        this.grouping = this.dimensions[pk1].group(function(d){
-            return Math.floor(size* (d - min) /(max-min));
-        }); 
+        this.grouping = this.dimensions[combsKey].group();
       }
+      
       if(this.grouping) {
         this.grouping.reduce(
           function reduceAdd(p,v){
@@ -126,8 +130,10 @@ function Aggregator(jsonarray, types) {
           }
         );//map end   
       } else {
-        //spk doesnot exist or greater than 2
+        //spk_keys greater than 2   or equal 0
+        currentArray = {};
       }
+      
       return currentArray;
     } catch (e) {
       console.log(e);

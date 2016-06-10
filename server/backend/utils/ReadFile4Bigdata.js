@@ -51,17 +51,20 @@ function ReadFile4Bigdata () {
   };
   
   this.ranges = function(jsonarray, header, types) {
+    var ranges={};
     header.forEach(function(column){
       if(types[column] == 'number') {
-        d3.extent(jsonarray.map(function(d){
+        ranges[column]= d3.extent(jsonarray.map(function(d){
            return d[column];
         }));
       } else {
-        d3.map(jsonarray, function(d){
+        ranges[column]=d3.map(jsonarray, function(d){
            return d[column];
         }).keys();  
       }
     });
+    
+    return ranges;
   };
   
   this.vts = function(wk_name) {
