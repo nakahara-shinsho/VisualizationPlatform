@@ -25,11 +25,12 @@ define(["util/AxisSelectable",
    this.io.setHighlightMode();
     
     //higher priority for set initial io variable values from template
-    this.io.designManager().setTemplate(designTpl);
     this.io.dataManager().setMapperProps({
       xaxis: {type: 'number', label: 'X axis', map2: '' },
       yaxis: {type: 'number', label: 'Y axis', map2: [] }
     });
+    this.io.designManager()
+      .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y-AXIS"});
     this.io.designManager()
       .setControl("graphType", {type:"radio", name:"Graph Type", range:["stacked","normalized", "individual"], value: "stacked"});
     this.io.designManager()
@@ -68,6 +69,23 @@ define(["util/AxisSelectable",
   };
   
    AreaChart.prototype.redraw = function() {
+    var self = this;
+
+      this.axisHeight   = this.containerHeight -
+	  this.layout.top -
+	  this.xConfig.caption.height -
+	  this.xConfig.label.height -
+	  this.xConfig.scrollbar.height;
+
+      this.axisWidth = this.containerWidth -
+	  this.layout.yaxis.width -
+	  this.layout.main.margin.right;
+
+      this.height = this.containerHeight;
+
+      this.scaleX = d3.scale.linear().range([0, this.axisWidth]);    
+      this.scaleY = d3.scale.linear().range([this.axisHeight, 0]);
+
        this.createChartHeader();
        this.drawCharts();
   };
@@ -141,14 +159,9 @@ define(["util/AxisSelectable",
 	  this.layout.main.margin.right;
   
       this.scaleX = d3.scale.linear().range([0, this.axisWidth]);    
-      this.scaleX2 = d3.scale.linear().range([0, this.containerWidth - this.layout.yaxis.width - this.layout.main.margin.right]);
-
       this.scaleY = d3.scale.linear().range([this.axisHeight, 0]);
 
-      this.scaleY2 = d3.scale.linear().range([this.height/16, 0]);
-
       this.name = "g1";
-      this.name2 = "g2";
       // init for others      
       this.svg = null;
       this.svg_g = null;
@@ -267,10 +280,8 @@ define(["util/AxisSelectable",
 	   return;
        }
        var g1 = this.drawAreaChart(self.data, self.name, {x: 0, y: 0}, this.scaleX, this.scaleY);
-       var g2 = this.drawBrushBar(self.data, self.name2, {x: 0, y: 0}, this.scaleX2, this.scaleY2);
-  
 
-       this.drawBrush(g1, g2);
+       this.drawBrush(g1);
        this.drawTooltip(g1);
    };
 
@@ -284,69 +295,42 @@ define(["util/AxisSelectable",
        self.setMainSvg(group , scaleX, scaleY);
        self.setXaxisSvg(group, scaleX, scaleY);
        self.setAxisesDomain(data, scaleX, scaleY);
-//       self.drawBar(data, position, scaleX, scaleY, group);
        self.drawXAxis(data, position, scaleX, scaleY, group);
        return group;
    };
 
-   AreaChart.prototype.drawBar = function (data, position, scaleX, scaleY, group) {
-      var height = scaleY.range()[0] + position.y;
-       gMain = group.select(".svgMain").append("rect")
-           .attr("class","brushbar")
-           .attr("width", (scaleX(self.maxXValue)))
-	   .attr("height", (scaleY.range()[0] - scaleY.range()[1]))
-          .style("stroke", "white")
-          .style("fill", "white");
-
+  AreaChart.prototype.drawBrush = function(g1){
+   var self = this;
+   
+   var brushed = function(){
+      d3.event.sourceEvent.stopPropagation();
+      var filter = {}, xcol = self.io.dataManager().getMapper('xaxis');
+      filter[xcol] = self.brush.empty() ? null : self.brush.extent();
+      self.io.dataManager().setRowRefiner(filter);
+      if(!self.io.isHighlightMode())
+      {
+        d3.selectAll(".brush").call(self.brush.clear());
+      }
    };
-   AreaChart.prototype.drawBrush = function (g1, g2) {
-       var self = this;
-       self.svg_g.append("defs").append("clipPath")
-           .attr("id", "clip")
-           .append("rect")
-           .attr("width", (self.scaleX.range()[1] - self.scaleX.range()[0]))
-           .attr("height", (self.scaleY.range()[0] - self.scaleY.range()[1]));
-       var focus = g1.selectAll("." + self.name + "area").attr("clip-path", "url(#clip)");
-
-       var brush = d3.svg.brush()
-           .x(self.scaleX2)
-           .on("brushstart", function(){
-               d3.event.sourceEvent.stopPropagation();
-               d3.selectAll(".brush").call(brush.clear());
-           })
-           .on("brushend", brushed);
-       d3.selectAll(".brush").call(brush.clear());
-       d3.selectAll(".brush").call(brushed);
-       g1.select("." + self.name + "area").append("g")
-       g2.select(".svgMain").append("g")
-           .attr("class", "x brush")
-           .call(brush)
-           .selectAll("rect")
-           .attr("y", 0)
-           .attr("height", self.scaleY.range()[0] + 10)
-           .style("fill", "red");
-
-       function brushed() {
-	   extractBrushRange();
-	   console.log( brush.extent());
-	   self.scaleX.domain(brush.empty() ? self.scaleX.domain() : brush.extent()); 
-	   area = self.createAreaData(self.scaleX, self.scaleY);
-	   focus.select("path")
-	       .attr("d", function (d) {
-		   return area(d.values);
-	       }); 
-	   var xAxis = d3.svg.axis().scale(self.scaleX).orient("bottom")
-              .ticks(self.io.designManager().getValue("xaxisticknum"));
-	   g1.select(".xAxis").call(xAxis);
-       }
-       function extractBrushRange() {
-	   brushDom = d3.selectAll(".brush").selectAll(".resize");
-	   brushDom.forEach(function (dom) {
-	       resizeE = dom[0];
-	       resizeW = dom[1];	       
-	   })
-       }
-   };   
+   
+   this.brush = d3.svg.brush()
+         .x(self.scaleX)
+         .on("brushstart", function(){
+           d3.event.sourceEvent.stopPropagation();
+           d3.selectAll(".brush").call(self.brush.clear());
+         })
+         .on("brushend", brushed);
+   
+   if(!self.io.isHighlightMode()) {
+        d3.selectAll(".brush").call(self.brush.clear());
+   }
+   g1.select(".svgMain").append("g")
+//   self.svg.append("g")
+     .attr("class","x brush")
+     .call(self.brush)
+     .selectAll("rect")
+     .attr("height", self.height + self.margin.top + self.margin.bottom);
+ };
 
    AreaChart.prototype.createAreaData = function (scaleX, scaleY) {
        area = d3.svg.area()
@@ -412,6 +396,7 @@ define(["util/AxisSelectable",
 
   AreaChart.prototype.drawXAxis = function (data, position, scaleX, scaleY, group) {
       var self = this;
+      var xcolumn = this.io.dataManager().getMapper('xaxis');
       var xAxis = d3.svg.axis().scale(scaleX).orient("bottom")
           .ticks(self.io.designManager().getValue("xaxisticknum"));
       if(self.io.designManager().getValue("xaxisticktype") == "dec"){
@@ -424,7 +409,11 @@ define(["util/AxisSelectable",
       var xAxisG = group.select(".svgXaxis")
 	  .append("g")
           .attr("class", "xAxis");
-      xAxisG.call(xAxis);
+      xAxisG.call(xAxis)
+	  .append('text')
+	  .attr('x',self.axisWidth/2)
+	  .attr('y',self.margin.bottom)
+	  .text((xcolumn)? xcolumn:'X');
   };
   AreaChart.prototype.drawYAxis = function (data, position, scaleX, scaleY, group) {
       var self = this;
@@ -493,7 +482,9 @@ define(["util/AxisSelectable",
        group.select(".areachart-yaxis").append("svg")
            .attr("class","yaxis")
            .attr("width", self.layout.yaxis.width)
-           .attr("height", self.containerHeight)
+	   .style("height",   function(){
+	       return self.layout.top + scaleY.range()[0] + "px";
+	   })
            .append("g")
            .attr("transform", "translate(" +
 		 self.layout.yaxis.width+","+ self.layout.top + ")")
@@ -516,7 +507,7 @@ define(["util/AxisSelectable",
                return self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right +"px";
            })
            .style("overflow-x","auto")
-           .attr("height", self.xConfig.caption.height);       
+           .attr("height", self.xConfig.caption.height + 40);       
    };
 
    AreaChart.prototype.setSvg = function (group, scaleX, scaleY) {
@@ -611,7 +602,8 @@ define(["util/AxisSelectable",
           .style("display","none")
            .style("stroke", "red");
        // ACTION
-       self.svg_g.selectAll("." + self.name + "area")
+//       self.svg_g.selectAll("." + self.name + "area")
+       self.svg_g.select("div.areachart-main")
 	   .on("mouseover", function(d, i, j){
                d3.select(this).style("fill-opacity", 0.5);
                line.style("display","block");

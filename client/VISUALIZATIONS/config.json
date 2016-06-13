@@ -25,6 +25,9 @@
         { type: 'TableChart',
           path: 'TABLE/TableChart'
         },
+        { type: 'AreaChart',
+          path: 'TABLE/AreaChart'
+        },
         { type: 'ParallelCoordinates',
           path: 'TABLE/ParallelCoordinates'
         }
