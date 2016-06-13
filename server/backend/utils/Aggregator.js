@@ -1,20 +1,30 @@
 //status-less or statusful ?-- status-less
 function Aggregator(jsonarray, types) {
   var self = this,
-      LIMIT_NUM_OF_COLUMNS = 20, //max=32
+      LIMIT_NUM_OF_COLUMNS = 30, //max=32
       //d3 = require('d3'),
       _ = require('underscore'),
       crossfilter = require('crossfilter'),
       //$  = require('jquery-deferred'),
       keys = Object.keys(jsonarray[0]).filter(function(column){
         return types[column]=='number';
-      });
-       //.splice(0, LIMIT_NUM_OF_COLUMNS); //the maximum number of dimensions is 16  
+      }).splice(0, LIMIT_NUM_OF_COLUMNS); //the maximum number of dimensions is 16
   
   this.crossfilter = crossfilter(jsonarray);
   this.dimensions = {};
   this.grouping = null;
-  
+  this.prefilters = {};
+
+  this.scale = function(orgsize){
+    var size = orgsize;
+    size = (size >3000) ? size/6: 
+           (size >2500) ? size/5:
+           (size >2000) ? size/4: 
+           (size >1500) ? size/3:
+           (size >1000) ? size/2: size ;
+    return size;
+  };
+
   //create dimensions
   keys.forEach(function(column){
     self.dimensions[column] = self.crossfilter.dimension(function(collection){
@@ -27,43 +37,57 @@ function Aggregator(jsonarray, types) {
       this.grouping.dispose();
       this.grouping = null;
     }
-    for(var column in this.dimensions) {
-      this.dimensions[column].filterAll();
-    }
   };
   
   this.exec = function(options) {
     try {
       var spks = options._spk_  || {},
           refiner  =  options._where_  || {},
-          selector = /* options._select_*/ keys ;
-              
+          selector =  options._select_ ;
+    
       var currentArray = {};
       
       //add new dimension which are not still existed   
-      //
+      
+      //no neessary mapped column, return null (or all column?)
       if(_.isEmpty(selector)) {
         return currentArray;
       }
-            
+
       //refining
-      var refiner_keys = Object.keys(refiner);
-      refiner_keys.forEach(function(column){
-        if(types[column]=='number') {
-          if(refiner[column][0] && refiner[column][1]){ //why it is set to null?
-            
-            var left = +refiner[column][0], right = +refiner[column][1];
-            /*self.dimensions[column].filterFunction(function(d) {
-              return d[column] >= left && d[column]< right;
-            });*/
-            self.dimensions[column].filterRange([left, right]);
+      var clearfilters = {};
+
+      if(!_.isEmpty(refiner)) {
+        var refiner_keys = Object.keys(refiner);
+
+        clearfilters = _.omit(this.prefilters, refiner_keys);
+
+        refiner_keys.forEach(function(column) {
+          if(types[column]=='number') {
+            if(refiner[column][0]!==null && refiner[column][1]!==null){
+              var left = +refiner[column][0], right = +refiner[column][1];
+              self.dimensions[column].filterFunction(function(d) {
+                  return d >= left && d< right;
+              });
+              self.prefilters[column] = refiner[column].slice(0); //copy array
+              
+            } else if(self.prefilters[column]) {
+              clearfilters[column] = self.prefilters[column];
+            } 
+          } else { //string
+            self.dimensions[column].filterFunction(function(d){
+              return refiner[column].indexOf(d) >= 0;
+            });
           }
-        } else {
-          self.dimensions[column].filterFunction(function(d){
-            return refiner[column].indexOf(d) >= 0;
-          });
-        }
-      });
+        });
+      } else { //highlight mode---statusful implementation
+        clearfilters = this.prefilters;
+      }
+      
+      //clear unnecessary filters
+      for(var column in clearfilters) {
+        this.dimensions[column].filterAll();
+      }
  
       var vsize = 1, spks_keys = Object.keys(spks);
      
@@ -75,18 +99,18 @@ function Aggregator(jsonarray, types) {
       //sampling
       this.grouping = null;
       if(spks_keys.length ==1 ) {
-        var pk=spks_keys[0],  size = +spks[pk],
-            max = this.dimensions[pk].top(1)[0][pk],
+        var pk=spks_keys[0],  size = +spks[pk];
+        var max = this.dimensions[pk].top(1)[0][pk],
             min = this.dimensions[pk].bottom(1)[0][pk];
         this.grouping = this.dimensions[pk].group(function(d){
           return Math.floor(size* (d - min) /(max-min));
         });
       } else
       if(spks_keys.length == 2 ) {
-        var pk0=spks_keys[0],  size0 = +spks[pk0] /2,
+        var pk0=spks_keys[0],  size0 = self.scale(+spks[pk0]) ,
             max0 = this.dimensions[pk0].top(1)[0][pk0],
             min0 = this.dimensions[pk0].bottom(1)[0][pk0];
-        var pk1=spks_keys[1],  size1 = +spks[pk1] /2,
+        var pk1=spks_keys[1],  size1 = self.scale(+spks[pk1]) ,
             max1 = this.dimensions[pk1].top(1)[0][pk1],
             min1 = this.dimensions[pk1].bottom(1)[0][pk1];
         var combsKey = pk0 +'|'+ pk1;
