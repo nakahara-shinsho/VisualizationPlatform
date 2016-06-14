@@ -47,7 +47,7 @@ function ReadFile4Bigdata () {
     this.jsonarray.forEach(function(row, index, array){
       header.forEach(function(column){
         if(itypes[column]) { //isNumber value
-           itypes[column] = !isNaN(parseFloat(row[column])) && isFinite(row[column]); //check and set isString value
+           itypes[column] = /*!isNaN(+row[column]) &&*/ isFinite(row[column]); //check and set isString value
         }
       });
     });
