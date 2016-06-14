@@ -2,7 +2,8 @@ var amqp = require('amqplib'),
       config = require('config'),
       fs = require('fs');
 var entrance = __dirname+'/bigdata/',
-    callback = new (require('./utils/ReadFile4Bigdata.js'))();
+    ReadFileClass = require('./utils/ReadFile4Bigdata.js'); 
+    //callback = new (require('./utils/ReadFile4Bigdata.js'))();
 
 function collector (path) {
     var files = [];
@@ -28,10 +29,11 @@ amqp.connect('amqp:'+ config.get('RabbitMQ.server.host')).then(function (conn) {
   return conn.createChannel().then(function (ch) {
     var mqBackend = new (require('./utils/MqBackend'))(ch);
     collector(entrance).forEach(function(wk_name) {
+      var instance = new ReadFileClass(entrance,wk_name);
       setInterval(function(){
-        mqBackend.notify('TABLE', wk_name, callback.vts(wk_name));
+        mqBackend.notify('TABLE', wk_name, instance.vts(wk_name));
       }, 3000);
-      mqBackend.create(entrance, wk_name, callback.init(entrance,wk_name));            
-    });        
+      mqBackend.create(entrance, wk_name, instance);
+    });
   });
 }).then(null, console.warn);
