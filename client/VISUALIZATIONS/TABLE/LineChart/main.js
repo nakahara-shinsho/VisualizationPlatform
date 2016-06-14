@@ -34,6 +34,9 @@ define(["util/AxisSelectable",
       yaxis: {type: 'number', label: 'Y axis', map2: [] }
     });
     
+    this.io.designManager().setControl("graphType", 
+        {type:"radio", name:"Graph Type", range:["stacked", "grouped","normalized"]}); 
+
   };
   
   /**
@@ -123,11 +126,15 @@ define(["util/AxisSelectable",
     
     var ycols = self.io.dataManager().getMapper('yaxis'),
         xcol = self.io.dataManager().getMapper('xaxis'),
-        data = (self.io.isHighlightMode())? 
-            self.io.dataManager().getData(): self.io.dataManager().getFilteredRows();
-        
-    if(_.isEmpty(ycols) || _.isEmpty(xcol)) return linesData;
-  
+        data = self.io.dataManager().getData();
+    
+    if(_.isEmpty(ycols) || _.isEmpty(xcol) || _.isEmpty(data)) return linesData;
+
+    //filtered data
+    if(self.io.isDrilldownMode()) { 
+        data = self.io.dataManager().getFilteredRows(); 
+    }
+    
     // filter max x value
     self.maxXValue = d3.max(data.map(function (d) {
       return +(d[xcol]);
@@ -140,7 +147,7 @@ define(["util/AxisSelectable",
     
     // sorting x axis data for line chart
     data.sort(function(rowa, rowb) {
-        return +rowa[xcol] > rowb[xcol] ? 1 : -1;
+       return +rowa[xcol] > +rowb[xcol] ? 1 : -1;
     });
        
     // set data to draw chart
@@ -155,8 +162,10 @@ define(["util/AxisSelectable",
       
       linesData.push(line);
     });
-        
     
+    
+    self.setAxisesDomain(data, linesData);
+
     return linesData;
   };
 
@@ -194,7 +203,6 @@ define(["util/AxisSelectable",
     
     var linesData = this.transformData();
     
-    self.setAxisesDomain(linesData);
     
     self.line = d3.svg.line()
       .interpolate("linear ")
@@ -324,22 +332,18 @@ define(["util/AxisSelectable",
    * @method setAxisesDomain
    * @memberOf LineChart
    */
-  LineChart.prototype.setAxisesDomain = function (linesData) {
+  LineChart.prototype.setAxisesDomain = function (data, linesData) {
     var self = this,
-        ret  = {},
-        data = (self.io.isHighlightMode())? 
-            self.io.dataManager().getData(): self.io.dataManager().getFilteredRows();
-      // set domain for X axis
+        ret  = {};
+    
+    // set domain for X axis
     var xcol = this.io.dataManager().getMapper('xaxis'),
-        xDomain = d3.extent(data, function (d) {
+    xDomain = d3.extent(data, function (d) {
             return +d[xcol];
-        });
+    });
     this.x.domain(xDomain);     
     
-    this.io.designManager().setControl("graphType", 
-        {type:"radio", name:"Graph Type", range:["stacked", "grouped","normalized"]}); 
-
-      // set domain for Y axis
+    // set domain for Y axis
     var yMin = d3.min(linesData, function (line) {
                 var values= line.values.map(function(d) {return d.yval;});
                 return d3.min(values);

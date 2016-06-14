@@ -26,7 +26,7 @@ function Aggregator(jsonarray, types) {
   };
 
   //create dimensions
-  keys.forEach(function(column){
+  keys.forEach(function(column) {
     self.dimensions[column] = self.crossfilter.dimension(function(collection){
         return collection[column];
     });
@@ -40,18 +40,19 @@ function Aggregator(jsonarray, types) {
   };
   
   this.exec = function(options) {
+    var currentArray = {};
+
     try {
+ 
       var spks = options._spk_  || {},
           refiner  =  options._where_  || {},
           selector =  options._select_ ;
-    
-      var currentArray = {};
       
       //add new dimension which are not still existed   
       
       //no necessary mapped column, return null (or all column?)
       if(_.isEmpty(selector)) {
-        return currentArray;
+        return {};
       }
 
       //clear unused refiner
@@ -64,20 +65,14 @@ function Aggregator(jsonarray, types) {
 
         //apply current refiner
         refiner_keys.forEach(function(column) {
-          if(types[column]=='number') {
-            if(refiner[column][0]!==null && refiner[column][1]!==null){
+          if(refiner[column][0]===null || refiner[column][1]===null) {
+              clearfilters[column] = self.prefilters[column];  
+          } else {
               var left = +refiner[column][0], right = +refiner[column][1];
               self.dimensions[column].filterFunction(function(d) {
-                  return d >= left && d< right;
+                  return d >=left && d <right; //filter range is slower than fiter function
               });
               self.prefilters[column] = refiner[column].slice(0); //copy array
-            } else if(self.prefilters[column]) {
-              clearfilters[column] = self.prefilters[column];
-            } 
-          } else { //string
-            self.dimensions[column].filterFunction(function(d){
-              return refiner[column].indexOf(d) >= 0;
-            });
           }
         });
       } else { //highlight mode---statusful implementation
@@ -91,24 +86,23 @@ function Aggregator(jsonarray, types) {
         }
       }
  
-      var vsize = 1, spks_keys = Object.keys(spks);
-     
-      if(currentArray.length < 20000) { //small data --> samlping is necessary
-        currentArray= this.dimensions[keys[0]].top(Infinity);
+      var spks_keys = Object.keys(spks);
+
+      currentArray= this.dimensions[keys[0]].top(Infinity);
+      if(spks_keys.length===0 || currentArray.length <20000) { //small data --> samlping is unnecessary  
         return currentArray;
       }
       
       //sampling
-      this.grouping = null;
       if(spks_keys.length ==1 ) {
-        var pk=spks_keys[0],  size = +spks[pk];
+        var pk=spks_keys[0],  size = +spks[pk] /2;
         var max = this.dimensions[pk].top(1)[0][pk],
             min = this.dimensions[pk].bottom(1)[0][pk];
         this.grouping = this.dimensions[pk].group(function(d){
           return Math.floor(size* (d - min) /(max-min));
         });
       } else
-      if(spks_keys.length == 2 ) {
+      if(spks_keys.length >= 2 ) { //maximum two dimension samping
         var pk0=spks_keys[0],  size0 = self.scale(+spks[pk0]) ,
             max0 = this.dimensions[pk0].top(1)[0][pk0],
             min0 = this.dimensions[pk0].bottom(1)[0][pk0];
@@ -123,7 +117,7 @@ function Aggregator(jsonarray, types) {
           });
         }
         this.grouping = this.dimensions[combsKey].group();
-      }
+      } 
       
       if(this.grouping) {
         this.grouping.reduce(
@@ -157,19 +151,20 @@ function Aggregator(jsonarray, types) {
              });
              return obj;
           }
-        );//map end   
+        );//map end 
+        return currentArray;
       } else {
         //spk_keys greater than 2   or equal 0
-        currentArray = {};
+        return {};
       }
-      
-      return currentArray;
+      //return currentArray;
     } catch (e) {
       console.log(e);
-    }
       return {};
-    }; //this.exec function end
-  //return this;
+    }
+    return currentArray;
+  }; //this.exec function end
+  
 }
 
 module.exports= Aggregator;
