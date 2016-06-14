@@ -15,14 +15,14 @@ function Aggregator(jsonarray, types) {
   this.grouping = null;
   this.prefilters = {};
 
-  this.scale = function(orgsize){
-    var size = orgsize;
-    size = (size >3000) ? size/6: 
+  this.scale = function(size){
+    return (size >4000) ? size/8:
+           (size >3500) ? size/7: 
+           (size >3000) ? size/6:
            (size >2500) ? size/5:
            (size >2000) ? size/4: 
            (size >1500) ? size/3:
            (size >1000) ? size/2: size ;
-    return size;
   };
 
   //create dimensions
@@ -49,12 +49,12 @@ function Aggregator(jsonarray, types) {
       
       //add new dimension which are not still existed   
       
-      //no neessary mapped column, return null (or all column?)
+      //no necessary mapped column, return null (or all column?)
       if(_.isEmpty(selector)) {
         return currentArray;
       }
 
-      //refining
+      //clear unused refiner
       var clearfilters = {};
 
       if(!_.isEmpty(refiner)) {
@@ -62,6 +62,7 @@ function Aggregator(jsonarray, types) {
 
         clearfilters = _.omit(this.prefilters, refiner_keys);
 
+        //apply current refiner
         refiner_keys.forEach(function(column) {
           if(types[column]=='number') {
             if(refiner[column][0]!==null && refiner[column][1]!==null){
@@ -70,7 +71,6 @@ function Aggregator(jsonarray, types) {
                   return d >= left && d< right;
               });
               self.prefilters[column] = refiner[column].slice(0); //copy array
-              
             } else if(self.prefilters[column]) {
               clearfilters[column] = self.prefilters[column];
             } 
@@ -85,13 +85,15 @@ function Aggregator(jsonarray, types) {
       }
       
       //clear unnecessary filters
-      for(var column in clearfilters) {
-        this.dimensions[column].filterAll();
+      if(!_.isEmpty(clearfilters)) {
+        for(var column in clearfilters) {
+          this.dimensions[column].filterAll();
+        }
       }
  
       var vsize = 1, spks_keys = Object.keys(spks);
      
-      if(currentArray.length < 128*128) { //small data --> samlping is necessary
+      if(currentArray.length < 20000) { //small data --> samlping is necessary
         currentArray= this.dimensions[keys[0]].top(Infinity);
         return currentArray;
       }
