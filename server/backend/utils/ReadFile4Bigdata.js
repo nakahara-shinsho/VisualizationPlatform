@@ -1,4 +1,4 @@
-function ReadFile4Bigdata () {
+function ReadFile4Bigdata (entrance, filename) {
   var BIG = {
         NONE: 0,
         ROW: 1,
@@ -9,8 +9,8 @@ function ReadFile4Bigdata () {
   var fs = require('fs'),
       Aggregator = require('./Aggregator'),
       d3 = require('d3');
-      
-  this.init = function(entrance, filename) {
+
+  {
     var startTime = (new Date()).getTime();
     var table = fs.readFileSync(entrance + filename, 'utf8'),
         format = filename.split('.').pop().toLowerCase();
@@ -31,10 +31,10 @@ function ReadFile4Bigdata () {
     
     console.log('prepare aggregator END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
 
-    return this;
-  };
-  
-  this.calculateInitValues = function() {
+  }
+}
+
+ReadFile4Bigdata.prototype.calculateInitValues = function() {
     var self=this,
         itypes={},
         header = Object.keys(this.jsonarray[0]);
@@ -77,11 +77,11 @@ function ReadFile4Bigdata () {
     return;
   };
   
-  this.vts = function(wk_name) {
+  ReadFile4Bigdata.prototype.vts = function(wk_name) {
       return [wk_name];
   };
   
-  this.syn = function(options, entrance, filename) {
+  ReadFile4Bigdata.prototype.syn = function(options, entrance, filename) {
     console.log('request options:  ' + JSON.stringify(options) );
     var startTime = (new Date()).getTime();
     this.response._table_.filled = this.aggregator.exec(options);
@@ -94,6 +94,6 @@ function ReadFile4Bigdata () {
       this.aggregator.clear();
     }
   };
-}
+
 
 module.exports = ReadFile4Bigdata;
