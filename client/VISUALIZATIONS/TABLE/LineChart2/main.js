@@ -67,6 +67,7 @@ define(["util/CustomTooltip",
   LineChart.prototype.update = function (changed) {
     var self = this;
     if(changed.hasOwnProperty("COLOR_MANAGER")){
+      console.log(changed);
       self.redraw();
     }else if(changed.hasOwnProperty("DESIGN_MANAGER")){
       self.redraw();
@@ -510,7 +511,7 @@ define(["util/CustomTooltip",
         return "line_chart hideme";
       })
       .style("stroke", function(d) {
-        if(self.io.colorManager().getDomainName() !== "Y axis"){
+        if(self.io.colorManager().getDomainName() !== "Y Axis"){
           return self.io.colorManager().getColorOfRow(d.color);
         }
         return self.io.colorManager().getColor(d.name);

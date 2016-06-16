@@ -19,6 +19,10 @@
           path: 'TABLE/ScatterPlot'
         },
         {
+          type: 'ScatterPlot2',
+          path: 'TABLE/ScatterPlot2'
+        },
+        {
           type: 'PieChart',
           path: 'TABLE/PieChart'
         },
@@ -36,6 +40,10 @@
     SourceCodeView: {
         type: 'SourceCodeView',
         path: 'Authenticated/SourceCodeView'
+    },
+    LineChartRowSplit: {
+        type: 'LineChartRowSplit',
+        path: 'Authenticated/LineChartRowSplit'
     },
     ConfusionMatrix: {
         type: 'ConfusionMatrix',

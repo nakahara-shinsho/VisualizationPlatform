@@ -300,10 +300,18 @@ define(["css!./main"], function () {
           });
 
     // draw dots
-     this.svg.selectAll("circle")
-       .data(data)
-       .enter()
-     .append("circle")
+    var axisColor    = undefined;
+    //var colorManager = this.io.colorManager();
+    if(colorManager.getDomainName() === "X Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+    }else if(colorManager.getDomainName() === "Y Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    }
+
+    this.svg.selectAll("circle")
+      .data(data)
+      .enter()
+      .append("circle")
       .attr("cx", function (d) {
         return self.x(+d[xcolumn]);
       })
@@ -312,6 +320,9 @@ define(["css!./main"], function () {
       })
       .attr("r", 3)
       .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
+        }
         return colorManager.getColorOfRow(d);
       });
     //hide unfocused data for highligh mode
@@ -425,27 +436,37 @@ define(["css!./main"], function () {
     });
     if (chart.brush.empty()) {
        chart.io.dataManager().setRowRefiner(filterset); //clear refiner of all visible columns
-    }
-    else {
-        var e = chart.brush.extent(),
-            selector = chart.io.dataManager().getColumnRefiner();
-        if(xcolumn == ycolumn) {
-            filterset[xcolumn]= [Math.max(e[0][0], e[0][1]), Math.min(e[1][0], e[1][1])];
-        } else {
-            filterset[xcolumn]= [e[0][0], e[1][0]];
-            filterset[ycolumn]= [e[0][1], e[1][1]];
-        }
-        chart.io.dataManager().setRowRefiner(filterset);
+    } else {
+      var e = chart.brush.extent(),
+          selector = chart.io.dataManager().getColumnRefiner();
+      if(xcolumn == ycolumn) {
+        filterset[xcolumn]= [Math.max(e[0][0], e[0][1]), Math.min(e[1][0], e[1][1])];
+      } else {
+        filterset[xcolumn]= [e[0][0], e[1][0]];
+        filterset[ycolumn]= [e[0][1], e[1][1]];
+      }
+      chart.io.dataManager().setRowRefiner(filterset);
     }
   };
 
   ScatterPlot.prototype.updateColors = function() {
-     var colorManager = this.io.colorManager();
-     this.svg.selectAll("circle")
+    var self = this;
+    var colorManager = self.io.colorManager();
+    var axisColor    = undefined;
+    if(colorManager.getDomainName() === "X Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+    }else if(colorManager.getDomainName() === "Y Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    }
+
+
+    self.svg.selectAll("circle")
       .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
+        }
         return colorManager.getColorOfRow(d);
       });
   };
-  
   return ScatterPlot;
 });
