@@ -52,7 +52,7 @@ define(["util/CustomTooltip",
       .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y AXIS"});
     this.io.designManager()
       .setControl("yaxisticknum", {type: "regx", name: " Y AXIS Tick Number", value:4});
-        this.io.designManager()
+    this.io.designManager()
       .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
     this.io.designManager()
       .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
