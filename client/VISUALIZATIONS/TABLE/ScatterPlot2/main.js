@@ -67,8 +67,7 @@ define(["css!./main"], function () {
     } else if (changed.hasOwnProperty("DATA_MANAGER")) {
       self.redraw();
     }else if(changed.hasOwnProperty("MODE")){
-      self._mode = changed.MODE;
-      if(self._mode === "highlight"){
+      if(self.io.isHighlightMode()){
         self.brush = undefined;
         self.redraw();
       }
@@ -154,8 +153,6 @@ define(["css!./main"], function () {
     this.containerWidth = containerWidth;
     this.containerHeight= containerHeight;
 
-    /** Mode **/
-    this._mode = "highlight"; // ["highlight","drilldown"]
     /** Brush **/
     this.brush =undefined;
 
@@ -305,10 +302,12 @@ define(["css!./main"], function () {
     // draw dots
     var axisColor    = undefined;
     //var colorManager = this.io.colorManager();
-    if(colorManager.getDomainName() === "X Axis"){
-      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
-    }else if(colorManager.getDomainName() === "Y Axis"){
-      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    if(colorManager.getDomainName()){
+      if(colorManager.getDomainName().toLowerCase() === "x axis"){
+        axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+      }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
+        axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+      }
     }
 
     this.svg.selectAll("circle")
@@ -415,7 +414,7 @@ define(["css!./main"], function () {
    */
   ScatterPlot.prototype.drawBrush = function(){
     var self = this;
-    if(self.brush === undefined || self._mode === "drilldown"){
+    if(self.brush === undefined || self.io.isDrilldownMode()){
       self.brush = d3.svg.brush()
         .x(self.x)
         .on("brushstart", function(){
