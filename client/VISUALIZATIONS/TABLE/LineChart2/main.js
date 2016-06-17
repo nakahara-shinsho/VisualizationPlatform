@@ -85,8 +85,7 @@ define(["util/CustomTooltip",
     }else if(changed.hasOwnProperty("DATA_MANAGER")){
       self.redraw();
     }else if(changed.hasOwnProperty("MODE")){
-      self._mode = changed.MODE;
-      if(self._mode === "highlight"){
+      if(self.io.isHighlightMode()){
         self.brush = undefined;
       }
       self.redraw();
@@ -181,7 +180,10 @@ define(["util/CustomTooltip",
       lineopacity : 0.6
     };
     /** Mode **/
-    this._mode = "drilldown"; // ["highlight","drilldown"]
+    //set default to highligh mode
+    if(!this.io.isHighlightMode() && !this.io.isDrilldownMode()) {
+      this.io.setHighlightMode();
+    }
 
     /** Inner Variable **/
     // VIEW
@@ -413,7 +415,7 @@ define(["util/CustomTooltip",
       var xcolumn = self.io.dataManager().getMapper("xaxis");
       var filteredRows = self.io.dataManager().getFilteredRows();
       var xRange;
-      if(self._mode === "drilldown"){
+      if(self.io.isDrilldownMode()){
         xRange = self.io.dataManager().getFilteredDataRange(xcolumn, filteredRows);
       }else{
         xRange= self.io.dataManager().getDataRange(xcolumn);
@@ -544,7 +546,8 @@ define(["util/CustomTooltip",
         return "line_chart hideme";
       })
       .style("stroke", function(d) {
-        if(self.io.colorManager().getDomainName().toLowerCase() !== "y axis"){
+        if(self.io.colorManager().getDomainName() !== undefined &&
+           self.io.colorManager().getDomainName().toLowerCase() !== "y axis"){
           return self.io.colorManager().getColorOfRow(d.color);
         }
         return self.io.colorManager().getColor(d.name);
@@ -648,7 +651,7 @@ define(["util/CustomTooltip",
   */
  LineChart.prototype.drawBrush = function(){
    var self = this;
-   if(self.brush === undefined || self._mode === "drilldown"){
+   if(self.brush === undefined || self.io.isDrilldownMode()){
      self.brush = d3.svg.brush()
        .x(self.x)
        .on("brushstart", function(){
@@ -697,18 +700,6 @@ define(["util/CustomTooltip",
     var data = self.transformData();
     self.createChart(data);
     return self.root_dom;
-  };
- /**
-   * mode Selector by user
-   * @method mode
-   * @memberOf LineChart
-   */
-   LineChart.prototype.mode = function (mode) {
-    if(mode){
-      this._mode = mode;
-      this.redraw();
-    }
-    return this._mode;
   };
   return LineChart;
 });
