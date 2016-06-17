@@ -82,8 +82,13 @@ define(["util/CustomTooltip",
       }else{
         self.redraw();
       }
-    }
-    if(changed.hasOwnProperty("DATA_MANAGER")){
+    }else if(changed.hasOwnProperty("DATA_MANAGER")){
+      self.redraw();
+    }else if(changed.hasOwnProperty("MODE")){
+      self._mode = changed.MODE;
+      if(self._mode === "highlight"){
+        self.brush = undefined;
+      }
       self.redraw();
     }
   };
@@ -245,7 +250,7 @@ define(["util/CustomTooltip",
     var yaxisDiv,mainDiv,xaxiscaptionDiv;
     // Draw Div
     drawDiv();
-    // Draw yAxisCaption
+    // Draw XAxisCaption
     drawXAxisCaptionSVG();
     var mainHeight = self.containerHeight -
           self.layout.top -
@@ -643,20 +648,29 @@ define(["util/CustomTooltip",
   */
  LineChart.prototype.drawBrush = function(){
    var self = this;
-   var brush = d3.svg.brush()
-         .x(self.x)
-         .on("brushstart", function(){
-           d3.event.sourceEvent.stopPropagation();
-         })
-         .on("brushend", function(){
-           d3.event.sourceEvent.stopPropagation();
-           var filter = {}, xcol = self.io.dataManager().getMapper('xaxis');
-           filter[xcol] = brush.empty() ? null : brush.extent();
+   if(self.brush === undefined || self._mode === "drilldown"){
+     self.brush = d3.svg.brush()
+       .x(self.x)
+       .on("brushstart", function(){
+         d3.event.sourceEvent.stopPropagation();
+       })
+       .on("brushend", function(){
+         d3.event.sourceEvent.stopPropagation();
+         var filter = {};
+         var xcol = self.io.dataManager().getMapper('xaxis');
+         var diff = self.brush.extent()[1] - self.brush.extent()[0];
+         if(self.brush.extent() !== undefined && diff > 0){
+           filter[xcol] = self.brush.extent();
            self.io.dataManager().setRowRefiner(filter);
-         });
+         }else{
+           filter[xcol] = null;
+           self.io.dataManager().setRowRefiner(filter);
+         }
+       });
+   }
    self.svg.append("g")
      .attr("class","x brush")
-     .call(brush)
+     .call(self.brush)
      .selectAll("rect")
      .attr("y", -10)
      .attr("height", self.axisHeight + 10 + self.xConfig.label.height);
