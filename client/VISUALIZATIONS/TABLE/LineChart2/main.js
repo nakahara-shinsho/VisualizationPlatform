@@ -42,14 +42,20 @@ define(["util/CustomTooltip",
     this.io.designManager()
       .setControl("xaxisCaption", {type:"regx", name:"X AXIS Caption", value:""});
     this.io.designManager()
-      .setControl("xaxisticktype", {type: "radio", name: " X AXIS Label Format", range:["dec", "hex"],value:"dec"});
-    this.io.designManager()
       .setControl("xaxisticknum", {type: "regx", name: " X AXIS Tick Number", value:4});
+    this.io.designManager()
+      .setControl("xaxisticktype", {type: "radio", name: " X AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.io.designManager()
+      .setControl("xaxisdigitnum", {type: "regx", name: " X AXIS Digit Number", value:""});
     /// Y Axis
     this.io.designManager()
       .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y AXIS"});
     this.io.designManager()
       .setControl("yaxisticknum", {type: "regx", name: " Y AXIS Tick Number", value:4});
+    this.io.designManager()
+      .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.io.designManager()
+      .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
     this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
@@ -69,7 +75,13 @@ define(["util/CustomTooltip",
     if(changed.hasOwnProperty("COLOR_MANAGER")){
       self.redraw();
     }else if(changed.hasOwnProperty("DESIGN_MANAGER")){
-      self.redraw();
+      if(changed.DESIGN_MANAGER.xaxisdigitnum > 10){
+        self.io.designManager().setValue("xaxisdigitnum", "");
+      }else if(changed.DESIGN_MANAGER.yaxisdigitnum > 10){
+        self.io.designManager().setValue("yaxisdigitnum", "");
+      }else{
+        self.redraw();
+      }
     }
     if(changed.hasOwnProperty("DATA_MANAGER")){
       self.redraw();
@@ -98,10 +110,10 @@ define(["util/CustomTooltip",
     var self = this;
     var selectedLegends = [];
     if(self.io.isHighlightMode() || refresh !== undefined) {
-      selectedLegends = self.io.dataManager().getMapperProps("yaxis").map2;
+      selectedLegends = self.io.dataManager().getMapper("yaxis");
     }else{
       var selectedColumns = self.io.dataManager().getColumnRefiner();
-      var ycols = self.io.dataManager().getMapperProps("yaxis").map2;
+      var ycols = self.io.dataManager().getMapper("yaxis");
       var pos = 0;
       ycols.forEach(function(col){
         if(selectedColumns.indexOf(col) !== -1){
@@ -127,7 +139,15 @@ define(["util/CustomTooltip",
     /*******************************
      ** Chart Customize Parameter **
      *******************************/
-
+    /** AXIS Signature **/
+    this.axisConfig ={
+      "Dec"   : "",
+      "%"     : "%",
+      "Float" : "f",
+      "SI"    : "s",
+      "Round" : "r",
+      "Hex"   : "x"
+    };
     /** Y AXIS **/
     this.yConfig = {
       scale: "basic",
@@ -139,7 +159,7 @@ define(["util/CustomTooltip",
     this.xConfig = {
       label   : {height: 50},
       range   : {max:"auto", min:"auto"},
-      caption : {height:20, top:20, left:"auto"},
+      caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25},
       axis    : {height:25},
       margin  : 5
@@ -194,9 +214,7 @@ define(["util/CustomTooltip",
     }else{
       this.y= d3.scale.log().range([this.axisHeight,0]);
     }
-    this.yAxis = d3.svg.axis().scale(this.y).orient("left")
-      .ticks(this.io.designManager().getValue("yaxisticknum"))
-      .tickFormat(d3.format(".2s"));
+    this.yAxis = d3.svg.axis().scale(this.y).orient("left");
     // X AXIS
     this.x = d3.scale.linear().range[0,this.axisWidth];
     this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
@@ -397,13 +415,10 @@ define(["util/CustomTooltip",
       }
       self.x = d3.scale.linear().range([0,self.axisWidth]).domain([xRange[0],xRange[1]]);
       /// 2.Tick
+      var format = getFormat("x");
       var xAxis = d3.svg.axis().scale(self.x).orient("bottom")
-            .ticks(self.io.designManager().getValue("xaxisticknum"));
-      if(self.io.designManager().getValue("xaxisticktype") == "dec"){
-        xAxis.tickFormat(d3.format(".2s"));
-      }else if(self.io.designManager().getValue("xaxisticktype") == "hex"){
-        xAxis.tickFormat(d3.format("#04x"));
-      }
+            .ticks(self.io.designManager().getValue("xaxisticknum"))
+            .tickFormat(format);
       /// 3. Draw
       var xAxisG = self.xSvg.append("g")
             .attr("class", "x axis");
@@ -446,9 +461,10 @@ define(["util/CustomTooltip",
       self.y = d3.scale.linear().range([self.axisHeight,0])
         .domain([yRange[0],yRange[1]]);
       /// 2.Tick
+      var format = getFormat("y");
       var yAxis = d3.svg.axis().scale(self.y).orient("left")
             .ticks(self.io.designManager().getValue("yaxisticknum"))
-            .tickFormat(d3.format(".2s"));
+            .tickFormat(format);
       /// 3.Draw
       self.ySvg.append("g")
         .attr("class", "y axis")
@@ -471,6 +487,19 @@ define(["util/CustomTooltip",
           }
           return self.yConfig.caption.left;
         });
+    }
+    function getFormat(axisType){
+      var sign  = self.axisConfig[self.io.designManager().getValue(axisType+"axisticktype")];
+      var digit = self.io.designManager().getValue(axisType+"axisdigitnum");
+      var format = sign;
+      if(digit !== ""){
+        if(sign == "x"){
+          format = "#0"+digit+sign;
+        }else{
+          format = "."+digit+sign;
+        }
+      }
+      return d3.format(format);
     }
   };
  /**
@@ -510,7 +539,7 @@ define(["util/CustomTooltip",
         return "line_chart hideme";
       })
       .style("stroke", function(d) {
-        if(self.io.colorManager().getDomainName() !== "Y axis"){
+        if(self.io.colorManager().getDomainName().toLowerCase() !== "y axis"){
           return self.io.colorManager().getColorOfRow(d.color);
         }
         return self.io.colorManager().getColor(d.name);
@@ -550,9 +579,11 @@ define(["util/CustomTooltip",
 	var tooltipKey     = self.io.dataManager().getMapperProps("xaxis").map2;
         var tooltipValue   = parseInt(self.x.invert(xPosition));
         // Add X Label
+        /***********************************************************/
 	if(self.io.designManager().getValue("xaxisticktype") == "hex"){
 	  tooltipValue = "0x" + tooltipValue.toString(16);
 	}
+        /***********************************************************/
 	var data = createTableData(tooltipValue);
         self.tooltipConfig.attributes
           = {key: tooltipKey, value: tooltipValue };
@@ -582,7 +613,7 @@ define(["util/CustomTooltip",
         if(selectedLegends.indexOf(d.name) !== -1){
           elem.key = d.name;
           if(highlights.indexOf(d.name) !== -1){
-            if(self.io.colorManager().getDomainName() !== "Y axis"){
+            if(self.io.colorManager().getDomainName() !== "Y Axis"){
               elem.color = self.io.colorManager().getColorOfRow(d.name);
             }else{
               elem.color = self.io.colorManager().getColor(d.name);

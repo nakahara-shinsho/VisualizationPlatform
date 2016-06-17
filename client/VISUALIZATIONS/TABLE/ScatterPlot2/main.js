@@ -31,9 +31,17 @@ define(["css!./main"], function () {
       .setControl("xaxisticktype", {type: "radio", name: " X AXIS Label Format", range:["dec", "hex"],value:"dec"});
     this.io.designManager()
       .setControl("xaxisticknum", {type: "regx", name: " X AXIS Tick Number", value:4});
+        this.io.designManager()
+      .setControl("xaxisticktype", {type: "radio", name: " X AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.io.designManager()
+      .setControl("xaxisdigitnum", {type: "regx", name: " X AXIS Digit Number", value:""});
     /// Y Axis
-      this.io.designManager()
+    this.io.designManager()
       .setControl("yaxisticknum", {type: "regx", name: " Y AXIS Tick Number", value:4});
+    this.io.designManager()
+      .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.io.designManager()
+      .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
     this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
@@ -109,6 +117,15 @@ define(["css!./main"], function () {
     /*******************************
      ** Chart Customize Parameter **
      *******************************/
+    /** AXIS Signature **/
+    this.axisConfig ={
+      "Dec"   : "",
+      "%"     : "%",
+      "Float" : "f",
+      "SI"    : "s",
+      "Round" : "r",
+      "Hex"   : "x"
+    };
 
     /** Y AXIS **/
     this.yConfig = {
@@ -162,9 +179,7 @@ define(["css!./main"], function () {
     }else{
       self.y= d3.scale.log().range([self.axisHeight,0]);
     }
-    self.yAxis = d3.svg.axis().scale(self.y).orient("left")
-    //.ticks(self.io.designManager().getValue("yaxisticknum"))
-      .tickFormat(d3.format(".2s"));
+    self.yAxis = d3.svg.axis().scale(self.y).orient("left");
     // X AXIS
     self.x = d3.scale.linear().range[0,self.axisWidth];
     self.xAxis = d3.svg.axis().scale(self.x).orient("bottom");
@@ -300,10 +315,18 @@ define(["css!./main"], function () {
           });
 
     // draw dots
-     this.svg.selectAll("circle")
-       .data(data)
-       .enter()
-     .append("circle")
+    var axisColor    = undefined;
+    //var colorManager = this.io.colorManager();
+    if(colorManager.getDomainName() === "X Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+    }else if(colorManager.getDomainName() === "Y Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    }
+
+    this.svg.selectAll("circle")
+      .data(data)
+      .enter()
+      .append("circle")
       .attr("cx", function (d) {
         return self.x(+d[xcolumn]);
       })
@@ -312,6 +335,9 @@ define(["css!./main"], function () {
       })
       .attr("r", 3)
       .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
+        }
         return colorManager.getColorOfRow(d);
       });
     //hide unfocused data for highligh mode
@@ -339,15 +365,10 @@ define(["css!./main"], function () {
 
     function drawXAxis(){
       /// 2.Tick
-      var xAxis = d3.svg.axis().scale(self.x).orient("bottom").ticks(5);
-      //.ticks(self.io.designManager().getValue("xaxisticknum"));
-      /*
-      if(self.io.designManager().getValue("xaxisticktype") == "dec"){
-        xAxis.tickFormat(d3.format(".2s"));
-      }else if(self.io.designManager().getValue("xaxisticktype") == "hex"){
-        xAxis.tickFormat(d3.format("#04x"));
-      }
-       */
+      var format = getFormat("x");
+      var xAxis = d3.svg.axis().scale(self.x).orient("bottom")
+            .ticks(self.io.designManager().getValue("xaxisticknum"))
+            .tickFormat(format);
       /// 3. Draw
       var xAxisG = self.xSvg.append("g")
             .attr("class", "x axis");
@@ -356,10 +377,10 @@ define(["css!./main"], function () {
     // Y AXIS
     function drawYAxis(){
       /// 2.Tick
+      var format = getFormat("y");
       var yAxis = d3.svg.axis().scale(self.y).orient("left")
-            //.ticks(self.io.designManager().getValue("yaxisticknum"))
-            .ticks(5)
-            .tickFormat(d3.format(".2s"));
+            .ticks(self.io.designManager().getValue("yaxisticknum"))
+            .tickFormat(format);
       /// 3.Draw
       self.ySvg.append("g")
         .attr("class", "y axis")
@@ -383,6 +404,20 @@ define(["css!./main"], function () {
           return self.yConfig.caption.left;
         });
     }
+    function getFormat(axisType){
+      var sign  = self.axisConfig[self.io.designManager().getValue(axisType+"axisticktype")];
+      var digit = self.io.designManager().getValue(axisType+"axisdigitnum");
+      var format = sign;
+      if(digit !== ""){
+        if(sign == "x"){
+          format = "#0"+digit+sign;
+        }else{
+          format = "."+digit+sign;
+        }
+      }
+      return d3.format(format);
+    }
+
   };
 
   /**
@@ -425,27 +460,37 @@ define(["css!./main"], function () {
     });
     if (chart.brush.empty()) {
        chart.io.dataManager().setRowRefiner(filterset); //clear refiner of all visible columns
-    }
-    else {
-        var e = chart.brush.extent(),
-            selector = chart.io.dataManager().getColumnRefiner();
-        if(xcolumn == ycolumn) {
-            filterset[xcolumn]= [Math.max(e[0][0], e[0][1]), Math.min(e[1][0], e[1][1])];
-        } else {
-            filterset[xcolumn]= [e[0][0], e[1][0]];
-            filterset[ycolumn]= [e[0][1], e[1][1]];
-        }
-        chart.io.dataManager().setRowRefiner(filterset);
+    } else {
+      var e = chart.brush.extent(),
+          selector = chart.io.dataManager().getColumnRefiner();
+      if(xcolumn == ycolumn) {
+        filterset[xcolumn]= [Math.max(e[0][0], e[0][1]), Math.min(e[1][0], e[1][1])];
+      } else {
+        filterset[xcolumn]= [e[0][0], e[1][0]];
+        filterset[ycolumn]= [e[0][1], e[1][1]];
+      }
+      chart.io.dataManager().setRowRefiner(filterset);
     }
   };
 
   ScatterPlot.prototype.updateColors = function() {
-     var colorManager = this.io.colorManager();
-     this.svg.selectAll("circle")
+    var self = this;
+    var colorManager = self.io.colorManager();
+    var axisColor    = undefined;
+    if(colorManager.getDomainName() === "X Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+    }else if(colorManager.getDomainName() === "Y Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    }
+
+
+    self.svg.selectAll("circle")
       .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
+        }
         return colorManager.getColorOfRow(d);
       });
   };
-  
   return ScatterPlot;
 });

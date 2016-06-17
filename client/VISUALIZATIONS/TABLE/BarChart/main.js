@@ -56,6 +56,10 @@ define(["util/CustomTooltip",
     this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
     this.io.designManager().setControl("yaxisRangeMinManual", {type:"regx", name:"Y AXIS Min (Manual)", value: 0});
     this.io.designManager()
+      .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.io.designManager()
+      .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
+    this.io.designManager()
       .setControl("xaxisLabelFocus", {type:"selection", name:"X Axis Label Focused By Value ", range:[], value: []});
     this.io.designManager().setControl("rectClickable"  , {type:"radio", name:"RECTANGLE CLICKBLE ",range:["ON", "OFF"], value:"OFF"});
   };
@@ -173,11 +177,18 @@ define(["util/CustomTooltip",
     /*******************************
      ** Chart Customize Parameter **
      *******************************/
-
+    /** AXIS Signature **/
+    this.axisConfig ={
+      "Dec"   : "",
+      "%"     : "%",
+      "Float" : "f",
+      "SI"    : "s",
+      "Round" : "r",
+      "Hex"   : "x"
+    };
     /** Y AXIS **/
     // Y AXIS [height - XAxis_height]
     this.yConfig = {
-      tick : {format:".2s"},
       scale: "basic", // ["basic", "log"]
       caption : {top:-60, left:"auto"}
     };
@@ -242,8 +253,7 @@ define(["util/CustomTooltip",
       self.io.designManager().getValue("xaxisLabelHeight") -
       self.xConfig.scrollbar.height;
     self.y = d3.scale.linear().range([self.axisHeight,0]);
-    self.yAxis = d3.svg.axis().scale(self.y).orient("left")
-      .ticks(self.yConfig.tick.num).tickFormat(d3.format(self.yConfig.tick.format));
+    self.yAxis = d3.svg.axis().scale(self.y).orient("left");
 
     // 2. Transform Data to Chart Format
     if(self.io.dataManager().getMapperProps("xaxis").map2 == '' ||
@@ -513,11 +523,28 @@ define(["util/CustomTooltip",
     // Initialize Y Axis
     var yAxis = d3.svg.axis().scale(self.y).orient("left");
     yAxis.ticks(self.io.designManager().getValue("yaxisticknum"));
+    var format = "";
     if(graphType == "normalized"){
-      yAxis.tickFormat(d3.format(".0%"));
+      var digit = self.io.designManager().getValue("yaxisdigitnum");
+      if(digit !== ""){
+        format = "."+digit + "%";
+      }else{
+        format = ".0%";
+      }
     }else{
-      yAxis.tickFormat(d3.format(self.yConfig.tick.format));
+      var sign  = self.axisConfig[self.io.designManager().getValue("yaxisticktype")];
+      var digit = self.io.designManager().getValue("yaxisdigitnum");
+      if(digit !== ""){
+        if(sign == "x"){
+          format = "#0"+digit+sign;
+        }else{
+          format = "."+digit+sign;
+        }
+      }
     }
+    yAxis.ticks(self.io.designManager().getValue("yaxisticknum"))
+      .tickFormat(d3.format(format));
+
     // Create X Axis
     /// Add X Axis Label Action
     self.svg.append("g")
