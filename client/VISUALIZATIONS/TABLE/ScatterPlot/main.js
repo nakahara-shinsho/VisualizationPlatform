@@ -28,7 +28,7 @@ define(["css!./main"], function () {
   ScatterPlot.prototype.update = function (changed) {
     var self = this;
     if (changed.hasOwnProperty("COLOR_MANAGER")) {
-      this.updateColors();
+      this.redraw();
     }
     else if (changed.hasOwnProperty("DESIGN_MANAGER")) {
       this.redraw();

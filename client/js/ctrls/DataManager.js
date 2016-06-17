@@ -17,7 +17,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  var DataManager = function(boardModel, chartCtrl){
-     // this._get_data_time = {};
+      // this._get_data_time = {};
       this._model = boardModel;
       this._ctrl  = chartCtrl;
       this._data = {_default_table_key_: '_table_', _$mapper_props_:{}, _infer_: {} };
@@ -295,14 +295,24 @@ define(['ctrl/COMMON'], function (COMMON) {
 
 //get data-mapped or color-mapped columns if not-existed in client
 DataManager.prototype.getRenderingColumns = function() {
-   var columns = [], colorManager= this._ctrl.colorManager();
-   Array.prototype.push.apply(columns,this.getMappedColumns());
+   var columns = [], 
+       colorManager= this._ctrl.colorManager();
+   
+   Array.prototype.push.apply(columns, this.getMappedColumns());
+
    if(colorManager.isColumnDomain()){
      columns.push(colorManager.getDomainName());
    }
+
    return columns;
 };
 
+DataManager.prototype.getColumnsInVT = function() {
+  if(_.isEmpty(this.getMapperProps()) ){
+    return '*'; //select all data columns
+  }
+  return this.getRenderingColumns();
+};
 //when option in data-mapping or color-mapping 
 DataManager.prototype.isCachedColumn = function(column) {
   var row0 = this.getData()[0];
@@ -351,7 +361,8 @@ DataManager.prototype.clearAll = function(key, value) {
  };
  
  DataManager.prototype.setData = function(key, value) {
-     this._data[key] = value;
+    this.clearData(key);
+    this._data[key] = value;
  };
  
  DataManager.prototype.getData = function(key, initValue) {
@@ -588,10 +599,10 @@ DataManager.prototype.clearAll = function(key, value) {
                             cache: false,
                             timeout: 30000, //3 seconds 
                             url: this._dataset_url_root + virtualTable,
-                            data: conditions };
+                          };
       var startTime = new Date().getTime();
       conditions._context_ = $.extend(true, {}, window.framework.context, screenContext);
-      conditions._select_= this.getRenderingColumns(); //this.getColumnRefiner();
+      conditions._select_  = this.getColumnsInVT();
       conditions._extra_select_= this._readExtraColumnRefiner();
 
       //TBD&I: if chart is highlight mode, the all condtions besides deepColumns' shouldn't be sent to server
@@ -604,7 +615,7 @@ DataManager.prototype.clearAll = function(key, value) {
       if(!_.isEmpty(spk)) {
         conditions._spk_ = spk;
       }
-      
+      query_options.data = conditions;
       $.ajax(query_options)
             .done( function (data) {
               var jsondata = JSON.parse(data);
@@ -674,15 +685,18 @@ DataManager.prototype.clearAll = function(key, value) {
   
   //update chart with changing refining parameters
   DataManager.prototype.updateChart = function(key, options) {
-    var chartInst = this._ctrl.chartInstance();
+    var vobj = {}, chartInst = this._ctrl.chartInstance();
+    vobj[key] = options;
     for(var prop in this.getMapperProps()) {
-       if(_.isEmpty(this.getMapper(prop)) ) { //stop even if one mapping item is not still set.
-         return;
+       if(_.isEmpty(this.getMapper(prop)) ) { 
+         //return; //stop even if one mapping item is not still set.
+         if(chartInst.update) {
+            chartInst.update({DATA_MANAGER: {SELECTOR: vobj}});
+          }
+          return;
        }
     }
     
-    var vobj = {};
-    vobj[key] = options;
     if(this._isDeepUpdate(key, (options.constructor==Array)? options:_.keys(options)) ) {
        //TBD: will the existed data need to be cleared? -- same Virtual Table
        this.getDataFromServer(this._model.get('vtname')).done(
@@ -697,7 +711,35 @@ DataManager.prototype.clearAll = function(key, value) {
         }
     }
   };
- 
+  
+  DataManager.prototype.isIncompleteData = function() {
+    var types = this.getDataType(),
+        selector_columns = this.getColumnsInVT(),
+        data_columns = _.keys(this.getData()[0]);
+
+    if(selector_columns == '*') {
+      selector_columns =  _.keys(types);
+    }
+
+    return _.difference(selector_columns, data_columns).length >0 ;
+  };
+
+  DataManager.prototype.updateFromColormapping = function(optionsObj, shouldCheckdata) {
+     var chartInst = this._ctrl.chartInstance();
+     if(shouldCheckdata && /*this._isDeepUpdate() &&*/ this.isIncompleteData()) {
+        this.getDataFromServer(this._model.get('vtname')).done(
+         function() {
+           if(chartInst.update) {
+             chartInst.update(optionsObj);
+           }
+        });
+     } else {
+        if(chartInst.update) {
+            chartInst.update(optionsObj);
+        }
+     }
+  };
+
   DataManager.prototype.linkages = function(eventMessage, linked_vtName, lined_wkName ) {
       var self = this, statusOfLink;
       if(eventMessage.constructor == Object ) { //Row Refiner
