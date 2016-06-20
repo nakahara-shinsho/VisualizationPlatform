@@ -23,8 +23,8 @@ define(["css!./main"], function () {
     }
 
     this.io.dataManager().setMapperProps({
-      xaxis: { label: 'X Axis', type: 'number', map2: '', size: 'width'},
-      yaxis: { label: 'Y Axis', type: 'number', map2: '', size: 'height'}
+      xaxis: { label: 'X Axis', type: 'number', map2: '', spk: 'width'},
+      yaxis: { label: 'Y Axis', type: 'number', map2: [''], spk: 'height'}
     });
     /// X Axis
     this.io.designManager()
@@ -286,53 +286,63 @@ define(["css!./main"], function () {
         dataManager = this.io.dataManager(),
         data = dataManager.getFilteredRows(),
         xcolumn = dataManager.getMapper('xaxis'),
-        ycolumn = dataManager.getMapper('yaxis'),
+        ycolumns = dataManager.getMapper('yaxis'),
         filteredRows = dataManager.getFilteredRows();
-
-    if(filteredRows.length <=0 || _.isEmpty(xcolumn) || _.isEmpty(ycolumn))  return;
+    if(filteredRows.length <=0 || _.isEmpty(xcolumn) || ycolumns.length == 0)  return;
 
     var xrange = dataManager.getFilteredDataRange(xcolumn, filteredRows);
-    var yrange = dataManager.getFilteredDataRange(ycolumn, filteredRows);
+    var yrange = [undefined, undefined];
+    ycolumns.forEach(function(ycolumn){
+      var tmp = dataManager.getFilteredDataRange(ycolumn, filteredRows);
+      if(yrange[0] === undefined || yrange[0] > tmp[0]){
+        yrange[0] = tmp[0];
+      }
+      if(yrange[1] === undefined || yrange[1] < tmp[1]){
+        yrange[1] = tmp[1];
+      }
+    });
     self.x = d3.scale.linear().range([0,self.axisWidth]).domain(xrange);
     self.y = d3.scale.linear().range([self.axisHeight,0]).domain(yrange);
     // drawX
-    self.drawAxis(xcolumn,ycolumn);
+    self.drawAxis(xrange,yrange);
     // draw brush
     self.drawBrush();
     // draw dots
-    var axisColor    = undefined;
-    //var colorManager = this.io.colorManager();
-    if(colorManager.getDomainName()){
-      if(colorManager.getDomainName().toLowerCase() === "x axis"){
-        axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
-      }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
-        axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
-      }
-    }
-
-    this.svg.selectAll("circle")
-      .data(data)
-      .enter()
-      .append("circle")
-      .attr("cx", function (d) {
-        return self.x(+d[xcolumn]);
-      })
-      .attr("cy", function (d) {
-        return self.y(+d[ycolumn]);
-      })
-      .attr("r", 3)
-      .style("fill", function (d) {
-        if(axisColor !== undefined){
-          return axisColor;
+    var axisColor;
+    self.io.dataManager().getMapper("yaxis").forEach(function(ycolumn){
+      axisColor    = undefined;
+      if(colorManager.getDomainName()){
+        if(colorManager.getDomainName().toLowerCase() === "x axis"){
+          axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+        }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
+          axisColor = colorManager.getColor(ycolumn);
         }
-        return colorManager.getColorOfRow(d);
-      });
+      }
+      var id = ycolumn.replace("(", "_").replace(")","");
+      self.svg.selectAll("circle#"+id)
+        .data(data)
+        .enter()
+        .append("circle").attr("id", id)
+        .attr("cx", function (d) {
+          return self.x(+d[xcolumn]);
+        })
+        .attr("cy", function (d) {
+          return self.y(+d[ycolumn]);
+        })
+        .attr("r", 3)
+        .style("fill", function (d) {
+          if(axisColor !== undefined){
+            return axisColor;
+          }
+          return colorManager.getColorOfRow(d);
+        });
+    });
     //hide unfocused data for highligh mode
-    if(this.io.isHighlightMode()) {
-      this.svg
+    if(self.io.isHighlightMode()) {
+      self.svg
         .selectAll("circle")
         .classed("hideme", function (row) {
-           return !dataManager.isHighlightRow(row);
+          return !dataManager.isHighlightRow(row);
         });
     }
   };
@@ -342,11 +352,9 @@ define(["css!./main"], function () {
    * @memberOf ScatterPlot
    * @returns {undefined}
    */
-  ScatterPlot.prototype.drawAxis = function (xcolumn, ycolumn) {
+  ScatterPlot.prototype.drawAxis = function (xrange, yrange) {
     var self = this;
     var filteredRows = self.io.dataManager().getFilteredRows();
-    var xrange = self.io.dataManager().getFilteredDataRange(xcolumn, filteredRows);
-    var yrange = self.io.dataManager().getFilteredDataRange(ycolumn, filteredRows);
     drawXAxis();
     drawYAxis();
 
@@ -445,20 +453,21 @@ define(["css!./main"], function () {
     var self = this;
     var colorManager = self.io.colorManager();
     var axisColor    = undefined;
-    if(colorManager.getDomainName().toLowerCase() === "x axis"){
-      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
-    }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
-      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
-    }
-
-
-    self.svg.selectAll("circle")
-      .style("fill", function (d) {
-        if(axisColor !== undefined){
-          return axisColor;
-        }
-        return colorManager.getColorOfRow(d);
-      });
+    self.io.dataManager().getMapper("yaxis").forEach(function(ycolumn){
+      if(colorManager.getDomainName().toLowerCase() === "x axis"){
+        axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+      }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
+        axisColor = colorManager.getColor(ycolumn);
+      }
+      var id = ycolumn.replace("(", "_").replace(")","");
+      self.svg.selectAll("circle#"+id)
+        .style("fill", function (d) {
+          if(axisColor !== undefined){
+            return axisColor;
+          }
+          return colorManager.getColorOfRow(d);
+        });
+    });
   };
   return ScatterPlot;
 });

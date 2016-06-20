@@ -26,6 +26,11 @@ text#caption{
   fill: none;
   stroke: none;
 }
+
+.scatterplot circle {
+    fill-opacity: .6 !important;
+}
+
 .scatterplot circle.hideme {
   fill: #666 !important;
   fill-opacity: .6 !important;
