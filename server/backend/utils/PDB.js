@@ -36,32 +36,35 @@ function PDB (family) {
     console.log('[INFO] : request options:  ' + JSON.stringify(options)  );
     var deferred = $.Deferred();
     var response = {};
-    var dataPath = "../pdb/sample/";
+    var dataPath = "/home/kuroda/devel/VisualizationPlatform/server/backend/pdb/sample/";
     if(this.queryFile !== undefined){
       // create query
       var query = JSON.parse(fs.readFileSync(this.queryFile, 'utf8'));
       // get time_stamp columnName
       var timestampColumnName =  getTimeStampColumnName(query);
       // update where
+      query.where.time_range.lower = 0;
+      query.where.time_range.upper = -1;
       if(options._where_ !== undefined){
         for(var i=0; i<options._where_.length; i++){
           var vt = options._where_[i];
-          if(vt[timestampColumnName] !== undefined){
-            query.where.time_range.lower = Number(vt[timestampColumnName][0]);
-            query.where.time_range.upper = Number(vt[timestampColumnName][1]);
+          if(vt[timestampColumnName] !== undefined && vt[timestampColumnName] !== null){
+            if(vt[timestampColumnName][0] !== undefined && vt[timestampColumnName][1] !== undefined){
+              query.where.time_range.lower = Number(vt[timestampColumnName][0]);
+              query.where.time_range.upper = Number(vt[timestampColumnName][1]);
+            }
             break;
           }
         }
-      }else{
-        query.where.time_range.lower = 0;
-        query.where.time_range.upper = -1;
       }
       if(options._extra_where_ !== undefined){
         for(var vtname in options._extra_where_){
           var vt = options._extra_where_[vtname];
-          if(vt[timestampColumnName] !== undefined){
-            query.where.time_range.lower = parseInt(vt[timestampColumnName][0]);
-            query.where.time_range.upper = parseInt(vt[timestampColumnName][1]);
+          if(vt[timestampColumnName] !== undefined && vt[timestampColumnName] !== null){
+            if(vt[timestampColumnName][0] !== undefined && vt[timestampColumnName][1] !== undefined){
+              query.where.time_range.lower = parseInt(vt[timestampColumnName][0]);
+              query.where.time_range.upper = parseInt(vt[timestampColumnName][1]);
+            }
             break;
           }
         }
