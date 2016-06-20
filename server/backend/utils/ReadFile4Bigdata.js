@@ -10,29 +10,26 @@ function ReadFile4Bigdata (entrance, filename) {
       Aggregator = require('./Aggregator'),
       d3 = require('d3');
 
-  {
-    var startTime = (new Date()).getTime();
-    var table = fs.readFileSync(entrance + filename, 'utf8'),
-        format = filename.split('.').pop().toLowerCase();
+  
+  var startTime = (new Date()).getTime();
+  var table = fs.readFileSync(entrance + filename, 'utf8');
+  var format = filename.split('.').pop().toLowerCase();
     
-    var jsonarray = (format=='csv')? d3.csv.parse(table):
+  var jsonarray = (format=='csv')? d3.csv.parse(table):
                      (format=='tsv')? d3.tsv.parse(table): table;
-    console.log('CSV file read END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
+  console.log('CSV file read END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
     
-    this.calculateInitValues(jsonarray, d3); //types, range
-    console.log('calculate Init Values END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
+  this.calculateInitValues(jsonarray, d3); //types, range
+  console.log('calculate Init Values END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
     
-    this.response = {_table_:{format: 'json'} };
-    this.response._table_.types  = this.types;
-
-    this.response._table_.ranges = this.ranges; //not change with options
-    this.response._table_.big = BIG.ROW;
+  this.response = {_table_:{format: 'json'} };
+  this.response._table_.types  = this.types;
+  this.response._table_.ranges = this.ranges; //not change with options
+  this.response._table_.big = BIG.ROW;
     
-    this.aggregator = new Aggregator(jsonarray, this.itypes);
-    
-    console.log('prepare aggregator END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
-
-  }
+  this.aggregator = new Aggregator(jsonarray, this.itypes);
+   
+  console.log('prepare aggregator END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
 }
 
 ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
@@ -54,6 +51,11 @@ ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
       });
     });
     
+    //test
+    /*header.filter(function(column){
+      return itypes[column];
+    });
+    */
     //ranges
     var ranges = {};
     var iheader = header.filter(function(column){

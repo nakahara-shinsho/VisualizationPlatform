@@ -189,7 +189,7 @@ function Aggregator(jsonarray, itypes) {
 
         var size =1000; //default value
         if(comboPK ==='') { comboPK = numberKey; }  //size is 1000
-        else { size = +spkObject[comboPK] /2;} //pk equal the spks[0]
+        else { size = +spkObject[comboPK] ;} //pk equal the spks[0]
 
         var max = this.dimensions[comboPK].top(1)[0][comboPK],
             min = this.dimensions[comboPK].bottom(1)[0][comboPK];
