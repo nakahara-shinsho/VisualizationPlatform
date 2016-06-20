@@ -28,12 +28,24 @@ define(["css!./main"], function () {
     });
     /// X Axis
     this.io.designManager()
+      .setControl("xaxisCaption", {type:"regx", name:"X AXIS Caption", value:""});
+    this.io.designManager()
       .setControl("xaxisticktype", {type: "radio", name: " X AXIS Label Format", range:["dec", "hex"],value:"dec"});
     this.io.designManager()
       .setControl("xaxisticknum", {type: "regx", name: " X AXIS Tick Number", value:4});
+        this.io.designManager()
+      .setControl("xaxisticktype", {type: "radio", name: " X AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.io.designManager()
+      .setControl("xaxisdigitnum", {type: "regx", name: " X AXIS Digit Number", value:""});
     /// Y Axis
-      this.io.designManager()
+    this.io.designManager()
+      .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:""});
+    this.io.designManager()
       .setControl("yaxisticknum", {type: "regx", name: " Y AXIS Tick Number", value:4});
+    this.io.designManager()
+      .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.io.designManager()
+      .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
     this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
@@ -49,17 +61,21 @@ define(["css!./main"], function () {
   ScatterPlot.prototype.update = function (changed) {
     var self = this;
     if (changed.hasOwnProperty("COLOR_MANAGER")) {
-      this.updateColors();
+      self.updateColors();
+    } else if (changed.hasOwnProperty("DESIGN_MANAGER")) {
+      self.redraw();
+    } else if (changed.hasOwnProperty("DATA_MANAGER")) {
+      self.redraw();
+    }else if(changed.hasOwnProperty("MODE")){
+      if(self.io.isHighlightMode()){
+        self.brush = undefined;
+        self.redraw();
+      }
+    }else{
+      self.redraw();
     }
-    else if (changed.hasOwnProperty("DESIGN_MANAGER")) {
-      this.redraw();
-    }
-    else if (changed.hasOwnProperty("DATA_MANAGER")) {
-      this.redraw();
-    } else {
-      this.redraw();
-    }
-    return this.svg_dom;
+
+    return self.svg_dom;
   };
 
     /**
@@ -104,11 +120,20 @@ define(["css!./main"], function () {
     this.layout ={
       top  : 20,
       yaxis: {width: 80},
-      main:  {margin:{right: 50}}
+      main:  {margin:{right: 50, top: 20 }}
     };
     /*******************************
      ** Chart Customize Parameter **
      *******************************/
+    /** AXIS Signature **/
+    this.axisConfig ={
+      "Dec"   : "",
+      "%"     : "%",
+      "Float" : "f",
+      "SI"    : "s",
+      "Round" : "r",
+      "Hex"   : "x"
+    };
 
     /** Y AXIS **/
     this.yConfig = {
@@ -121,15 +146,16 @@ define(["css!./main"], function () {
     this.xConfig = {
       label   : {height: 50},
       range   : {max:"auto", min:"auto"},
-      caption : {height:20, top:20, left:"auto"},
+      caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25},
       axis    : {height:25}
     };
     this.containerWidth = containerWidth;
     this.containerHeight= containerHeight;
 
-    /** Mode **/
-    this._mode = "highlight"; // ["highlight","drilldown"]
+    /** Brush **/
+    this.brush =undefined;
+
 
     this.svg       = undefined;
     this.xSvg      = undefined;
@@ -162,9 +188,7 @@ define(["css!./main"], function () {
     }else{
       self.y= d3.scale.log().range([self.axisHeight,0]);
     }
-    self.yAxis = d3.svg.axis().scale(self.y).orient("left")
-    //.ticks(self.io.designManager().getValue("yaxisticknum"))
-      .tickFormat(d3.format(".2s"));
+    self.yAxis = d3.svg.axis().scale(self.y).orient("left");
     // X AXIS
     self.x = d3.scale.linear().range[0,self.axisWidth];
     self.xAxis = d3.svg.axis().scale(self.x).orient("bottom");
@@ -177,9 +201,6 @@ define(["css!./main"], function () {
    */
   ScatterPlot.prototype.createChartHeader = function () {
     var self = this;
-    // Brush
-    self.brush = null;
-
     if(self.root_dom === undefined){
       self.root_dom  = document.createElement("div");
       self.container = d3.select(self.root_dom);
@@ -187,7 +208,7 @@ define(["css!./main"], function () {
     if(self.container.selectAll("div.scatterplot")){
       self.container.selectAll("div.scatterplot").remove();
     }
-    var yaxisDiv, mainDiv, xaxisDiv;
+    var yaxisDiv, mainDiv, xaxisDiv, xaxisCaptionDiv;
     drawDiv();
 
     function drawDiv(){
@@ -207,6 +228,8 @@ define(["css!./main"], function () {
         .style("overflow-x","auto");
       xaxisDiv = div.append("div")
         .attr("class","scatterplot-xaxis");
+      xaxisCaptionDiv = div.append("div")
+        .attr("class","scatterplot-xaxis-caption");
       var mainHeight = self.containerHeight -
             self.layout.top -
             self.xConfig.caption.height -
@@ -226,13 +249,29 @@ define(["css!./main"], function () {
         .style("height", mainHeight)
         .append("g")
         .attr("transform", "translate(0," + self.layout.top +")");
-
       self.xSvg = xaxisDiv.append("svg")
         .attr("class", "xaxis")
         .style("width", self.containerWidth - self.layout.main.margin.right)
         .style("height", self.xConfig.axis.height)
         .append("g")
         .attr("transform", "translate(" + self.layout.yaxis.width + ",0)");
+      self.xCaptionSVG =  xaxisCaptionDiv.append("svg")
+        .attr("class", "xaxiscaption")
+        .attr("width", self.containerWidth)
+        .attr("height", self.xConfig.caption.height)
+        .append("g")
+        .attr("transform","translate(0,"+ self.xConfig.caption.top+")")
+        .append("text").attr("class","xaxis")
+        .text(self.io.designManager().getValue("xaxisCaption"));
+      xaxisCaptionDiv.select("text.xaxis")
+        .attr("x", function(){
+          if(self.xConfig.caption.left === "auto" ||
+             self.xConfig.caption.left == undefined){
+            return self.containerWidth/2  -
+              d3.select(this).property("clientWidth")/2;
+          }
+          return  self.xConfig.caption.left;
+        });
     }
   };
 
@@ -254,56 +293,27 @@ define(["css!./main"], function () {
 
     var xrange = dataManager.getFilteredDataRange(xcolumn, filteredRows);
     var yrange = dataManager.getFilteredDataRange(ycolumn, filteredRows);
-
-    /*
-    if(self.io.designManager().getValue("yaxisRangeMinAuto") == "OFF"){
-      yrange[0] = Number(self.io.designManager().getValue("yaxisRangeMinManual"));
-    }
-    if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "OFF"){
-      yrange[1] = Number(self.io.designManager().getValue("yaxisRangeMaxManual"));
-    }
-    self.x.range([0,  self.width]).domain(xrange);
-    self.y.range([self.height, 0]).domain(yrange);
-    self.xAxis = d3.svg.axis().scale(self.x).orient("bottom").ticks(5);
-    self.yAxis = d3.svg.axis().scale(self.y).orient("left").ticks(5);
-     */
     self.x = d3.scale.linear().range([0,self.axisWidth]).domain(xrange);
     self.y = d3.scale.linear().range([self.axisHeight,0]).domain(yrange);
     // drawX
     self.drawAxis(xcolumn,ycolumn);
-    //define brush
-    self.brush =d3.svg.brush()
-      .x(self.x)
-      .y(self.y)
-      .on("brushstart", function () {
-        self.brushstart(self, this, xcolumn, ycolumn);
-      })
-      .on("brush", function () {
-        self.brushmove(self, xcolumn, ycolumn);
-      })
-      .on("brushend", function () {
-        self.brushend(self, xcolumn, ycolumn);
-      });
-
-    //draw frame to brush
-    var brushframe = self.svg.append("rect")
-          .attr("class", 'frame')
-          .attr("x", 0)
-          .attr("y", 0)
-          .style("width", self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right)
-          .style("height",self.containerHeight -  self.layout.top -
-            self.xConfig.caption.height -
-            self.xConfig.scrollbar.height -
-            self.xConfig.axis.height)
-          .call(self.brush).on("mousedown", function () {
-            //d3.event.stopPropagation();
-          });
-
+    // draw brush
+    self.drawBrush();
     // draw dots
-     this.svg.selectAll("circle")
-       .data(data)
-       .enter()
-     .append("circle")
+    var axisColor    = undefined;
+    //var colorManager = this.io.colorManager();
+    if(colorManager.getDomainName()){
+      if(colorManager.getDomainName().toLowerCase() === "x axis"){
+        axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+      }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
+        axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+      }
+    }
+
+    this.svg.selectAll("circle")
+      .data(data)
+      .enter()
+      .append("circle")
       .attr("cx", function (d) {
         return self.x(+d[xcolumn]);
       })
@@ -312,6 +322,9 @@ define(["css!./main"], function () {
       })
       .attr("r", 3)
       .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
+        }
         return colorManager.getColorOfRow(d);
       });
     //hide unfocused data for highligh mode
@@ -339,15 +352,10 @@ define(["css!./main"], function () {
 
     function drawXAxis(){
       /// 2.Tick
-      var xAxis = d3.svg.axis().scale(self.x).orient("bottom").ticks(5);
-      //.ticks(self.io.designManager().getValue("xaxisticknum"));
-      /*
-      if(self.io.designManager().getValue("xaxisticktype") == "dec"){
-        xAxis.tickFormat(d3.format(".2s"));
-      }else if(self.io.designManager().getValue("xaxisticktype") == "hex"){
-        xAxis.tickFormat(d3.format("#04x"));
-      }
-       */
+      var format = getFormat("x");
+      var xAxis = d3.svg.axis().scale(self.x).orient("bottom")
+            .ticks(self.io.designManager().getValue("xaxisticknum"))
+            .tickFormat(format);
       /// 3. Draw
       var xAxisG = self.xSvg.append("g")
             .attr("class", "x axis");
@@ -356,10 +364,10 @@ define(["css!./main"], function () {
     // Y AXIS
     function drawYAxis(){
       /// 2.Tick
+      var format = getFormat("y");
       var yAxis = d3.svg.axis().scale(self.y).orient("left")
-            //.ticks(self.io.designManager().getValue("yaxisticknum"))
-            .ticks(5)
-            .tickFormat(d3.format(".2s"));
+            .ticks(self.io.designManager().getValue("yaxisticknum"))
+            .tickFormat(format);
       /// 3.Draw
       self.ySvg.append("g")
         .attr("class", "y axis")
@@ -383,69 +391,74 @@ define(["css!./main"], function () {
           return self.yConfig.caption.left;
         });
     }
-  };
-
-  /**
-   * Clear the previously-active brush, if any.
-   * @method brushstart
-   * @param {type} p
-   * @memberOf ScatterPlot
-   */
-  ScatterPlot.prototype.brushstart = function (chart, frame, xcolumn, ycolumn) {  
-    d3.select(frame).call(chart.brush.clear());
-    d3.event.sourceEvent.stopPropagation();
-   };
-
-  /**
-   * Highlight the selected circles.
-   * @method brushmove
-   * @param {type} p
-   * @memberOf ScatterPlot
-   */
-  ScatterPlot.prototype.brushmove = function (chart, xcolumn, ycolumn) {
-    var e = chart.brush.extent();
-    chart.svg.selectAll("circle").classed("hideme", function (d) {
-        return e[0][0] > +d[xcolumn] || +d[xcolumn] > e[1][0] || e[0][1] > +d[ycolumn] || +d[ycolumn] > e[1][1];
-    });
-  };
-
-  /**
-   * If the brush is empty(no selection), show (restore) all circles.
-   * @method brushend
-   * @memberOf ScatterPlot
-   */
-  ScatterPlot.prototype.brushend = function (chart, xcolumn, ycolumn) {
-    var filterset = {},
-        mappedColumns = chart.io.dataManager().getMappedColumns();
-    d3.event.sourceEvent.stopPropagation();
-    mappedColumns.forEach(function(column) {
-      if(!_.has(filterset, column)){
-        filterset[column] = null;
-      }
-    });
-    if (chart.brush.empty()) {
-       chart.io.dataManager().setRowRefiner(filterset); //clear refiner of all visible columns
-    }
-    else {
-        var e = chart.brush.extent(),
-            selector = chart.io.dataManager().getColumnRefiner();
-        if(xcolumn == ycolumn) {
-            filterset[xcolumn]= [Math.max(e[0][0], e[0][1]), Math.min(e[1][0], e[1][1])];
-        } else {
-            filterset[xcolumn]= [e[0][0], e[1][0]];
-            filterset[ycolumn]= [e[0][1], e[1][1]];
+    function getFormat(axisType){
+      var sign  = self.axisConfig[self.io.designManager().getValue(axisType+"axisticktype")];
+      var digit = self.io.designManager().getValue(axisType+"axisdigitnum");
+      var format = sign;
+      if(digit !== ""){
+        if(sign == "x"){
+          format = "#0"+digit+sign;
+        }else{
+          format = "."+digit+sign;
         }
-        chart.io.dataManager().setRowRefiner(filterset);
+      }
+      return d3.format(format);
     }
+
+  };
+
+  /**
+   * draw Brush
+   * @method drawBrush
+   * @memberOf ScatterPlot
+   */
+  ScatterPlot.prototype.drawBrush = function(){
+    var self = this;
+    if(self.brush === undefined || self.io.isDrilldownMode()){
+      self.brush = d3.svg.brush()
+        .x(self.x)
+        .on("brushstart", function(){
+          d3.event.sourceEvent.stopPropagation();
+        })
+        .on("brushend", function(){
+          d3.event.sourceEvent.stopPropagation();
+          var filter = {}, xcol = self.io.dataManager().getMapper('xaxis');
+          var diff = self.brush.extent()[1] - self.brush.extent()[0];
+          if(self.brush.extent() !== undefined && diff > 0){
+            filter[xcol] = self.brush.extent();
+            self.io.dataManager().setRowRefiner(filter);
+          }else{
+            filter[xcol] = null;
+            self.io.dataManager().setRowRefiner(filter);
+          }
+        });
+      }
+      self.svg.append("g")
+      .attr("class","x brush")
+      .call(self.brush)
+      .selectAll("rect")
+      .attr("y", -10)
+      .attr("height", self.axisHeight + 10 + self.xConfig.label.height);
   };
 
   ScatterPlot.prototype.updateColors = function() {
-     var colorManager = this.io.colorManager();
-     this.svg.selectAll("circle")
+    var self = this;
+    var colorManager = self.io.colorManager();
+    var axisColor    = undefined;
+    if(colorManager.getDomainName().toLowerCase() === "x axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+    }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    }
+
+
+    self.svg.selectAll("circle")
       .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
+        }
         return colorManager.getColorOfRow(d);
       });
   };
-  
   return ScatterPlot;
 });

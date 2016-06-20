@@ -20,7 +20,7 @@ define(['ctrl/COMMON'], function (COMMON) {
      this._defalutColor = "#555";
      this._defaultColorSeparator = [];//[0.2, 0.4, 0.6, 0.8];
  };
- 
+
  ColorManager.prototype.clearAll = function() {
      this._model.set({ 'colorIndexes': {},
                        'colorTheme': '',
@@ -29,12 +29,12 @@ define(['ctrl/COMMON'], function (COMMON) {
                      }, {silent: true});
      this._ctrl.trigger("change:_save_model_");
  };
- 
+
   //get the colorset list to show combox
   ColorManager.prototype.getThemes = function(){
       return Object.keys(this._themeColors);
   };
-  
+
   ColorManager.prototype.getTheme = function(){
      var theme = this._model.get('colorTheme');
      if(_.isEmpty(theme) || !_.has(this._themeColors, theme)) {
@@ -45,20 +45,20 @@ define(['ctrl/COMMON'], function (COMMON) {
   /*
   ColorManager.prototype.getSeparator = function(){
     var colorSeparator = this._model.get('colorSeparator');
-    
+
     colorSeparator = COMMON.makeObject(colorSeparator, this._defaultColorSeparator);
-    
+
     if(_.isEmpty(colorSeparator)) {
         colorSeparator = this._defaultColorSeparator;
     }
-    
+
     return colorSeparator;
   };
-  
+
   ColorManager.prototype.setSeparator = function(arr) {
     var bDirty=false,
         origSeparator = this.getSeparator();
-        
+
     if(!COMMON.isEqualArray(origSeparator, arr) && !_.isEmpty(arr)) {
        this._model.set('colorSeparator', arr);
        bDirty = true;
@@ -66,8 +66,8 @@ define(['ctrl/COMMON'], function (COMMON) {
     return bDirty;
   };
   */
-  
-  //set the use selected theme 
+
+  //set the use selected theme
   //if return not null, trigger event to chart to inofrm changing of the whole colormap
   ColorManager.prototype.setTheme = function(selectedTheme){
      var bDirty=false, theme = this.getTheme(),
@@ -79,13 +79,13 @@ define(['ctrl/COMMON'], function (COMMON) {
      }
      return bDirty;
   };
-  
+
   //get colorset to show the color list in user interface
   ColorManager.prototype.getThemeColors = function() {
       var colors= [], theme = this.getTheme();
       return this._themeColors[theme];
   };
- 
+
  //the function is used for setting start or end color or number domain
  ColorManager.prototype.setColorIndex = function(indexOfStartOrEnd, color) {
      var theme = this.getTheme(),
@@ -96,7 +96,7 @@ define(['ctrl/COMMON'], function (COMMON) {
          this._model.set('colorIndexes', $.extend(true, {}, colorIndexes) );
      }
   };
- 
+
   //set colorIndex when  user select or change the color mapping to an item 
   //--- trigger event to chart to inform the change of one color in colormap
   ColorManager.prototype.setColor = function(itemName, color) {
@@ -105,9 +105,9 @@ define(['ctrl/COMMON'], function (COMMON) {
         colorIndexes = COMMON.makeObject(this._model.get('colorIndexes'),{}),
         theme = this.getTheme(),
         colorIndex = this._themeColors[theme].indexOf(color);
-    
+
     if(itemIndex <0 ) return false;
-    
+
     if(itemIndex != colorIndex) {
         if(colorIndexes[itemIndex] != colorIndex) { //add index to colorIndexes
             colorIndexes[itemIndex] = colorIndex;
@@ -118,8 +118,8 @@ define(['ctrl/COMMON'], function (COMMON) {
     this._model.set('colorIndexes', $.extend(true, {}, colorIndexes));//clone and then save
     return true;
   };
-  
-   
+
+
   //get color<>item objst to show the current color mapping status in user interface
   ColorManager.prototype.getColormap = function() {
       var colormap = {},
@@ -127,14 +127,14 @@ define(['ctrl/COMMON'], function (COMMON) {
           colorIndexes = COMMON.makeObject(this._model.get('colorIndexes'),{}),
           colorDomainName = this.getDomainName(),
           colorIndex=-1;
-     
+
      if(!items || items.length <=0 ) return colormap;
-          
+
      var colors = this.getThemeColors();
-     
+
      items.forEach(function(item, itemIndex) { //the items have been defined
-        
-        if(_.isEmpty(colorIndexes) ) { //defalut color setting :colorIndex = itemIndex, user have not defined color  
+
+        if(_.isEmpty(colorIndexes) ) { //defalut color setting :colorIndex = itemIndex, user have not defined color
             colormap[item] = colors[itemIndex % colors.length];
         } else if((colorIndex = colorIndexes[itemIndex]) >=0 ) { //user defined color<>item mapping
             colormap[item] = colors[colorIndex];
@@ -142,11 +142,11 @@ define(['ctrl/COMMON'], function (COMMON) {
             colormap[item] = colors[itemIndex % colors.length];
         }
      });
-     
+
      return colormap;
   };
-  
-  //get the color a given item 
+
+  //get the color a given item
   //if domain has not been set, the default coloring will be used
   ColorManager.prototype.getColor = function(itemName){
      var color = this._defalutColor,
@@ -156,9 +156,9 @@ define(['ctrl/COMMON'], function (COMMON) {
          colors = this.getThemeColors(),
          colorIndexes = COMMON.makeObject(this._model.get('colorIndexes'),{}),
          colorIndex = -1;
-     
+
      if(itemIndex >= 0 ) { //known item
-        if(_.isEmpty(colorIndexes) ) { //defalut color setting :colorIndex = itemIndex  
+        if(_.isEmpty(colorIndexes) ) { //defalut color setting :colorIndex = itemIndex
             color = colors[itemIndex % colors.length];
         } else {  //user defined itemIndex<-->colorIndex mapping
             colorIndex = colorIndexes[itemIndex];
@@ -175,23 +175,23 @@ define(['ctrl/COMMON'], function (COMMON) {
          this.defalutColoring(itemName);
      }
      return color;
-  }; 
-  
+  };
+
   //parameters: @name, @items
   //no defalut domain for any chart
-  //--- trigger event to chart to inform changing of the whole colormap 
+  //--- trigger event to chart to inform changing of the whole colormap
   ColorManager.prototype.setDomain = function(/*name,items*/) {
      var bDirty=false;
-     
+
      if(arguments.length > 0 && arguments[0].constructor == String &&
        this._model.get('colorDomainName') != arguments[0]) {
             this._model.set('colorDomainName', arguments[0]);
             bDirty = true;
       }
-     
+
      if(arguments.length > 1) {
          var domain = (arguments[1].constructor == Array)? arguments[1]: [arguments[1]];
-         
+
          if( !COMMON.isEqualArray(this.getDomain(), domain) ) {
             if(domain.length > this._MAX_ITEMS_NUM) {
                 this._model.set('colorDomain', domain.slice(0, this._MAX_ITEMS_NUM)); //clone and then save
@@ -204,15 +204,15 @@ define(['ctrl/COMMON'], function (COMMON) {
      }
      return bDirty;
   };
-  
+
   ColorManager.prototype.getDomainName = function() {
       return  this._model.get('colorDomainName');
   };
-  
+
   ColorManager.prototype.getDomain = function() {
      return  COMMON.makeObject(this._model.get('colorDomain'), []);
   };
-  
+
   /** the following function are using chart ctrl parameters  */
   //show the dataset List
   ColorManager.prototype.getDatasetList = function() {
@@ -236,7 +236,7 @@ define(['ctrl/COMMON'], function (COMMON) {
   ColorManager.prototype.getRangeOfDataset = function(dataset) {
     var items=[], 
         mapperPropsObj = this._ctrl.dataManager().getMapperProps();
-    
+
     for( var prop in mapperPropsObj) {
         if(mapperPropsObj[prop].label.trim() == dataset){
             items = mapperPropsObj[prop].map2;
@@ -318,24 +318,31 @@ define(['ctrl/COMMON'], function (COMMON) {
         domain = this.getDomain(),
         colorDomainName = this.getDomainName(),
         colormap = this.getColormap();
-        
+
         if(this.isDataMappingDomain()) {  //data mapping array
-            return color; //default color         
+            return color; //default color
         }
         if(this.isNumberDomain(colorDomainName) && row[colorDomainName]) {//column
             var value = +row[colorDomainName];
             for(var i=1; i<domain.length; i++) {
-              if(value>= domain[i-1] && value < domain[i]) {
-                 var colorScale = d3.scale.linear()
-                        .domain([domain[i-1], domain[i]])
-                        .range([colormap[domain[i-1]], colormap[domain[i]]]);
+              if(value >= domain[i-1] && value < domain[i]){
+                var colorScale = d3.scale.linear()
+                      .domain([domain[i-1], domain[i]])
+                      .range([colormap[domain[i-1]], colormap[domain[i]]]);
                  color = colorScale(value);
                  break;
+              }else if( value == domain[i]){
+                var colorScale = d3.scale.linear()
+                      .domain([domain[i-1], domain[i]])
+                      .range([colormap[domain[i-1]], colormap[domain[i]]]);
+                color = colorScale(value);
+                break;
               }
             }
        } else if( row[colorDomainName] ) { //string column
            color = colormap[row[colorDomainName]];
-       }     
+       }
+       console.log(color);
        return color;
   };
  
