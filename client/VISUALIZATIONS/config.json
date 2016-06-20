@@ -1,0 +1,52 @@
+{
+    TREE: [], /*please remove spaces between key and ":" */
+    TABLE: [
+        { type: 'BarChart',
+          path: 'TABLE/BarChart'
+        },
+        { type: 'LineChart',
+          path: 'TABLE/LineChart'
+        },
+        { type: 'LineChart2',
+          path: 'TABLE/LineChart2'
+        },
+        {
+          type: 'ScatterMatrixChart',
+          path: 'TABLE/ScatterMatrixChart'
+        },
+        {
+          type: 'ScatterPlot',
+          path: 'TABLE/ScatterPlot'
+        },
+        {
+          type: 'ScatterPlot2',
+          path: 'TABLE/ScatterPlot2'
+        },
+        {
+          type: 'PieChart',
+          path: 'TABLE/PieChart'
+        },
+        { type: 'TableChart',
+          path: 'TABLE/TableChart'
+        },
+        { type: 'AreaChart',
+          path: 'TABLE/AreaChart'
+        },
+        { type: 'ParallelCoordinates',
+          path: 'TABLE/ParallelCoordinates'
+        }
+    ],
+    STREAM: [],
+    SourceCodeView: {
+        type: 'SourceCodeView',
+        path: 'Authenticated/SourceCodeView'
+    },
+    LineChartRowSplit: {
+        type: 'LineChartRowSplit',
+        path: 'Authenticated/LineChartRowSplit'
+    },
+    ConfusionMatrix: {
+        type: 'ConfusionMatrix',
+        path: 'Authenticated/fplus/ConfusionMatrix'
+    }
+}

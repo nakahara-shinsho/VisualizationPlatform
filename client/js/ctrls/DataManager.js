@@ -320,12 +320,13 @@ DataManager.prototype.getGroupByColumns = function() {
 
 //get data-mapped or color-mapped columns if not-existed in client
 DataManager.prototype.getRenderingColumns = function() {
-   var columns = [], 
-       colorManager= this._ctrl.colorManager();
+   var columns = [],  
+       colorManager= this._ctrl.colorManager(),
+       colorDomainName= colorManager.getDomainName();
    
    Array.prototype.push.apply(columns, this.getMappedColumns());
 
-   if(colorManager.isColumnDomain()){
+   if(colorDomainName !=='' && colorManager.isColumnDomain(colorDomainName)){
      columns.push(colorManager.getDomainName());
    }
 
