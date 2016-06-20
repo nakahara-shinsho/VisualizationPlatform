@@ -278,20 +278,45 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype.getPrimaryKeyColumns = function(size) {
-   var pksObj = {}, 
+   var self=this, 
+       pksObj = {}, 
        sizeObj = (size)? size: this._ctrl.size(); 
        mapperProps = this.getMapperProps();
-   for(var key in mapperProps) {
+   Object.keys(mapperProps).forEach(function(key) {
      var nameOfSize = mapperProps[key].spk;
-     if( nameOfSize && sizeObj[nameOfSize] && typeof(mapperProps[key].map2) ==='string') {
-       var column = this.getMapper(key);
-       if(!_.isEmpty(column) ) {
-         pksObj[column] = sizeObj[nameOfSize];
+     if( nameOfSize && sizeObj[nameOfSize] ) {
+       var columns = self.getMapper(key), 
+           type = typeof(columns);
+       if(type =='string') {
+         pksObj[columns] = sizeObj[nameOfSize];
+       }
+       if(type =='Array') {
+         columns.forEach(function(column){
+           pksObj[column] = sizeObj[nameOfSize];
+         });
        }
      }
-   }
+   });
    return pksObj;
  };
+
+DataManager.prototype.getGroupByColumns = function() {
+   var key= 'groupby', 
+       prop = this.getMapperProps(key);
+   if(prop) { //have group props
+     var columns = this.getMapper(key),
+         type = typeof(columns);
+     if(prop.type =='string') {
+        if(type == 'string') {
+          return [columns];
+        }
+        if(type == 'Array') {
+          return columns;
+        } 
+     }
+   }
+   return null;
+};
 
 //get data-mapped or color-mapped columns if not-existed in client
 DataManager.prototype.getRenderingColumns = function() {
@@ -615,6 +640,12 @@ DataManager.prototype.clearAll = function(key, value) {
       if(!_.isEmpty(spk)) {
         conditions._spk_ = spk;
       }
+
+      var groupby = this.getGroupByColumns();
+      if(!_.isEmpty(spk)) {
+        conditions._groupby_ = groupby;
+      }
+
       query_options.data = conditions;
       $.ajax(query_options)
             .done( function (data) {

@@ -60,7 +60,7 @@ function MqFrontend(host) {
         ok = ok.then(function (queue) {
           
           ch.assertExchange(ex, 'topic', {durable: false});
-          console.log('------------------------------'+ JSON.stringify(options));
+          //console.log('------------------------------'+ JSON.stringify(options));
           ch.publish(ex, wvt_name, new Buffer( (options)? JSON.stringify(options): "{}"), { //request ex + routing_key
             correlationId: uid,
             replyTo: queue,

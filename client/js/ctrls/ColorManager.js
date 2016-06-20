@@ -250,9 +250,15 @@ define(['ctrl/COMMON'], function (COMMON) {
   };
   
   ColorManager.prototype.isDataMappingDomain = function(domainName) {
+     
      var column = (domainName) ? domainName: this.getDomainName(),
          mapperPropsObj = this._ctrl.dataManager().getMapperProps();
-     return ( _.has(mapperPropsObj, column));
+     for(var prop in mapperPropsObj) {
+        if(mapperPropsObj[prop].label == column) {
+            return true;
+        }
+     }
+     return false;
   };
   
   ColorManager.prototype.isColumnDomain = function(domainName) {

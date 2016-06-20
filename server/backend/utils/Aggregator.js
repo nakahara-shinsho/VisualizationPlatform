@@ -159,7 +159,7 @@ function Aggregator(jsonarray, itypes) {
         //return only the groupby result: TBD
         if(hasGroupBy) {
           if(groupby.length ==1) {
-            currentArray = thi.dimensions[groupby].group().all();
+            currentArray = thi.dimensions[groupby[0]].group().all();
             return currentArray; //select the columns in selector : TBD
           } else {
             var tmpObj, tmpKeyObj, comboGroupKey = groupby.join('|');

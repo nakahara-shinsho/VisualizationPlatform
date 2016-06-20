@@ -59,10 +59,6 @@ ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
     var iheader = header.filter(function(column){
        return itypes[column];
     });
-    var sheader = header.filter(function(column){
-       return !itypes[column];
-    });
-    
     jsonarray.forEach(function(row, index, array) {
       iheader.forEach(function(column){
           row[column] = +row[column];
@@ -73,10 +69,14 @@ ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
           return d[column];
       }));
     });
+
+    var sheader = header.filter(function(column){
+       return !itypes[column];
+    });
     sheader.forEach(function(column){
       ranges[column]= d3.map(jsonarray, function(d){
             return d[column];
-      }).keys();
+      }).keys().slice(0, 50);
     });
     this.ranges = ranges;
     
