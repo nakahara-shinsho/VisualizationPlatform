@@ -1,4 +1,4 @@
-function ReadFile4Bigdata () {
+function ReadFile4Bigdata (entrance, filename) {
   var BIG = {
         NONE: 0,
         ROW: 1,
@@ -9,68 +9,97 @@ function ReadFile4Bigdata () {
   var fs = require('fs'),
       Aggregator = require('./Aggregator'),
       d3 = require('d3');
-      
-  this.init = function(entrance, filename) {
-    
+
+  {
+    var startTime = (new Date()).getTime();
     var table = fs.readFileSync(entrance + filename, 'utf8'),
-        format = filename.split('.').pop().toLowerCase(),
-        jsonarray = (format=='csv')? d3.csv.parse(table):
-                    (format=='tsv')? d3.tsv.parse(table): table;
+        format = filename.split('.').pop().toLowerCase();
     
-    var header = Object.keys(jsonarray[0]),
-        types  = this.types(jsonarray, header),
-        ranges = this.ranges(jsonarray, header, types);
+    var jsonarray = (format=='csv')? d3.csv.parse(table):
+                     (format=='tsv')? d3.tsv.parse(table): table;
+    console.log('CSV file read END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
+    
+    this.calculateInitValues(jsonarray, d3); //types, range
+    console.log('calculate Init Values END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
     
     this.response = {_table_:{format: 'json'} };
-    this.response._table_.types  = types;   //not change with options
-    this.response._table_.ranges = ranges; //not change with options
+    this.response._table_.types  = this.types;
+
+    this.response._table_.ranges = this.ranges; //not change with options
     this.response._table_.big = BIG.ROW;
-    //this.response._table_.family = null;
-    this.aggregator = new Aggregator(jsonarray, types);
     
-    return this;
-  };
-  
-  this.types = function(jsonarray, header) {
+    this.aggregator = new Aggregator(jsonarray, this.itypes);
+    
+    console.log('prepare aggregator END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
+
+  }
+}
+
+ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
+    var self = this,
+        itypes = {},
+        header = Object.keys(jsonarray[0]);
+    
+    //initialize itypes value
+    header.forEach(function(column){
+      itypes[column] = true; //is number
+    });
+
+    //itypes
+    jsonarray.forEach(function(row, index, array){
+      header.forEach(function(column){
+        if(itypes[column]) { //isNumber value
+           itypes[column] = /*!isNaN(+row[column]) &&*/ isFinite(row[column]); //check and set isString value
+        }
+      });
+    });
+    
+    //ranges
+    var ranges = {};
+    var iheader = header.filter(function(column){
+       return itypes[column];
+    });
+    jsonarray.forEach(function(row, index, array) {
+      iheader.forEach(function(column){
+          row[column] = +row[column];
+      });
+    });
+    iheader.forEach(function(column){
+      ranges[column]= d3.extent(jsonarray.map(function(d){
+          return d[column];
+      }));
+    });
+
+    var sheader = header.filter(function(column){
+       return !itypes[column];
+    });
+    sheader.forEach(function(column){
+      ranges[column]= d3.map(jsonarray, function(d){
+            return d[column];
+      }).keys().slice(0, 50);
+    });
+    this.ranges = ranges;
+    
+    //types
     var types = {};
     header.forEach(function(column){
-       types[column] =  column.endsWith(".number")? 'number' :
-                        column.endsWith(".string")? 'string' :
-                        column.endsWith(".date")? 'date' : 'string'; 
+      types[column] = (itypes[column]) ?'number': 'string';
     });
-    
-    jsonarray.forEach(function(row, index, array){
-      for(var column in types) {
-        if(types[column] =='number') {
-          row[column] = +row[column];
-        }
-      }
-    });   
-    
-    return types;
+    this.itypes = itypes;
+    this.types = types;
+
+    return;
   };
   
-  this.ranges = function(jsonarray, header, types) {
-    header.forEach(function(column){
-      if(types[column] == 'number') {
-        d3.extent(jsonarray.map(function(d){
-           return d[column];
-        }));
-      } else {
-        d3.map(jsonarray, function(d){
-           return d[column];
-        }).keys();  
-      }
-    });
-  };
-  
-  this.vts = function(wk_name) {
+  ReadFile4Bigdata.prototype.vts = function(wk_name) {
       return [wk_name];
   };
   
-  this.syn = function(options, entrance, filename) {
+  ReadFile4Bigdata.prototype.syn = function(options, entrance, filename) {
     console.log('request options:  ' + JSON.stringify(options) );
+    var startTime = (new Date()).getTime();
     this.response._table_.filled = this.aggregator.exec(options);
+    console.log('aggregating process END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
     return this.response;
   };
   
@@ -79,6 +108,7 @@ function ReadFile4Bigdata () {
       this.aggregator.clear();
     }
   };
-}
+  
+
 
 module.exports = ReadFile4Bigdata;

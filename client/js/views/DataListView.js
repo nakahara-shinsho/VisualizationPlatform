@@ -15,7 +15,7 @@ define([ "js/app",
         url: app.API + '/data/datalist',
         type: 'POST', //or GET if no options' data
         dataType: "json",
-        timeout: 10000, //10s
+        timeout: 30000, //10s
         data: data
       })
       .done(function(response, textStatus, jqXHR) {

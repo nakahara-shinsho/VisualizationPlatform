@@ -32,9 +32,8 @@ text#caption{
 }
 
 .scatterplot .extent {
-  fill: #000;
-  fill-opacity: .125;
-  stroke: #fff;
+    fill: yellow;
+    fill-opacity:0.3;
 }
 
 .scatterplot .cell rect.background {
@@ -51,4 +50,3 @@ text#caption{
   stroke: #ddd;
    stroke-width: 1px;
 }
-

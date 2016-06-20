@@ -17,6 +17,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  var DataManager = function(boardModel, chartCtrl){
+      // this._get_data_time = {};
       this._model = boardModel;
       this._ctrl  = chartCtrl;
       this._data = {_default_table_key_: '_table_', _$mapper_props_:{}, _infer_: {} };
@@ -151,7 +152,7 @@ define(['ctrl/COMMON'], function (COMMON) {
         }
       }
  };
-  
+ 
  DataManager.prototype.getMapperProps = function(prop) {
       var self = this, value,
           dataMapper = $.extend(true, {}, this.getData('_$mapper_props_'));//deep clone
@@ -277,31 +278,66 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype.getPrimaryKeyColumns = function(size) {
-   var pksObj = {}, 
+   var self=this, 
+       pksObj = {}, 
        sizeObj = (size)? size: this._ctrl.size(); 
        mapperProps = this.getMapperProps();
-   for(var key in mapperProps) {
+   Object.keys(mapperProps).forEach(function(key) {
      var nameOfSize = mapperProps[key].spk;
-     if( nameOfSize && sizeObj[nameOfSize] && typeof(mapperProps[key].map2) ==='string') {
-       var column = this.getMapper(key);
-       if(!_.isEmpty(column) ) {
-         pksObj[column] = sizeObj[nameOfSize];
+     if( nameOfSize && sizeObj[nameOfSize] ) {
+       var columns = self.getMapper(key), 
+           type = typeof(columns);
+       if(type =='string') {
+         pksObj[columns] = sizeObj[nameOfSize];
+       }
+       if(type =='Array') {
+         columns.forEach(function(column){
+           pksObj[column] = sizeObj[nameOfSize];
+         });
        }
      }
-   }
+   });
    return pksObj;
  };
 
+DataManager.prototype.getGroupByColumns = function() {
+   var key= 'groupby', 
+       prop = this.getMapperProps(key);
+   if(prop) { //have group props
+     var columns = this.getMapper(key),
+         type = typeof(columns);
+     if(prop.type =='string') {
+        if(type == 'string') {
+          return [columns];
+        }
+        if(type == 'Array') {
+          return columns;
+        } 
+     }
+   }
+   return null;
+};
+
 //get data-mapped or color-mapped columns if not-existed in client
 DataManager.prototype.getRenderingColumns = function() {
-   var columns = [], colorManager= this._ctrl.colorManager();
-   Array.prototype.push.apply(columns,this.getMappedColumns());
+   var columns = [], 
+       colorManager= this._ctrl.colorManager();
+   
+   Array.prototype.push.apply(columns, this.getMappedColumns());
+
    if(colorManager.isColumnDomain()){
      columns.push(colorManager.getDomainName());
    }
+
    return columns;
 };
 
+DataManager.prototype.getColumnsInVT = function() {
+  if(_.isEmpty(this.getMapperProps()) ){
+    return '*'; //select all data columns
+  }
+  return this.getRenderingColumns();
+};
 //when option in data-mapping or color-mapping 
 DataManager.prototype.isCachedColumn = function(column) {
   var row0 = this.getData()[0];
@@ -350,7 +386,8 @@ DataManager.prototype.clearAll = function(key, value) {
  };
  
  DataManager.prototype.setData = function(key, value) {
-     this._data[key] = value;
+    this.clearData(key);
+    this._data[key] = value;
  };
  
  DataManager.prototype.getData = function(key, initValue) {
@@ -454,7 +491,7 @@ DataManager.prototype.clearAll = function(key, value) {
             var BreakException={};
             Object.keys(table[0]).forEach(function(key) {
                 types[key] = 'number';
-                try{
+                try {
                 table.forEach(function(row) {
                     if(! $.isNumeric(row[key])) {
                     throw BreakException;
@@ -587,10 +624,10 @@ DataManager.prototype.clearAll = function(key, value) {
                             cache: false,
                             timeout: 30000, //3 seconds 
                             url: this._dataset_url_root + virtualTable,
-                            data: conditions };
-      
+                          };
+      var startTime = new Date().getTime();
       conditions._context_ = $.extend(true, {}, window.framework.context, screenContext);
-      conditions._select_= this.getRenderingColumns(); //this.getColumnRefiner();
+      conditions._select_  = this.getColumnsInVT();
       conditions._extra_select_= this._readExtraColumnRefiner();
 
       //TBD&I: if chart is highlight mode, the all condtions besides deepColumns' shouldn't be sent to server
@@ -603,7 +640,13 @@ DataManager.prototype.clearAll = function(key, value) {
       if(!_.isEmpty(spk)) {
         conditions._spk_ = spk;
       }
-      
+
+      var groupby = this.getGroupByColumns();
+      if(!_.isEmpty(spk)) {
+        conditions._groupby_ = groupby;
+      }
+
+      query_options.data = conditions;
       $.ajax(query_options)
             .done( function (data) {
               var jsondata = JSON.parse(data);
@@ -641,7 +684,7 @@ DataManager.prototype.clearAll = function(key, value) {
                    self._setInferData('_big_', value.big);
                 }
               });
-        
+              console.log('Get '+ virtualTable +' in ' + (new Date().getTime() - startTime)+ ' milliseconds!');
               return deferred.resolve();
             })
             .fail(function(jqXHR, textStatus) {
@@ -671,13 +714,21 @@ DataManager.prototype.clearAll = function(key, value) {
     }
   };
   
-  /* link&update related functions  SRART */
   //update chart with changing refining parameters
-  DataManager.prototype.updateChart = function(subkey, options) {
-    var chartInst = this._ctrl.chartInstance(), vobj = {};
-    vobj[subkey] = options;
+  DataManager.prototype.updateChart = function(key, options) {
+    var vobj = {}, chartInst = this._ctrl.chartInstance();
+    vobj[key] = options;
+    for(var prop in this.getMapperProps()) {
+       if(_.isEmpty(this.getMapper(prop)) ) { 
+         //return; //stop even if one mapping item is not still set.
+         if(chartInst.update) {
+            chartInst.update({DATA_MANAGER: {SELECTOR: vobj}});
+          }
+          return;
+       }
+    }
     
-    if(this._isDeepUpdate(subkey, (options.constructor==Array)? options:_.keys(options)) ) {
+    if(this._isDeepUpdate(key, (options.constructor==Array)? options:_.keys(options)) ) {
        //TBD: will the existed data need to be cleared? -- same Virtual Table
        this.getDataFromServer(this._model.get('vtname')).done(
          function() {
@@ -691,7 +742,35 @@ DataManager.prototype.clearAll = function(key, value) {
         }
     }
   };
- 
+  
+  DataManager.prototype.isIncompleteData = function() {
+    var types = this.getDataType(),
+        selector_columns = this.getColumnsInVT(),
+        data_columns = _.keys(this.getData()[0]);
+
+    if(selector_columns == '*') {
+      selector_columns =  _.keys(types);
+    }
+
+    return _.difference(selector_columns, data_columns).length >0 ;
+  };
+
+  DataManager.prototype.updateFromColormapping = function(optionsObj, shouldCheckdata) {
+     var chartInst = this._ctrl.chartInstance();
+     if(shouldCheckdata && /*this._isDeepUpdate() &&*/ this.isIncompleteData()) {
+        this.getDataFromServer(this._model.get('vtname')).done(
+         function() {
+           if(chartInst.update) {
+             chartInst.update(optionsObj);
+           }
+        });
+     } else {
+        if(chartInst.update) {
+            chartInst.update(optionsObj);
+        }
+     }
+  };
+
   DataManager.prototype.linkages = function(eventMessage, linked_vtName, lined_wkName ) {
       var self = this, statusOfLink;
       if(eventMessage.constructor == Object ) { //Row Refiner
@@ -849,11 +928,19 @@ DataManager.prototype.clearAll = function(key, value) {
     
     var isdeep = false, 
         big= this._getInferData('_big_'),
-        data_columns = _.keys(this.getData()[0]);
+        data_columns = _.keys(this.getData()[0]),
+        render_columns = this.getRenderingColumns();
     
     //pre-condifion -- BIG.COLUMN/BIG.ROW will not use the only-server-columns for coloring
     
     if(subkey) { //called with changed refiner parameters
+      
+      //have all the necessary data been got?
+      for(var i= render_columns.length; i--;){
+         if(!data_columns.includes(render_columns[i])) {
+           return true;
+         }
+      }
       
       if(this._ctrl.isHighlightMode()) {
           return false; //unnecessary to update the data from server --having got all data
@@ -880,7 +967,7 @@ DataManager.prototype.clearAll = function(key, value) {
         case BIG.NONE: break;
         default: break;
       }
-    } else { //switch MODE:
+    } else { //switching MODE
       isdeep = (big !== BIG.NONE);
     }
     
