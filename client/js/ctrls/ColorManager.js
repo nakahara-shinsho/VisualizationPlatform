@@ -232,7 +232,6 @@ define(['ctrl/COMMON'], function (COMMON) {
     });
     return dataset;
   };
-  
   ColorManager.prototype.getRangeOfDataset = function(dataset) {
     var items=[], 
         mapperPropsObj = this._ctrl.dataManager().getMapperProps();
@@ -327,7 +326,7 @@ define(['ctrl/COMMON'], function (COMMON) {
        } else if( row[colorDomainName] ) { //string column
            color = colormap[row[colorDomainName]];
        }
-       console.log(color);
+       //console.log(color);
        return color;
   };
  

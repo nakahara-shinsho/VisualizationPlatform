@@ -6,11 +6,7 @@ function Aggregator(jsonarray, itypes) {
       //d3 = require('d3'),
       _ = require('underscore'),
       crossfilter = require('crossfilter');
-      //$  = require('jquery-deferred'),
-      /*keys = Object.keys(jsonarray[0]).filter(function(column){
-        return itypes[column];
-      }).splice(0, LIMIT_NUM_OF_COLUMNS); //the maximum number of dimensions is 16
-      */
+      
   this.crossfilter = crossfilter(jsonarray);
   this.dimensions = {};
   this.prefilters = {};
@@ -52,10 +48,11 @@ function Aggregator(jsonarray, itypes) {
   };
   
   this.createDimensions = function(dimKeys, comboPK) {
+    
     var dimsLength2Keep = dimKeys.length,
         clearColumns = _.difference(Object.keys(this.dimensions), dimKeys);
 
-    if(comboPK !=='' && dimKeys.indexOf(comboPK) <0 ) {
+    if( dimKeys.indexOf(comboPK) <0 ) {
        dimsLength2Keep +=1;
     }
 
@@ -80,6 +77,8 @@ function Aggregator(jsonarray, itypes) {
   }; //create  end
 
   this.exec = function(options) {
+    var startTime = new Date().getTime();
+
     var spkObject = options._spk_  || {},
         refiner  =  options._where_  || {},
         selector =  (options._select_=='*')? Object.keys(itypes): options._select_ , //the rendering column
@@ -99,8 +98,9 @@ function Aggregator(jsonarray, itypes) {
       if(!selector) { 
         return {};
       } 
-
+      
       this.createDimensions(_.union(refinerKeys, spks), comboPK); //create necessary dimensions
+      console.log( 'createDimension(ms): ' + (new Date().getTime() - startTime));
 
       //no refiner, no spks
       if(Object.keys(this.dimensions).length <=0) {
@@ -108,52 +108,58 @@ function Aggregator(jsonarray, itypes) {
         return  (jsonarray.length> LIMIT_NUM_OF_ROWS)? _.sample(jsonarray, LIMIT_NUM_OF_ROWS): jsonarray;
       }
 
-      var clearcolumn;
+      var clearColumn;
       if(!_.isEmpty(refiner)) {
         
         clearfilters = _.omit(this.prefilters, refinerKeys);
+        
         //clear unused filters
         if(!_.isEmpty(clearfilters)) {
-          for(clearcolumn in clearfilters) {
-            this.dimensions[clearcolumn].filterAll();
+          for(clearColumn in clearfilters) {
+            this.dimensions[clearColumn].filterAll();
           }
         }
-
+        console.log( 'clearDimension(ms) : ' + (new Date().getTime() - startTime));
         //apply current refiner
+        var left, right;
         refinerKeys.forEach(function(column) {
-          if(itypes[column]) {
-            if(refiner[column][0]===null || refiner[column][1]===null) {
-                clearfilters[column] = self.prefilters[column];  
-            } else {
-                var left = +refiner[column][0], right = +refiner[column][1];
+          if(_.isNull(refiner[column][0]) || _.isNull(refiner[column][1])) {
+                clearfilters[column] = self.prefilters[column];
+          } else if(!_.isEqual(self.prefilters[column], refiner[column])) {
+              if(itypes[column]) {
+                left  = +refiner[column][0];
+                right = +refiner[column][1];
+                //self.dimensions[column].filterRange([left, right]);
                 self.dimensions[column].filterFunction(function(d) {
                     return d >=left && d <right; //filter range is slower than fiter function
                 });
-                self.prefilters[column] = refiner[column].slice(0); //copy array [min, max]
-            }
-          } else { //'string'
-             var rangeset = refiner[column];
-             self.dimensions[column].filterFunction(function(d) {
-                return rangeset.indexOf(d) >=0; //filter range is slower than fiter function
-             });
-             self.prefilters[column] = refiner[column].slice(0); //copy array [string1, string2, ...]
+              }
+              else { //'string'
+                var rangeset = refiner[column];
+                self.dimensions[column].filterFunction(function(d) {
+                    return rangeset.indexOf(d) >=0; //filter range is slower than fiter function
+                });
+              }
+              self.prefilters[column] = refiner[column].slice(0); //copy array [min, max]
           }
         });
-      } else { //highlight mode---statusful implementation
+         console.log( 'filter(ms): ' + (new Date().getTime() - startTime));
+      } else { //highlight mode or inital chart
         clearfilters = this.prefilters;
         //clear unnecessary filters
         if(!_.isEmpty(clearfilters)) {
-          for(clearcolumn in clearfilters) {
-            this.dimensions[clearcolumn].filterAll();
+          for(clearColumn in clearfilters) {
+            this.dimensions[clearColumn].filterAll();
           }
         }
+        console.log( 'clearDimension(ms): ' + (new Date().getTime() - startTime));
       }
       
       currentArray= this.dimensions[refinerKeys[0] || this.findOneDimKey()].top(Infinity);
       if(currentArray.length < LIMIT_NUM_OF_ROWS) { //small data --> samlping is unnecessary  
         return currentArray;
       }
-
+      
       var numberKey = this.findOneNumberDimKey();
       if(!numberKey) {
         //return only the groupby result: TBD
@@ -177,6 +183,7 @@ function Aggregator(jsonarray, itypes) {
             });
             return currentArray;
           }
+          console.log( 'groupDimension(ms): ' + (new Date().getTime() - startTime));
         } else {
           console.error('(2)sending all the data without sampling');
           return  (currentArray.length> LIMIT_NUM_OF_ROWS)? _.sample(currentArray, LIMIT_NUM_OF_ROWS): currentArray;
@@ -186,7 +193,6 @@ function Aggregator(jsonarray, itypes) {
       //sampling
       var prefix = null;
       if(spks.length <= 1 ) {
-
         var size =1000; //default value
         if(comboPK ==='') { comboPK = numberKey; }  //size is 1000
         else { size = +spkObject[comboPK] ;} //pk equal the spks[0]
@@ -197,15 +203,19 @@ function Aggregator(jsonarray, itypes) {
         var group, groupItem;
         this.grouping = this.dimensions[comboPK].group(function(d) {
           if(hasGroupBy) {
-             group = groupby.map(function(column) {
+            /*group = groupby.map(function(column) {
               groupItem = {};
               groupItem[column] = d[column];
               return groupItem;
             });
             group['|size|'] = Math.floor(size* (d - min) /(max-min));
-            return JSON.stringify(group);
+            return JSON.stringify(group);*/
+            group = groupby.map(function(column) {
+              return d[column];
+            });
+            return group.join('|') + Math.floor(size* (d - min) /(max-min)); 
           } else {
-            return  Math.floor(size* (d - min) /(max-min));
+            return Math.floor(size* (d - min) /(max-min))+'';
           }
         });
       } else if(spks.length >= 2 ) { //two~ dimensions samping
@@ -218,57 +228,66 @@ function Aggregator(jsonarray, itypes) {
         });
 
         if(!this.dimensions[comboPK]) { //pk equal 'pk0|pk1'
-          var dimPKsSizeObj, dimGroupbyObj;
+          var dimPKsSizeObj, dimGroupbyObj, dimParam;
           this.dimensions[comboPK] = self.crossfilter.dimension(function(d) {
-            dimPKsSizeObj= {};
-            spks.forEach( function(onePK){
-                dimPKsSizeObj[onePK] = Math.floor(multiParams[onePK].size* (d[onePK] - multiParams[onePK].min) /(multiParams[onePK].max- multiParams[onePK].min));
-             });
-
+            /*dimPKsSizeObj= {};
+            spks.forEach( function(onePK) {
+              dimParam = multiParams[onePK];
+              dimPKsSizeObj[onePK] = Math.floor(dimParam.size* (d[onePK] - dimParam.min) /(dimParam.max- dimParam.min));
+            });*/
+            dimPKsSizeObj = spks.map(function(onePK){
+              dimParam = multiParams[onePK];
+              return Math.floor(dimParam.size * (d[onePK] - dimParam.min) / (dimParam.max- dimParam.min));
+            });
             if(hasGroupBy) {
-              dimGroupbyObj = {};
+              /*dimGroupbyObj = {};
               groupby.forEach(function(column) {
                  dimGroupbyObj[column] = d[column];
               });
               dimGroupbyObj['|size|'] = dimPKsSizeObj;
-              return  JSON.stringify(dimGroupbyObj);
+              return  JSON.stringify(dimGroupbyObj);*/
+              dimGroupbyObj = groupby.map(function(column){
+                return d[column];
+              });
+              return dimGroupbyObj.join('|') + dimPKsSizeObj.join('|');
             } else {
-              return JSON.stringify(dimPKsSizeObj);
+              //return JSON.stringify(dimPKsSizeObj);
+              return dimPKsSizeObj.join('|');
             }
           });
         }
         this.grouping = this.dimensions[comboPK].group();
       }
       
+      console.log( 'groupingDimension(ms): ' + (new Date().getTime() - startTime));
+
       if(this.grouping) { //grouping should have value always
-        var numberSelector = selector.filter(function(column){
-          return itypes[column];
-        });
+        
         this.grouping.reduce(
           function reduceAdd(p,v) {
             selector.forEach(function(column) {
               if(itypes[column]) {
                 p[column] +=  v[column];
-              } else {
-                p[column] = v[column];
+              } else if(! p[column]) {
+                p[column] = v[column];//override to goet the first value of its group for 'String' columns 
               }
             });
-             p['|size|'] += 1;
+             p.size += 1;
             return p;
           },
           function reduceRemove(p,v) {
             selector.forEach(function(column) {
               if(itypes[column]) {
                 p[column] -=  v[column];
-              } else {
+              } else if(! p[column]) {
                 p[column] = v[column];
               }
             });
-            p['|size|'] -= 1;
+            p.size -= 1;
             return p;
           },
           function reduceInitial(){
-            var p = {'|size|': 0};
+            var p = {size: 0};
             selector.forEach(function(column) {
               p[column] = (itypes[column])? 0: null;
             });
@@ -276,30 +295,32 @@ function Aggregator(jsonarray, itypes) {
           }
         );
 
+        console.log( 'reduceDimension(ms): ' + (new Date().getTime() - startTime));
+
         var resultItemKey, packageKeyObj;
         currentArray = this.grouping.all().map(
           function(p) {
             var row = {};
             selector.forEach(function(column) {
                 if(itypes[column]) {
-                  row[column] = p.value[column] / p.value['|size|'];
+                  row[column] = p.value[column] / p.value.size;
                 } else {
                   row[column] = p.value[column];
                 }
             });
-            if(hasGroupBy) {
+            /*if(hasGroupBy) {
                packageKeyObj = JSON.parse(d.key);
                for(resultItemKey in packageKeyObj) {
                   row[resultItemKey] = packageKeyObj[resultItemKey];
                }
-            }
+            }*/
+            row['|size|'] = p.value.size; //return size in its group
             
-            row['|size|'] = p.value['|size|'];
-
             //do not return the string column who have not grouped by
             return row;
           }
         );//map end
+        console.log( 'summaryDimension(ms): ' + (new Date().getTime() - startTime));
         return currentArray;
       } //if(grouping) end
       else {
