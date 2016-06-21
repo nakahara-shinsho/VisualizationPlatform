@@ -10,7 +10,6 @@ function Aggregator(jsonarray, itypes) {
   this.crossfilter = crossfilter(jsonarray);
   this.dimensions = {};
   this.prefilters = {};
-  this.grouping = null;
   
   this.scale = function(size){
     
@@ -42,8 +41,8 @@ function Aggregator(jsonarray, itypes) {
 
   this.clear = function() {
     if(this.grouping) {
-      this.grouping.dispose();
-      this.grouping = null;
+      //this.grouping.dispose();
+      //this.grouping = null;
     }
   };
   
@@ -91,7 +90,7 @@ function Aggregator(jsonarray, itypes) {
     
     var currentArray = {}, clearfilters = {};
 
-    this.grouping=null;
+    grouping=null;
     
     try {
       //firstly, check and send back empty data for initializing data mapping panel
@@ -117,6 +116,7 @@ function Aggregator(jsonarray, itypes) {
         if(!_.isEmpty(clearfilters)) {
           for(clearColumn in clearfilters) {
             this.dimensions[clearColumn].filterAll();
+            delete this.prefilters[clearColumn];
           }
         }
         console.log( 'clearDimension(ms) : ' + (new Date().getTime() - startTime));
@@ -124,7 +124,7 @@ function Aggregator(jsonarray, itypes) {
         var left, right;
         refinerKeys.forEach(function(column) {
           if(_.isNull(refiner[column][0]) || _.isNull(refiner[column][1])) {
-                clearfilters[column] = self.prefilters[column];
+              clearfilters[column] = self.prefilters[column];
           } else if(!_.isEqual(self.prefilters[column], refiner[column])) {
               if(itypes[column]) {
                 left  = +refiner[column][0];
@@ -143,13 +143,14 @@ function Aggregator(jsonarray, itypes) {
               self.prefilters[column] = refiner[column].slice(0); //copy array [min, max]
           }
         });
-         console.log( 'filter(ms): ' + (new Date().getTime() - startTime));
+        console.log( 'filter(ms): ' + (new Date().getTime() - startTime));
       } else { //highlight mode or inital chart
         clearfilters = this.prefilters;
         //clear unnecessary filters
         if(!_.isEmpty(clearfilters)) {
           for(clearColumn in clearfilters) {
             this.dimensions[clearColumn].filterAll();
+            delete this.prefilters[clearColumn];
           }
         }
         console.log( 'clearDimension(ms): ' + (new Date().getTime() - startTime));
@@ -175,8 +176,8 @@ function Aggregator(jsonarray, itypes) {
                 return JSON.stringify(groupby.map(function(column){tmpObj[column] = d[column];}) );
               });
             }
-            this.grouping = this.dimensions[comboGroupKey].group();
-            currentArray = this.grouping.all().map(function(d){
+            grouping = this.dimensions[comboGroupKey].group();
+            currentArray = grouping.all().map(function(d){
               tmpKeyObj = JSON.parse(d.key);
               tmpKeyObj['|size|'] = d.value;
               return tmpKeyObj;
@@ -201,7 +202,7 @@ function Aggregator(jsonarray, itypes) {
             min = this.dimensions[comboPK].bottom(1)[0][comboPK];
         
         var group, groupItem;
-        this.grouping = this.dimensions[comboPK].group(function(d) {
+        grouping = this.dimensions[comboPK].group(function(d) {
           if(hasGroupBy) {
             /*group = groupby.map(function(column) {
               groupItem = {};
@@ -245,7 +246,8 @@ function Aggregator(jsonarray, itypes) {
                  dimGroupbyObj[column] = d[column];
               });
               dimGroupbyObj['|size|'] = dimPKsSizeObj;
-              return  JSON.stringify(dimGroupbyObj);*/
+              return  JSON.stringify(dimGroupbyObj);
+              */
               dimGroupbyObj = groupby.map(function(column){
                 return d[column];
               });
@@ -256,14 +258,14 @@ function Aggregator(jsonarray, itypes) {
             }
           });
         }
-        this.grouping = this.dimensions[comboPK].group();
+        grouping = this.dimensions[comboPK].group();
       }
       
       console.log( 'groupingDimension(ms): ' + (new Date().getTime() - startTime));
 
-      if(this.grouping) { //grouping should have value always
+      if(grouping) { //grouping should have value always
         
-        this.grouping.reduce(
+        grouping.reduce(
           function reduceAdd(p,v) {
             selector.forEach(function(column) {
               if(itypes[column]) {
@@ -298,7 +300,7 @@ function Aggregator(jsonarray, itypes) {
         console.log( 'reduceDimension(ms): ' + (new Date().getTime() - startTime));
 
         var resultItemKey, packageKeyObj;
-        currentArray = this.grouping.all().map(
+        currentArray = grouping.all().map(
           function(p) {
             var row = {};
             selector.forEach(function(column) {
@@ -321,6 +323,9 @@ function Aggregator(jsonarray, itypes) {
           }
         );//map end
         console.log( 'summaryDimension(ms): ' + (new Date().getTime() - startTime));
+
+        grouping.dispose();
+        console.log( 'group dispose(ms): ' + (new Date().getTime() - startTime));
         return currentArray;
       } //if(grouping) end
       else {
