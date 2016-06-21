@@ -50,12 +50,13 @@ ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
         }
       });
     });
-    
+    /*
     //test
-    /*header.filter(function(column){
+    header.filter(function(column){
       return itypes[column];
     });
     */
+
     //ranges
     var ranges = {};
     var iheader = header.filter(function(column){

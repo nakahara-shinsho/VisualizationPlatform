@@ -186,9 +186,9 @@ define(['ctrl/COMMON'], function (COMMON) {
          if(!_.isEmpty(toBeAdded)) {
            this._writeRowRefiner(toBeAdded, { silent: !hasRendered } ); //the general 'change' event is triggered
          }
-      } else if( _.has(dataTypes, arguments[0]) && arguments.length >1) { //(column, range)
-           obj = {}; 
-           obj[arguments[0]]=arguments[1];
+      } else if( _.has(dataTypes, arguments[0]) && arguments.length >1 ) { //(column, range)
+           obj = {};
+           obj[arguments[0]] = arguments[1];
            this._writeRowRefiner(obj, { silent: !hasRendered });// general 'change' event isn't triggered   
       }
   };
@@ -440,7 +440,7 @@ DataManager.prototype.clearAll = function(key, value) {
         table = this.getData(),
         filtedRows = table; //initialized value
     
-    if(!this._ctrl.isHighlightMode()) {
+    if(!this._ctrl.isHighlightMode() && !_.isEmpty(filtedRows)) {
         var refiningObject = this.getRowRefiner(),
              dataTypes = this.getDataType();
         filtedRows = filtedRows.slice(0);
@@ -617,7 +617,11 @@ DataManager.prototype.clearAll = function(key, value) {
   };
   
  //get virtual table data from server, 'options' is parameters for filtering data
-  DataManager.prototype.getDataFromServer = function(virtualTable, screenContext, sizeObj){
+  DataManager.prototype.getDataFromServer = function(virtualTable, screenContext, sizeObj) {
+      if(this._ctrl.loading) {
+          return;
+      }
+
       var self = this,
           deferred = $.Deferred(),
           conditions = { } ,
@@ -643,11 +647,14 @@ DataManager.prototype.clearAll = function(key, value) {
       }
 
       var groupby = this.getGroupByColumns();
-      if(!_.isEmpty(spk)) {
+      if(!_.isEmpty(groupby)) {
         conditions._groupby_ = groupby;
       }
 
       query_options.data = conditions;
+
+      //show loading icon
+      this._ctrl.trigger("loading:start");
       $.ajax(query_options)
             .done( function (data) {
               var jsondata = JSON.parse(data);
@@ -686,17 +693,22 @@ DataManager.prototype.clearAll = function(key, value) {
                 }
               });
               console.log('Get '+ virtualTable +' in ' + (new Date().getTime() - startTime)+ ' milliseconds!');
+              //hidden loading icon
+              self._ctrl.trigger("loading:end");
               return deferred.resolve();
             })
             .fail(function(jqXHR, textStatus) {
                 if(textStatus === 'timeout') {  //big data? it may be necessary for samping data
                     alert('Failed from timeout'); 
                 }
+                self._ctrl.trigger("loading:end");
+                return deferred.reject();
+                //hidden loading icon
             });
     
       return deferred.promise();
     }; 
-   
+  
   //deep update data if necessary
   DataManager.prototype.switchMode = function() {
     var self=this, chartInst = this._ctrl.chartInstance();

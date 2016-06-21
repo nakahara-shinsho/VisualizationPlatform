@@ -33,6 +33,15 @@ define([
         }
       });
       
+      this.listenTo(this.chartctrl, 'loading:start', function() {
+        self.chartctrl.loading = true;
+        self.$el.find('.loading').css("display", "block"); 
+      });
+      this.listenTo(this.chartctrl, 'loading:end', function() {
+         self.chartctrl.loading = false;
+         self.$el.find('.loading').css("display", "none");
+      });
+
       //caption update is outside chart
       this.model.bind('change:caption', function () {
         self.setCaption();
@@ -114,20 +123,17 @@ define([
       this.model.set({'vtname': key}, {silent: true});
       
       var self = this,
-          grandParent = this.parent.parent,
-          $chart = this.$el.find(".chart").empty(),
-          width  = $chart.width(),
-          height = $chart.height();
-            
-      //this.chartctrl.getVirtualDataset(key, grandParent.context)
+          grandParent = this.parent.parent;
+
       this.chartctrl.dataManager().getDataFromServer(key, grandParent.context)
       .done( function () {
          self.setCaption();
-         //content
-         var $chart_el = self.$el.find('.chart');
-         var renderd_dom = self.chartctrl.render(width, height);
+         var $chart_el = self.$el.find('.chart'),
+             width  = $chart.width(),
+             height = $chart.height(),
+             renderd_dom = self.chartctrl.render(width, height);
          if(!!renderd_dom) {
-           $chart_el.append(renderd_dom);
+           $chart_el.empty().append(renderd_dom);
            if($(renderd_dom).is('svg') && $chart_el.find('svg').length==1) {
              self.resize_svg(renderd_dom, width, height);
            }
@@ -156,11 +162,16 @@ define([
        }
        
        if( !this.chartctrl.resize(width, height)) {
-          var $first= this.$el.find('.chart > svg');
+          /*var $first= this.$el.find('.chart > svg');
           if($first.length >0) {
             this.resize_svg($first[0], width, height);
           } else {
             //no way to resize
+          }*/
+          var renderd_dom = this.chartctrl.render(width, height);
+          $chart.empty().append(renderd_dom);
+          if($(renderd_dom).is('svg') && $chart.find('svg').length==1) {
+             this.resize_svg(renderd_dom, width, height);
           }
        }
        
