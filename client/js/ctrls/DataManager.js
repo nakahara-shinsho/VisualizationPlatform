@@ -627,7 +627,7 @@ DataManager.prototype.clearAll = function(key, value) {
           conditions = { } ,
           query_options = { type: 'POST', 
                             cache: false,
-                            timeout: 30000, //3 seconds 
+                            timeout: 100000, //3 seconds 
                             url: this._dataset_url_root + virtualTable,
                           };
       var startTime = new Date().getTime();

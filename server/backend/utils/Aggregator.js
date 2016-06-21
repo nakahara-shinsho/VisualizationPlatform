@@ -186,6 +186,7 @@ function Aggregator(jsonarray, itypes) {
         }
       }
 
+      //TBD: max==min problem,  test filter after grouping
       //sampling
       var prefix = null;
       if(spks.length <= 1 ) {
@@ -250,7 +251,7 @@ function Aggregator(jsonarray, itypes) {
             selector.forEach(function(column) {
               if(itypes[column]) {
                 p[column] +=  v[column];
-              } else if(! p[column]) {
+              } else {
                 p[column] = v[column];//override to goet the first value of its group for 'String' columns 
               }
             });
@@ -261,7 +262,7 @@ function Aggregator(jsonarray, itypes) {
             selector.forEach(function(column) {
               if(itypes[column]) {
                 p[column] -=  v[column];
-              } else if(! p[column]) {
+              } else {
                 p[column] = v[column];
               }
             });
@@ -292,15 +293,9 @@ function Aggregator(jsonarray, itypes) {
                   row[column] = p.value[column];
                 }
             });
-            /*if(hasGroupBy) {
-               packageKeyObj = JSON.parse(d.key);
-               for(resultItemKey in packageKeyObj) {
-                  row[resultItemKey] = packageKeyObj[resultItemKey];
-               }
-            }*/
+            
             row['|size|'] = p.value.size; //return size in its group
             
-            //do not return the string column who have not grouped by
             return row;
           }
         );//map end
