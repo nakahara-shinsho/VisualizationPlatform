@@ -165,11 +165,7 @@ function Aggregator(jsonarray, itypes) {
       if(!numberKey) {
         //return only the groupby result: TBD
         if(hasGroupBy) {
-          if(groupby.length ==1) {
-            currentArray = thi.dimensions[groupby[0]].group().all();
-            return currentArray; //select the columns in selector : TBD
-          } else {
-            var tmpObj, tmpKeyObj, comboGroupKey = groupby.join('|');
+            var tmpObj, tmpKeyObj, comboGroupKey = '|'+ groupby.join('|') +'|';
             if(!this.dimensions[comboGroupKey]) {
               this.dimensions[comboGroupKey] = self.crossfilter.dimension(function(d) {
                 tmpObj = {};
@@ -182,9 +178,8 @@ function Aggregator(jsonarray, itypes) {
               tmpKeyObj['|size|'] = d.value;
               return tmpKeyObj;
             });
+            console.log( 'groupDimension(ms): ' + (new Date().getTime() - startTime));
             return currentArray;
-          }
-          console.log( 'groupDimension(ms): ' + (new Date().getTime() - startTime));
         } else {
           console.error('(2)sending all the data without sampling');
           return  (currentArray.length> LIMIT_NUM_OF_ROWS)? _.sample(currentArray, LIMIT_NUM_OF_ROWS): currentArray;
@@ -200,25 +195,22 @@ function Aggregator(jsonarray, itypes) {
 
         var max = this.dimensions[comboPK].top(1)[0][comboPK],
             min = this.dimensions[comboPK].bottom(1)[0][comboPK];
-        
-        var group, groupItem;
-        grouping = this.dimensions[comboPK].group(function(d) {
-          if(hasGroupBy) {
-            /*group = groupby.map(function(column) {
-              groupItem = {};
-              groupItem[column] = d[column];
-              return groupItem;
-            });
-            group['|size|'] = Math.floor(size* (d - min) /(max-min));
-            return JSON.stringify(group);*/
-            group = groupby.map(function(column) {
-              return d[column];
-            });
-            return group.join('|') + Math.floor(size* (d - min) /(max-min)); 
-          } else {
-            return Math.floor(size* (d - min) /(max-min))+'';
-          }
-        });
+
+        var group, groupItem, comboGroupPK = '|'+ comboPK+'|';
+        if(!this.dimensions[comboGroupPK]) {
+          this.dimensions[comboGroupPK] = self.crossfilter.dimension(function(d) {
+            if(hasGroupBy) {
+              group = groupby.map(function(column) {
+                return d[column];
+              });
+              return group.join('|') + Math.floor(size* (d[comboPK] - min) /(max-min)); 
+            } else {
+              return Math.floor(size* (d[comboPK] - min) /(max-min));
+            }
+          });
+        }
+        grouping = this.dimensions[comboGroupPK].group();
+
       } else if(spks.length >= 2 ) { //two~ dimensions samping
         var multiParams = {};
         spks.forEach(function(onePK){
@@ -231,29 +223,17 @@ function Aggregator(jsonarray, itypes) {
         if(!this.dimensions[comboPK]) { //pk equal 'pk0|pk1'
           var dimPKsSizeObj, dimGroupbyObj, dimParam;
           this.dimensions[comboPK] = self.crossfilter.dimension(function(d) {
-            /*dimPKsSizeObj= {};
-            spks.forEach( function(onePK) {
-              dimParam = multiParams[onePK];
-              dimPKsSizeObj[onePK] = Math.floor(dimParam.size* (d[onePK] - dimParam.min) /(dimParam.max- dimParam.min));
-            });*/
+           
             dimPKsSizeObj = spks.map(function(onePK){
               dimParam = multiParams[onePK];
               return Math.floor(dimParam.size * (d[onePK] - dimParam.min) / (dimParam.max- dimParam.min));
             });
             if(hasGroupBy) {
-              /*dimGroupbyObj = {};
-              groupby.forEach(function(column) {
-                 dimGroupbyObj[column] = d[column];
-              });
-              dimGroupbyObj['|size|'] = dimPKsSizeObj;
-              return  JSON.stringify(dimGroupbyObj);
-              */
               dimGroupbyObj = groupby.map(function(column){
                 return d[column];
               });
               return dimGroupbyObj.join('|') + dimPKsSizeObj.join('|');
             } else {
-              //return JSON.stringify(dimPKsSizeObj);
               return dimPKsSizeObj.join('|');
             }
           });
@@ -300,7 +280,9 @@ function Aggregator(jsonarray, itypes) {
         console.log( 'reduceDimension(ms): ' + (new Date().getTime() - startTime));
 
         var resultItemKey, packageKeyObj;
-        currentArray = grouping.all().map(
+        currentArray = grouping.all()
+        .filter(function(d) { return d.value.size > 0; })
+        .map(
           function(p) {
             var row = {};
             selector.forEach(function(column) {
