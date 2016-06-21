@@ -10,7 +10,6 @@ function Aggregator(jsonarray, itypes) {
   this.crossfilter = crossfilter(jsonarray);
   this.dimensions = {};
   this.prefilters = {};
-  this.grouping = null;
   
   this.scale = function(size){
     
@@ -42,8 +41,8 @@ function Aggregator(jsonarray, itypes) {
 
   this.clear = function() {
     if(this.grouping) {
-      this.grouping.dispose();
-      this.grouping = null;
+      //this.grouping.dispose();
+      //this.grouping = null;
     }
   };
   
@@ -91,7 +90,7 @@ function Aggregator(jsonarray, itypes) {
     
     var currentArray = {}, clearfilters = {};
 
-    this.grouping=null;
+    grouping=null;
     
     try {
       //firstly, check and send back empty data for initializing data mapping panel
@@ -117,6 +116,7 @@ function Aggregator(jsonarray, itypes) {
         if(!_.isEmpty(clearfilters)) {
           for(clearColumn in clearfilters) {
             this.dimensions[clearColumn].filterAll();
+            delete this.prefilters[clearColumn];
           }
         }
         console.log( 'clearDimension(ms) : ' + (new Date().getTime() - startTime));
@@ -124,7 +124,7 @@ function Aggregator(jsonarray, itypes) {
         var left, right;
         refinerKeys.forEach(function(column) {
           if(_.isNull(refiner[column][0]) || _.isNull(refiner[column][1])) {
-                clearfilters[column] = self.prefilters[column];
+              clearfilters[column] = self.prefilters[column];
           } else if(!_.isEqual(self.prefilters[column], refiner[column])) {
               if(itypes[column]) {
                 left  = +refiner[column][0];
@@ -143,13 +143,14 @@ function Aggregator(jsonarray, itypes) {
               self.prefilters[column] = refiner[column].slice(0); //copy array [min, max]
           }
         });
-         console.log( 'filter(ms): ' + (new Date().getTime() - startTime));
+        console.log( 'filter(ms): ' + (new Date().getTime() - startTime));
       } else { //highlight mode or inital chart
         clearfilters = this.prefilters;
         //clear unnecessary filters
         if(!_.isEmpty(clearfilters)) {
           for(clearColumn in clearfilters) {
             this.dimensions[clearColumn].filterAll();
+            delete this.prefilters[clearColumn];
           }
         }
         console.log( 'clearDimension(ms): ' + (new Date().getTime() - startTime));
@@ -164,26 +165,21 @@ function Aggregator(jsonarray, itypes) {
       if(!numberKey) {
         //return only the groupby result: TBD
         if(hasGroupBy) {
-          if(groupby.length ==1) {
-            currentArray = thi.dimensions[groupby[0]].group().all();
-            return currentArray; //select the columns in selector : TBD
-          } else {
-            var tmpObj, tmpKeyObj, comboGroupKey = groupby.join('|');
+            var tmpObj, tmpKeyObj, comboGroupKey = '|'+ groupby.join('|') +'|';
             if(!this.dimensions[comboGroupKey]) {
               this.dimensions[comboGroupKey] = self.crossfilter.dimension(function(d) {
                 tmpObj = {};
                 return JSON.stringify(groupby.map(function(column){tmpObj[column] = d[column];}) );
               });
             }
-            this.grouping = this.dimensions[comboGroupKey].group();
-            currentArray = this.grouping.all().map(function(d){
+            grouping = this.dimensions[comboGroupKey].group();
+            currentArray = grouping.all().map(function(d){
               tmpKeyObj = JSON.parse(d.key);
               tmpKeyObj['|size|'] = d.value;
               return tmpKeyObj;
             });
+            console.log( 'groupDimension(ms): ' + (new Date().getTime() - startTime));
             return currentArray;
-          }
-          console.log( 'groupDimension(ms): ' + (new Date().getTime() - startTime));
         } else {
           console.error('(2)sending all the data without sampling');
           return  (currentArray.length> LIMIT_NUM_OF_ROWS)? _.sample(currentArray, LIMIT_NUM_OF_ROWS): currentArray;
@@ -199,25 +195,22 @@ function Aggregator(jsonarray, itypes) {
 
         var max = this.dimensions[comboPK].top(1)[0][comboPK],
             min = this.dimensions[comboPK].bottom(1)[0][comboPK];
-        
-        var group, groupItem;
-        this.grouping = this.dimensions[comboPK].group(function(d) {
-          if(hasGroupBy) {
-            /*group = groupby.map(function(column) {
-              groupItem = {};
-              groupItem[column] = d[column];
-              return groupItem;
-            });
-            group['|size|'] = Math.floor(size* (d - min) /(max-min));
-            return JSON.stringify(group);*/
-            group = groupby.map(function(column) {
-              return d[column];
-            });
-            return group.join('|') + Math.floor(size* (d - min) /(max-min)); 
-          } else {
-            return Math.floor(size* (d - min) /(max-min))+'';
-          }
-        });
+
+        var group, groupItem, comboGroupPK = '|'+ comboPK+'|';
+        if(!this.dimensions[comboGroupPK]) {
+          this.dimensions[comboGroupPK] = self.crossfilter.dimension(function(d) {
+            if(hasGroupBy) {
+              group = groupby.map(function(column) {
+                return d[column];
+              });
+              return group.join('|') + Math.floor(size* (d[comboPK] - min) /(max-min)); 
+            } else {
+              return Math.floor(size* (d[comboPK] - min) /(max-min));
+            }
+          });
+        }
+        grouping = this.dimensions[comboGroupPK].group();
+
       } else if(spks.length >= 2 ) { //two~ dimensions samping
         var multiParams = {};
         spks.forEach(function(onePK){
@@ -230,40 +223,29 @@ function Aggregator(jsonarray, itypes) {
         if(!this.dimensions[comboPK]) { //pk equal 'pk0|pk1'
           var dimPKsSizeObj, dimGroupbyObj, dimParam;
           this.dimensions[comboPK] = self.crossfilter.dimension(function(d) {
-            /*dimPKsSizeObj= {};
-            spks.forEach( function(onePK) {
-              dimParam = multiParams[onePK];
-              dimPKsSizeObj[onePK] = Math.floor(dimParam.size* (d[onePK] - dimParam.min) /(dimParam.max- dimParam.min));
-            });*/
+           
             dimPKsSizeObj = spks.map(function(onePK){
               dimParam = multiParams[onePK];
               return Math.floor(dimParam.size * (d[onePK] - dimParam.min) / (dimParam.max- dimParam.min));
             });
             if(hasGroupBy) {
-              /*dimGroupbyObj = {};
-              groupby.forEach(function(column) {
-                 dimGroupbyObj[column] = d[column];
-              });
-              dimGroupbyObj['|size|'] = dimPKsSizeObj;
-              return  JSON.stringify(dimGroupbyObj);*/
               dimGroupbyObj = groupby.map(function(column){
                 return d[column];
               });
               return dimGroupbyObj.join('|') + dimPKsSizeObj.join('|');
             } else {
-              //return JSON.stringify(dimPKsSizeObj);
               return dimPKsSizeObj.join('|');
             }
           });
         }
-        this.grouping = this.dimensions[comboPK].group();
+        grouping = this.dimensions[comboPK].group();
       }
       
       console.log( 'groupingDimension(ms): ' + (new Date().getTime() - startTime));
 
-      if(this.grouping) { //grouping should have value always
+      if(grouping) { //grouping should have value always
         
-        this.grouping.reduce(
+        grouping.reduce(
           function reduceAdd(p,v) {
             selector.forEach(function(column) {
               if(itypes[column]) {
@@ -298,7 +280,9 @@ function Aggregator(jsonarray, itypes) {
         console.log( 'reduceDimension(ms): ' + (new Date().getTime() - startTime));
 
         var resultItemKey, packageKeyObj;
-        currentArray = this.grouping.all().map(
+        currentArray = grouping.all()
+        .filter(function(d) { return d.value.size > 0; })
+        .map(
           function(p) {
             var row = {};
             selector.forEach(function(column) {
@@ -321,6 +305,9 @@ function Aggregator(jsonarray, itypes) {
           }
         );//map end
         console.log( 'summaryDimension(ms): ' + (new Date().getTime() - startTime));
+
+        grouping.dispose();
+        console.log( 'group dispose(ms): ' + (new Date().getTime() - startTime));
         return currentArray;
       } //if(grouping) end
       else {
