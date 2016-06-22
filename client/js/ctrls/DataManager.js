@@ -430,7 +430,7 @@ DataManager.prototype.clearAll = function(key, value) {
  DataManager.prototype.getFilteredColumns = function () {
    
    var refinedColumns = this.getColumnRefiner(),
-       mappedColumns = this.getMappedColumns();
+       mappedColumns  = this.getMappedColumns();
    
    return (this._ctrl.isHighlightMode())? mappedColumns : _.intersection(refinedColumns, mappedColumns);
  };
@@ -440,13 +440,14 @@ DataManager.prototype.clearAll = function(key, value) {
         table = this.getData(),
         filtedRows = table; //initialized value
     
-    if(!this._ctrl.isHighlightMode() && !_.isEmpty(filtedRows)) {
+    if(!this._isDeepUpdate() && !this._ctrl.isHighlightMode() && !_.isEmpty(filtedRows)) {
         var refiningObject = this.getRowRefiner(),
              dataTypes = this.getDataType();
         filtedRows = filtedRows.slice(0);
         Object.keys(refiningObject).forEach(function(column) { 
             var range = refiningObject[column], value;
             if(dataTypes[column] ==='number') {
+              range = [+range[0], +range[1]];
               filtedRows = filtedRows.filter(function(d) {
                 value = +d[column];
                 return  value >= range[0] && value <= range[1];

@@ -21,7 +21,7 @@ function ReadFile4Bigdata (entrance, filename) {
     
   this.calculateInitValues(jsonarray, d3); //types, range
   console.log('calculate Init Values END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
-    
+  
   this.response = {_table_:{format: 'json'} };
   this.response._table_.types  = this.types;
   this.response._table_.ranges = this.ranges; //not change with options
