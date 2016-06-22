@@ -2,7 +2,7 @@
 function Aggregator(jsonarray, itypes) {
   var self = this,
       LIMIT_NUM_OF_COLUMNS = 30, //max=32
-      LIMIT_NUM_OF_ROWS = 20000,
+      LIMIT_NUM_OF_ROWS = 50000,
       //d3 = require('d3'),
       _ = require('underscore'),
       crossfilter = require('crossfilter');
@@ -12,7 +12,7 @@ function Aggregator(jsonarray, itypes) {
   this.prefilters = {};
   
   this.scale = function(size){
-    
+    /*
     return Math.floor( 
            (size >4000) ? size/8:
            (size >3500) ? size/7: 
@@ -20,7 +20,8 @@ function Aggregator(jsonarray, itypes) {
            (size >2500) ? size/5:
            (size >2000) ? size/4: 
            (size >1500) ? size/3:
-           (size >1000) ? size/2: size) ;
+           (size >1000) ? size/2: size) ;*/
+           return size;
   };
 
   this.findOneDimKey = function() {
@@ -89,8 +90,6 @@ function Aggregator(jsonarray, itypes) {
         refinerKeys = Object.keys(refiner);
     
     var currentArray = {}, clearfilters = {};
-
-    grouping=null;
     
     try {
       //firstly, check and send back empty data for initializing data mapping panel
@@ -161,6 +160,7 @@ function Aggregator(jsonarray, itypes) {
         return currentArray;
       }
       
+      var grouping=null;
       var numberKey = this.findOneNumberDimKey();
       if(!numberKey) {
         //return only the groupby result: TBD
@@ -186,6 +186,8 @@ function Aggregator(jsonarray, itypes) {
         }
       }
 
+      //TBD: max==min problem,  test filter after grouping
+      
       //sampling
       var prefix = null;
       if(spks.length <= 1 ) {
@@ -195,6 +197,10 @@ function Aggregator(jsonarray, itypes) {
 
         var max = this.dimensions[comboPK].top(1)[0][comboPK],
             min = this.dimensions[comboPK].bottom(1)[0][comboPK];
+        
+        if(max == min) {
+           return  (currentArray.length> LIMIT_NUM_OF_ROWS)? _.sample(currentArray, LIMIT_NUM_OF_ROWS): currentArray;
+        }
 
         var group, groupItem, comboGroupPK = '|'+ comboPK+'|';
         if(!this.dimensions[comboGroupPK]) {
@@ -222,9 +228,10 @@ function Aggregator(jsonarray, itypes) {
 
         if(!this.dimensions[comboPK]) { //pk equal 'pk0|pk1'
           var dimPKsSizeObj, dimGroupbyObj, dimParam;
+              groupColumns= spks.filter(function(column){return multiParams[column].max !== multiParams[column].min;});
           this.dimensions[comboPK] = self.crossfilter.dimension(function(d) {
            
-            dimPKsSizeObj = spks.map(function(onePK){
+            dimPKsSizeObj = groupColumns.map(function(onePK){
               dimParam = multiParams[onePK];
               return Math.floor(dimParam.size * (d[onePK] - dimParam.min) / (dimParam.max- dimParam.min));
             });
@@ -234,7 +241,7 @@ function Aggregator(jsonarray, itypes) {
               });
               return dimGroupbyObj.join('|') + dimPKsSizeObj.join('|');
             } else {
-              return dimPKsSizeObj.join('|');
+              return '|'+ dimPKsSizeObj.join('|')+'|';
             }
           });
         }
@@ -248,22 +255,14 @@ function Aggregator(jsonarray, itypes) {
         grouping.reduce(
           function reduceAdd(p,v) {
             selector.forEach(function(column) {
-              if(itypes[column]) {
-                p[column] +=  v[column];
-              } else if(! p[column]) {
-                p[column] = v[column];//override to goet the first value of its group for 'String' columns 
-              }
+              p[column] = v[column];//override to goet the first value of its group for 'String' columns 
             });
              p.size += 1;
             return p;
           },
           function reduceRemove(p,v) {
             selector.forEach(function(column) {
-              if(itypes[column]) {
-                p[column] -=  v[column];
-              } else if(! p[column]) {
-                p[column] = v[column];
-              }
+              p[column] = v[column];
             });
             p.size -= 1;
             return p;
@@ -271,7 +270,7 @@ function Aggregator(jsonarray, itypes) {
           function reduceInitial(){
             var p = {size: 0};
             selector.forEach(function(column) {
-              p[column] = (itypes[column])? 0: null;
+              p[column] = null;
             });
             return p;
           }
@@ -279,28 +278,21 @@ function Aggregator(jsonarray, itypes) {
 
         console.log( 'reduceDimension(ms): ' + (new Date().getTime() - startTime));
 
-        var resultItemKey, packageKeyObj;
-        currentArray = grouping.all()
-        .filter(function(d) { return d.value.size > 0; })
+        var tmpArray = grouping.all().filter(function(d) { return d.value.size > 0; });
+        if(tmpArray.length> LIMIT_NUM_OF_ROWS) { 
+          tmpArray = _.sample(tmpArray, LIMIT_NUM_OF_ROWS);
+        }
+        var resultItemKey, packageKeyObj; 
+        currentArray = tmpArray
         .map(
           function(p) {
             var row = {};
             selector.forEach(function(column) {
-                if(itypes[column]) {
-                  row[column] = p.value[column] / p.value.size;
-                } else {
-                  row[column] = p.value[column];
-                }
+               row[column] = p.value[column];   
             });
-            /*if(hasGroupBy) {
-               packageKeyObj = JSON.parse(d.key);
-               for(resultItemKey in packageKeyObj) {
-                  row[resultItemKey] = packageKeyObj[resultItemKey];
-               }
-            }*/
+            
             row['|size|'] = p.value.size; //return size in its group
             
-            //do not return the string column who have not grouped by
             return row;
           }
         );//map end
