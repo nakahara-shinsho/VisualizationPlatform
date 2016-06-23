@@ -24,7 +24,7 @@ define(["css!./main"], function () {
 
     this.io.dataManager().setMapperProps({
       xaxis: { label: 'X Axis', type: 'number', map2: '', spk: 'width'},
-      yaxis: { label: 'Y Axis', type: 'number', map2: [''], spk: 'height'}
+      yaxis: { label: 'Y Axis', type: 'number', map2: [], spk: 'height'}
     });
     /// X Axis
     this.io.designManager()
@@ -99,6 +99,7 @@ define(["css!./main"], function () {
     var self = this;
     self.containerWidth  = containerWidth;
     self.containerHeight = containerHeight;
+    self.brush = undefined;
     self.redraw();
   };
 
@@ -319,9 +320,10 @@ define(["css!./main"], function () {
         }
       }
       var id = ycolumn.replace("(", "_").replace(")","");
-      self.svg.selectAll("circle#"+id)
-        .data(data)
-        .enter()
+      if(id.length !== 0){
+        self.svg.selectAll("circle#"+id)
+          .data(data)
+          .enter()
         .append("circle").attr("id", id)
         .attr("cx", function (d) {
           return self.x(+d[xcolumn]);
@@ -336,6 +338,7 @@ define(["css!./main"], function () {
           }
           return colorManager.getColorOfRow(d);
         });
+      }
     });
     //hide unfocused data for highligh mode
     if(self.io.isHighlightMode()) {
@@ -454,9 +457,11 @@ define(["css!./main"], function () {
     var colorManager = self.io.colorManager();
     var axisColor    = undefined;
     self.io.dataManager().getMapper("yaxis").forEach(function(ycolumn){
-      if(colorManager.getDomainName().toLowerCase() === "x axis"){
+      if(colorManager.getDomainName().toLowerCase() !== undefined &&
+         colorManager.getDomainName().toLowerCase() === "x axis"){
         axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
-      }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
+      }else if(colorManager.getDomainName().toLowerCase() !== undefined &&
+        colorManager.getDomainName().toLowerCase() === "y axis"){
         axisColor = colorManager.getColor(ycolumn);
       }
       var id = ycolumn.replace("(", "_").replace(")","");

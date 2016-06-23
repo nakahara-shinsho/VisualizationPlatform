@@ -95,6 +95,7 @@ define(["util/CustomTooltip",
     self.columnNames = [];
     if(self.io.dataManager().getData()[0] !== undefined){
       for(var k in self.io.dataManager().getData()[0]){
+        k = k.replace("(","_").replace(")","");
         self.columnNames.push(k);
       }
     }
@@ -108,9 +109,10 @@ define(["util/CustomTooltip",
     });
     self.io.dataManager().getData().forEach(function(row){
       for(var key in row){
-        if(self.columnVariations[key].indexOf(row[key]) == -1){
-          self.columnVariations[key].push(row[key]);
-          self.selectedRows[key].push(row[key]);
+        var tkey = key.replace("(","_").replace(")","");
+        if(self.columnVariations[tkey].indexOf(row[key]) == -1){
+          self.columnVariations[tkey].push(row[key]);
+          self.selectedRows[tkey].push(row[key]);
         }
       }
     });
@@ -252,11 +254,11 @@ define(["util/CustomTooltip",
       })
       .enter()
       .append("td")
-      .attr("id", function(d){return d.key;})
+      .attr("id", function(d){return d.key.replace("(","_").replace(")","");})
       .attr("data-resizable-column-id",function(d){
-        return d.key;})
+        return d.key.replace("(","_").replace(")","");})
       .style("width", function(d){
-        return self.widthList[d.key] +"px";
+        return self.widthList[d.key.replace("(","_").replace(")","")] +"px";
       })
       .text(function(d){return d.value;});
 
