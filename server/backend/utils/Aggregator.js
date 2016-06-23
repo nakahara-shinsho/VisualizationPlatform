@@ -2,7 +2,7 @@
 function Aggregator(jsonarray, itypes) {
   var self = this,
       LIMIT_NUM_OF_COLUMNS = 30, //max=32
-      LIMIT_NUM_OF_ROWS = 50000,
+      LIMIT_NUM_OF_ROWS = 30000,
       //d3 = require('d3'),
       _ = require('underscore'),
       crossfilter = require('crossfilter');
@@ -77,7 +77,7 @@ function Aggregator(jsonarray, itypes) {
   }; //create  end
 
   this.exec = function(options) {
-    var startTime = new Date().getTime();
+    var tmpArray, startTime = new Date().getTime();
 
     var spkObject = options._spk_  || {},
         refiner  =  options._where_  || {},
@@ -100,7 +100,7 @@ function Aggregator(jsonarray, itypes) {
       this.createDimensions(_.union(refinerKeys, spks), comboPK); //create necessary dimensions
       console.log( 'createDimension(ms): ' + (new Date().getTime() - startTime));
 
-      //no refiner, no spks
+      //no refiner, no spks -- TBD: how to process long columns? 
       if(Object.keys(this.dimensions).length <=0) {
         console.error('(1)sending all the data without sampling');
         return  (jsonarray.length> LIMIT_NUM_OF_ROWS)? _.sample(jsonarray, LIMIT_NUM_OF_ROWS): jsonarray;
@@ -155,9 +155,8 @@ function Aggregator(jsonarray, itypes) {
         console.log( 'clearDimension(ms): ' + (new Date().getTime() - startTime));
       }
       
-      currentArray= this.dimensions[refinerKeys[0] || this.findOneDimKey()].top(Infinity);
-      if(currentArray.length < LIMIT_NUM_OF_ROWS) { //small data --> samlping is unnecessary  
-        return currentArray;
+      if(this.crossfilter.groupAll().value() <= LIMIT_NUM_OF_ROWS) { //small data --> samlping is unnecessary  
+        return this.dimensions[refinerKeys[0] || this.findOneDimKey()].top(Infinity);
       }
       
       var grouping=null;
@@ -182,7 +181,7 @@ function Aggregator(jsonarray, itypes) {
             return currentArray;
         } else {
           console.error('(2)sending all the data without sampling');
-          return  (currentArray.length> LIMIT_NUM_OF_ROWS)? _.sample(currentArray, LIMIT_NUM_OF_ROWS): currentArray;
+          return this.dimensions[refinerKeys[0] || this.findOneDimKey()].top(LIMIT_NUM_OF_ROWS);
         }
       }
 
@@ -199,7 +198,7 @@ function Aggregator(jsonarray, itypes) {
             min = this.dimensions[comboPK].bottom(1)[0][comboPK];
         
         if(max == min) {
-           return  (currentArray.length> LIMIT_NUM_OF_ROWS)? _.sample(currentArray, LIMIT_NUM_OF_ROWS): currentArray;
+           return this.dimensions[refinerKeys[0] || this.findOneDimKey()].top(LIMIT_NUM_OF_ROWS);
         }
 
         var group, groupItem, comboGroupPK = '|'+ comboPK+'|';
@@ -278,8 +277,8 @@ function Aggregator(jsonarray, itypes) {
 
         console.log( 'reduceDimension(ms): ' + (new Date().getTime() - startTime));
 
-        var tmpArray = grouping.all().filter(function(d) { return d.value.size > 0; });
-        if(tmpArray.length> LIMIT_NUM_OF_ROWS) { 
+        tmpArray = grouping.all().filter(function(d) { return d.value.size > 0; });
+        if(tmpArray.length> LIMIT_NUM_OF_ROWS) {
           tmpArray = _.sample(tmpArray, LIMIT_NUM_OF_ROWS);
         }
         var resultItemKey, packageKeyObj; 
@@ -302,10 +301,7 @@ function Aggregator(jsonarray, itypes) {
         console.log( 'group dispose(ms): ' + (new Date().getTime() - startTime));
         return currentArray;
       } //if(grouping) end
-      else {
-        console.error('(3)sending all the data without sampling');
-        return  (currentArray.length> LIMIT_NUM_OF_ROWS)? _.sample(currentArray, LIMIT_NUM_OF_ROWS): currentArray;
-      }
+      
     } catch (e) {
       console.log(e);
       return {};

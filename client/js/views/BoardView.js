@@ -118,28 +118,28 @@ define([
     },
     
     switchData: function(key, options) {
+
+      var self = this, grandParent = this.parent.parent;
+
       this.chartctrl.dataManager().clearAll();
       this.chartctrl.colorManager().clearAll();
       this.model.set({'vtname': key}, {silent: true});
       
-      var self = this,
-          grandParent = this.parent.parent;
-
       this.chartctrl.dataManager().getDataFromServer(key, grandParent.context)
       .done( function () {
          self.setCaption();
-         var $chart_el = self.$el.find('.chart'),
+         var $chart = self.$el.find('.chart'),
              width  = $chart.width(),
              height = $chart.height(),
              renderd_dom = self.chartctrl.render(width, height);
          if(!!renderd_dom) {
-           $chart_el.empty().append(renderd_dom);
-           if($(renderd_dom).is('svg') && $chart_el.find('svg').length==1) {
+           $chart.empty().append(renderd_dom);
+           if($(renderd_dom).is('svg') && $chart.find('svg').length==1) {
              self.resize_svg(renderd_dom, width, height);
            }
          }
-         self.updateLinkMenu();
-         self.updateModeIcon();
+         self.updateLinkMenu();//
+         self.updateModeIcon();//
          
          self.activeMe($.Event( "switch_data" ));
       })
@@ -242,8 +242,7 @@ define([
     activeMe: function (evt) {
       if(evt && (evt instanceof $.Event)){
         evt.stopPropagation(); //stop propagation to parent element 
-        //to udate control panel
-        framework.mediator.trigger('board:active', this);
+        framework.mediator.trigger('board:active', this);//to udate control panel
       }
     },
    
@@ -369,11 +368,11 @@ define([
           .done( function () {
             self.setCaption();
             //content
-            var $chart_el = self.$el.find('.chart');
+            var $chart = self.$el.find('.chart');
             var renderd_dom = self.chartctrl.render(width, height);
             if(!!renderd_dom) {
-              $chart_el.append(renderd_dom);
-              if($(renderd_dom).is('svg') && $chart_el.find('svg').length==1) {
+              $chart.append(renderd_dom);
+              if($(renderd_dom).is('svg') && $chart.find('svg').length==1) {
                 self.resize_svg(renderd_dom, width, height);
               }
             }

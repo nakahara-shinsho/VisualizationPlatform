@@ -83,7 +83,7 @@ define([
         return;
       }
 
-      if (dimType.endsWith('Array') && dimType.startsWith(colType) ) {
+      if (dimType=='Array' || (dimType.endsWith('Array') && dimType.startsWith(colType) )) {
         container.append(ev.originalEvent.dataTransfer.getData('html'));
       } else {
         if (colType !== dimType) {
