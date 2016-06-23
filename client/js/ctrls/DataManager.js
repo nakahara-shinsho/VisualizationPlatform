@@ -291,8 +291,11 @@ define(['ctrl/COMMON'], function (COMMON) {
          pksObj[columns] = sizeObj[nameOfSize];
        }
        if(type =='Array') {
+         var dataTypes = self.getDataType();
          columns.forEach(function(column){
-           pksObj[column] = sizeObj[nameOfSize];
+           if(dataTypes[column]=='number') { //only add number columns as sampling SPKs
+              pksObj[column] = sizeObj[nameOfSize];
+           }
          });
        }
      }

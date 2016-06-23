@@ -30,8 +30,8 @@ define(["util/CustomTooltip",
 
     // Data Mapper
     this.io.dataManager().setMapperProps({
-      columnsString: {type: 'string', label: 'Columns(String)', map2:[]},
-      columnsNumber: {type: 'number', label: 'Columns(Number)', map2:[]}
+      //columnsString: {type: 'string', label: 'Columns(String)', map2:[]},
+      axiscolumns: {type: '', label: 'Axises columns', map2:[], spk: 'height'}
     });
 
     // Design Mapper
@@ -138,20 +138,21 @@ define(["util/CustomTooltip",
    */
   ParallelCoordinates.prototype.transformData = function () {
     var self = this;
-    var chartData = [];
-    if((self.io.dataManager().getMapperProps("columnsString").map2 === undefined ||
-        self.io.dataManager().getMapperProps("columnsString").map2.length === 0) &&
-       (self.io.dataManager().getMapperProps("columnsNumber").map2 === undefined ||
-        self.io.dataManager().getMapperProps("columnsNumber").map2.length === 0 )){
+    var chartData = [],
+        dataManager = self.io.dataManager(), 
+        dataTypes = dataManager.getDataType();
+
+    if((dataManager.getMapperProps("axiscolumns").map2 === undefined ||
+        dataManager.getMapperProps("axiscolumns").map2.length === 0) ){
           return chartData;
         }
     var selectedLegends = self.getSelectedLegends();
     var row = {};
     self.columnsStringLabel2Value = {};
-    self.io.dataManager().getData().forEach(function(data){
+    dataManager.getData().forEach(function(data){
       row = {};
       selectedLegends.forEach(function(colName){
-        if(self.io.dataManager().getMapperProps("columnsString").map2.indexOf(colName) !== -1){
+        if(dataTypes[colName] !== 'number'){
           // Update Label2Value for colName & return data
           row[colName] = self.label2value(colName, data[colName]);
         }else{
@@ -193,7 +194,7 @@ define(["util/CustomTooltip",
   ParallelCoordinates.prototype.createHeader = function () {
     var self = this;
     // Initialize
-    if(self.root_dom == undefined){
+    if(!self.root_dom){
       self.root_dom   = self.root_dom  = document.createElement("div");
       self.container = d3.select(self.root_dom);
     }
@@ -272,7 +273,7 @@ define(["util/CustomTooltip",
         })
         .on("mouseout", function(){
           d3.select(this).style("stroke-width", 1);
-          self.tooltup.hide();
+          self.tooltip.hide();
         });
 
       function createTableData(d){
@@ -285,16 +286,20 @@ define(["util/CustomTooltip",
           tableData.push(elem);
         }
         return tableData;
-      };
+      }
+
       function getColor(d){
         var color = {};
-        var target = self.io.colorManager().getDomainName();
-        if(self.io.dataManager().getMapperProps("columnsString").map2.indexOf(target) !== -1){
-          color[target] = self.columnsStringValue2Label[target][d[target]];
-          return self.io.colorManager().getColorOfRow(color);
-        }else if(self.io.dataManager().getMapperProps("columnsNumber").map2.indexOf(target) !== -1){
-          color[target] = d[target];
-          return self.io.colorManager().getColorOfRow(color);
+        var target = self.io.colorManager().getDomainName(),
+            dataTypes = self.io.dataManager().getDataType();
+        if(!_.isEmpty(target)) {
+          if(dataTypes[target] !== 'number'){
+            color[target] = self.columnsStringValue2Label[target][d[target]];
+            return self.io.colorManager().getColorOfRow(color);
+          }else {
+            color[target] = d[target];
+            return self.io.colorManager().getColorOfRow(color);
+          }
         }
         return "lightgray";
       }
@@ -408,8 +413,13 @@ define(["util/CustomTooltip",
       });
     }
 
+    var dataTypes = self.io.dataManager().getDataType();
     // Update Labels for String-Axis
-    self.io.dataManager().getMapperProps("columnsString").map2.forEach(function(elem){
+    self.io.dataManager().getMapperProps("axiscolumns").map2
+    .filter(function(elem){
+       return dataTypes[elem]!== 'number';
+    })
+    .forEach(function(elem){
       self.svg.select("g.dimension#" + elem)
         .selectAll("g.tick")
         .selectAll("text")
@@ -449,17 +459,11 @@ define(["util/CustomTooltip",
     var self = this;
     var selectedLegends = [];
     if(self.io.isHighlightMode()) {
-      self.io.dataManager().getMapperProps("columnsString").map2.forEach(function(elem){
-        selectedLegends.push(elem);
-      });
-      self.io.dataManager().getMapperProps("columnsNumber").map2.forEach(function(elem){
+      self.io.dataManager().getMapperProps("axiscolumns").map2.forEach(function(elem){
         selectedLegends.push(elem);
       });
     }else {
-      self.io.dataManager().getMapperProps("columnsString").map2.forEach(function(elem){
-        selectedLegends.push(elem);
-      });
-      self.io.dataManager().getMapperProps("columnsNumber").map2.forEach(function(elem){
+      self.io.dataManager().getMapperProps("axiscolumns").map2.forEach(function(elem){
         selectedLegends.push(elem);
       });
     }
