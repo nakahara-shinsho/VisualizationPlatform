@@ -23,6 +23,7 @@ requirejs.config({
     d3          : 'assets/libs/d3',
     BsDialog    : 'assets/libs/bootstrap-dialog.min',
     dialog      : 'assets/libs/dialog-plus',
+    crossfilter : 'assets/libs/crossfilter',
     //compact paths
     lib         : 'assets/libs',
     model       : 'js/models',
@@ -55,6 +56,9 @@ requirejs.config({
     parsley : {
       deps: ['jquery']
     },
+    crossfilter: {
+      deps: [], exports: "crossfilter" 
+    },
     start: {
       deps: [
         'd3',
@@ -64,9 +68,10 @@ requirejs.config({
         'backbone',
         'stickit',
         'bootstrap',
-        
+        'crossfilter',
         'BsDialog',
-        'dialog'
+        'dialog',
+        'crossfilter'
       ],
     }
   }
