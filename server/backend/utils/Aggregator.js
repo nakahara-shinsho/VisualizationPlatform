@@ -12,7 +12,7 @@ function Aggregator(jsonarray, itypes) {
   this.prefilters = {};
   this.prespkobj = {};
   
-  this.scale = function(size){
+  this.scale = function(size){ // it it necessary to consider the size of spks ?
     
     return (size >2100) ? 1000:
            (size >1100) ? 800: 
