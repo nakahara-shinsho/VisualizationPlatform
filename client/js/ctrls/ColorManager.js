@@ -232,9 +232,8 @@ define(['ctrl/COMMON'], function (COMMON) {
     });
     return dataset;
   };
-
-  ColorManager.prototype.getItemsOfDataset = function(dataset) {
-    var items=[],
+  ColorManager.prototype.getRangeOfDataset = function(dataset) {
+    var items=[], 
         mapperPropsObj = this._ctrl.dataManager().getMapperProps();
 
     for( var prop in mapperPropsObj) {
@@ -244,62 +243,46 @@ define(['ctrl/COMMON'], function (COMMON) {
         }
     }
     if(items.length === 0 ) {
-        items = this.getItemsOfColumn(dataset); 
+        items = this.getRangeOfColumn(dataset);
     }
     return items;
   };
   
   ColorManager.prototype.isDataMappingDomain = function(domainName) {
-     var column = (domainName) ? domainName: this.getDomainName();
-     var data = this._ctrl.dataManager().getData(), 
-         dataTypes = this._ctrl.dataManager().getDataType();
-     return (data && dataTypes && !_.has(dataTypes, column));
+     
+     var column = (domainName) ? domainName: this.getDomainName(),
+         mapperPropsObj = this._ctrl.dataManager().getMapperProps();
+     if(!_.isEmpty(column)) {
+        for(var prop in mapperPropsObj) {
+            if(mapperPropsObj[prop].label == column) {
+                return true;
+            }
+        }
+     }
+     return false;
   };
   
   ColorManager.prototype.isColumnDomain = function(domainName) {
-     var column = (domainName) ? domainName: this.getDomainName();
-     var data = this._ctrl.dataManager().getData(), 
-        dataTypes = this._ctrl.dataManager().getDataType();
-     return (data && dataTypes && _.has(dataTypes, column));
+     var column = (domainName) ? domainName: this.getDomainName(),
+         dataTypes = this._ctrl.dataManager().getDataType();
+     if(!_.isEmpty(column)) {
+        return dataTypes && _.has(dataTypes, column);
+     }
+     return false;
   };
   
   ColorManager.prototype.isNumberDomain = function(domainName) {
      var column = (domainName) ? domainName: this.getDomainName();
-     var data = this._ctrl.dataManager().getData(), dataTypes = this._ctrl.dataManager().getDataType();
-     return (data && dataTypes && _.has(dataTypes, column) && dataTypes[column] == 'number');
+        dataTypes = this._ctrl.dataManager().getDataType();
+     if(!_.isEmpty(column)) {
+        return dataTypes && (dataTypes[column] == 'number');
+     }
+     return false;
   };
   
-  ColorManager.prototype.getItemsOfColumn = function(column) {
-    var self= this, items =[],
-        data = this._ctrl.dataManager().getData();
-    
-    if(this.isNumberDomain(column)) {
-        var min = Number.MAX_VALUE,  max= Number.MIN_VALUE, tempVal;
-        data.forEach(function (d) { //cluster
-            tempVal = +d[column];
-            if (tempVal > max ) {
-               max = tempVal;
-            } 
-            if (tempVal < min ) {
-               min = tempVal;
-            }
-        });
-        //var limit = Math.max(numberAfterDot(min), numberAfterDot(max));
-        //    colorSeparator = this.getSeparator();
-        items.push(min);
-        //for(var i=0; i< colorSeparator.length; i++) {
-        //    items.push(+((min + colorSeparator[i] * (max-min)).toFixed(limit)));
-        //}
-        items.push(max);
-    } else { 
-       data.forEach(function (d) { //cluster
-            if (items.indexOf(d[column]) < 0 ) {
-                items.push(d[column]);
-            }
-        });
-    }
-    return items;
- };
+  ColorManager.prototype.getRangeOfColumn = function(column) {
+    return this._ctrl.dataManager().getDataRange(column);
+  };
  
  ColorManager.prototype.getColorOfColumn = function(columnName) {
     var  color = this._defalutColor,
@@ -317,7 +300,8 @@ define(['ctrl/COMMON'], function (COMMON) {
         color = this._defalutColor,
         domain = this.getDomain(),
         colorDomainName = this.getDomainName(),
-        colormap = this.getColormap();
+        colormap = this.getColormap(),
+        colorScale;
 
         if(this.isDataMappingDomain()) {  //data mapping array
             return color; //default color
@@ -326,13 +310,13 @@ define(['ctrl/COMMON'], function (COMMON) {
             var value = +row[colorDomainName];
             for(var i=1; i<domain.length; i++) {
               if(value >= domain[i-1] && value < domain[i]){
-                var colorScale = d3.scale.linear()
+                 colorScale = d3.scale.linear()
                       .domain([domain[i-1], domain[i]])
                       .range([colormap[domain[i-1]], colormap[domain[i]]]);
                  color = colorScale(value);
                  break;
               }else if( value == domain[i]){
-                var colorScale = d3.scale.linear()
+                 colorScale = d3.scale.linear()
                       .domain([domain[i-1], domain[i]])
                       .range([colormap[domain[i-1]], colormap[domain[i]]]);
                 color = colorScale(value);
@@ -342,12 +326,13 @@ define(['ctrl/COMMON'], function (COMMON) {
        } else if( row[colorDomainName] ) { //string column
            color = colormap[row[colorDomainName]];
        }
-       console.log(color);
+       //console.log(color);
        return color;
   };
  
- ColorManager.prototype.colorUpdating = function(options) {
-    this._ctrl.chartInstance().update({ COLOR_MANAGER: options} );
+ ColorManager.prototype.chartUpdatingWithColors = function(options, shouldCheckData) {
+    var self = this, dataManager= this._ctrl.dataManager();
+    dataManager.updateFromColormapping({ COLOR_MANAGER: options}, shouldCheckData);
  };
  
  return ColorManager;

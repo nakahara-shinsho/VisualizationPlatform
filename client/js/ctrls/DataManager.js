@@ -17,7 +17,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  var DataManager = function(boardModel, chartCtrl){
-     // this._get_data_time = {};
+      // this._get_data_time = {};
       this._model = boardModel;
       this._ctrl  = chartCtrl;
       this._data = {_default_table_key_: '_table_', _$mapper_props_:{}, _infer_: {} };
@@ -186,9 +186,9 @@ define(['ctrl/COMMON'], function (COMMON) {
          if(!_.isEmpty(toBeAdded)) {
            this._writeRowRefiner(toBeAdded, { silent: !hasRendered } ); //the general 'change' event is triggered
          }
-      } else if( _.has(dataTypes, arguments[0]) && arguments.length >1) { //(column, range)
-           obj = {}; 
-           obj[arguments[0]]=arguments[1];
+      } else if( _.has(dataTypes, arguments[0]) && arguments.length >1 ) { //(column, range)
+           obj = {};
+           obj[arguments[0]] = arguments[1];
            this._writeRowRefiner(obj, { silent: !hasRendered });// general 'change' event isn't triggered   
       }
   };
@@ -278,31 +278,77 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype.getPrimaryKeyColumns = function(size) {
-   var pksObj = {}, 
+   var self=this, 
+       pksObj = {}, 
        sizeObj = (size)? size: this._ctrl.size(); 
        mapperProps = this.getMapperProps();
-   for(var key in mapperProps) {
+  
+   Object.keys(mapperProps).forEach(function(key) {
      var nameOfSize = mapperProps[key].spk;
-     if( nameOfSize && sizeObj[nameOfSize] && typeof(mapperProps[key].map2) ==='string') {
-       var column = this.getMapper(key);
-       if(!_.isEmpty(column) ) {
-         pksObj[column] = sizeObj[nameOfSize];
+     if( nameOfSize ) {
+       var columns = self.getMapper(key);
+        if(Array.isArray(columns)) {
+         //var dataTypes = self.getDataType();
+         columns.forEach(function(column) {
+           //if(dataTypes[column]=='number') { //only add number columns as sampling SPKs-- i don't know datatypes at the beginning
+           if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) {
+             pksObj[column] = +nameOfSize;
+           } else if(sizeObj[nameOfSize]) {
+             pksObj[column] = sizeObj[nameOfSize]; 
+           }
+           //}
+         });
+       }
+       else { //single column mapping
+         if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) {
+           pksObj[column] = +nameOfSize;
+         } else if(sizeObj[nameOfSize]) {
+           pksObj[column] = sizeObj[nameOfSize];
+         }
        }
      }
-   }
+   });
    return pksObj;
  };
 
+DataManager.prototype.getGroupByColumns = function() {
+   var key= 'groupby', 
+       prop = this.getMapperProps(key);
+   if(prop) { //have group props
+     var columns = this.getMapper(key);
+     if(prop.type =='string') {
+        if(Array.isArray(columns)) {
+          return columns;
+        } else {
+          return [columns];
+        }
+       
+     }
+   }
+   return null;
+};
+
 //get data-mapped or color-mapped columns if not-existed in client
 DataManager.prototype.getRenderingColumns = function() {
-   var columns = [], colorManager= this._ctrl.colorManager();
-   Array.prototype.push.apply(columns,this.getMappedColumns());
-   if(colorManager.isColumnDomain()){
+   var columns = [],  
+       colorManager= this._ctrl.colorManager(),
+       colorDomainName= colorManager.getDomainName();
+   
+   Array.prototype.push.apply(columns, this.getMappedColumns());
+
+   if(colorDomainName !=='' && colorManager.isColumnDomain(colorDomainName)){
      columns.push(colorManager.getDomainName());
    }
+
    return columns;
 };
 
+DataManager.prototype.getColumnsInVT = function() {
+  if(_.isEmpty(this.getMapperProps()) ){
+    return '*'; //select all data columns
+  }
+  return this.getRenderingColumns();
+};
 //when option in data-mapping or color-mapping 
 DataManager.prototype.isCachedColumn = function(column) {
   var row0 = this.getData()[0];
@@ -351,7 +397,8 @@ DataManager.prototype.clearAll = function(key, value) {
  };
  
  DataManager.prototype.setData = function(key, value) {
-     this._data[key] = value;
+    this.clearData(key);
+    this._data[key] = value;
  };
  
  DataManager.prototype.getData = function(key, initValue) {
@@ -393,7 +440,7 @@ DataManager.prototype.clearAll = function(key, value) {
  DataManager.prototype.getFilteredColumns = function () {
    
    var refinedColumns = this.getColumnRefiner(),
-       mappedColumns = this.getMappedColumns();
+       mappedColumns  = this.getMappedColumns();
    
    return (this._ctrl.isHighlightMode())? mappedColumns : _.intersection(refinedColumns, mappedColumns);
  };
@@ -403,13 +450,14 @@ DataManager.prototype.clearAll = function(key, value) {
         table = this.getData(),
         filtedRows = table; //initialized value
     
-    if(!this._ctrl.isHighlightMode()) {
+    if(!this._isDeepUpdate() && !this._ctrl.isHighlightMode() && !_.isEmpty(filtedRows)) {
         var refiningObject = this.getRowRefiner(),
              dataTypes = this.getDataType();
         filtedRows = filtedRows.slice(0);
         Object.keys(refiningObject).forEach(function(column) { 
             var range = refiningObject[column], value;
             if(dataTypes[column] ==='number') {
+              range = [+range[0], +range[1]];
               filtedRows = filtedRows.filter(function(d) {
                 value = +d[column];
                 return  value >= range[0] && value <= range[1];
@@ -580,18 +628,22 @@ DataManager.prototype.clearAll = function(key, value) {
   };
   
  //get virtual table data from server, 'options' is parameters for filtering data
-  DataManager.prototype.getDataFromServer = function(virtualTable, screenContext, sizeObj){
+  DataManager.prototype.getDataFromServer = function(virtualTable, screenContext, sizeObj) {
+      if(this._ctrl.loading) {
+          return;
+      }
+
       var self = this,
           deferred = $.Deferred(),
           conditions = { } ,
           query_options = { type: 'POST', 
                             cache: false,
-                            timeout: 30000, //3 seconds 
+                            timeout: 100000, //3 seconds 
                             url: this._dataset_url_root + virtualTable,
-                            data: conditions };
+                          };
       var startTime = new Date().getTime();
       conditions._context_ = $.extend(true, {}, window.framework.context, screenContext);
-      conditions._select_= this.getRenderingColumns(); //this.getColumnRefiner();
+      conditions._select_  = this.getColumnsInVT();
       conditions._extra_select_= this._readExtraColumnRefiner();
 
       //TBD&I: if chart is highlight mode, the all condtions besides deepColumns' shouldn't be sent to server
@@ -604,7 +656,16 @@ DataManager.prototype.clearAll = function(key, value) {
       if(!_.isEmpty(spk)) {
         conditions._spk_ = spk;
       }
-      
+
+      var groupby = this.getGroupByColumns();
+      if(!_.isEmpty(groupby)) {
+        conditions._groupby_ = groupby;
+      }
+
+      query_options.data = conditions;
+
+      //show loading icon
+      this._ctrl.trigger("loading:start");
       $.ajax(query_options)
             .done( function (data) {
               var jsondata = JSON.parse(data);
@@ -643,17 +704,22 @@ DataManager.prototype.clearAll = function(key, value) {
                 }
               });
               console.log('Get '+ virtualTable +' in ' + (new Date().getTime() - startTime)+ ' milliseconds!');
+              //hidden loading icon
+              self._ctrl.trigger("loading:end");
               return deferred.resolve();
             })
             .fail(function(jqXHR, textStatus) {
                 if(textStatus === 'timeout') {  //big data? it may be necessary for samping data
                     alert('Failed from timeout'); 
                 }
+                self._ctrl.trigger("loading:end");
+                return deferred.reject();
+                //hidden loading icon
             });
     
       return deferred.promise();
     }; 
-   
+  
   //deep update data if necessary
   DataManager.prototype.switchMode = function() {
     var self=this, chartInst = this._ctrl.chartInstance();
@@ -674,15 +740,18 @@ DataManager.prototype.clearAll = function(key, value) {
   
   //update chart with changing refining parameters
   DataManager.prototype.updateChart = function(key, options) {
-    var chartInst = this._ctrl.chartInstance();
+    var vobj = {}, chartInst = this._ctrl.chartInstance();
+    vobj[key] = options;
     for(var prop in this.getMapperProps()) {
-       if(_.isEmpty(this.getMapper(prop)) ) { //stop even if one mapping item is not still set.
-         return;
+       if(_.isEmpty(this.getMapper(prop)) ) { 
+         //return; //stop even if one mapping item is not still set.
+         if(chartInst.update) {
+            chartInst.update({DATA_MANAGER: {SELECTOR: vobj}});
+          }
+          return;
        }
     }
     
-    var vobj = {};
-    vobj[key] = options;
     if(this._isDeepUpdate(key, (options.constructor==Array)? options:_.keys(options)) ) {
        //TBD: will the existed data need to be cleared? -- same Virtual Table
        this.getDataFromServer(this._model.get('vtname')).done(
@@ -697,7 +766,35 @@ DataManager.prototype.clearAll = function(key, value) {
         }
     }
   };
- 
+  
+  DataManager.prototype.isIncompleteData = function() {
+    var types = this.getDataType(),
+        selector_columns = this.getColumnsInVT(),
+        data_columns = _.keys(this.getData()[0]);
+
+    if(selector_columns == '*') {
+      selector_columns =  _.keys(types);
+    }
+
+    return _.difference(selector_columns, data_columns).length >0 ;
+  };
+
+  DataManager.prototype.updateFromColormapping = function(optionsObj, shouldCheckdata) {
+     var chartInst = this._ctrl.chartInstance();
+     if(shouldCheckdata && /*this._isDeepUpdate() &&*/ this.isIncompleteData()) {
+        this.getDataFromServer(this._model.get('vtname')).done(
+         function() {
+           if(chartInst.update) {
+             chartInst.update(optionsObj);
+           }
+        });
+     } else {
+        if(chartInst.update) {
+            chartInst.update(optionsObj);
+        }
+     }
+  };
+
   DataManager.prototype.linkages = function(eventMessage, linked_vtName, lined_wkName ) {
       var self = this, statusOfLink;
       if(eventMessage.constructor == Object ) { //Row Refiner
