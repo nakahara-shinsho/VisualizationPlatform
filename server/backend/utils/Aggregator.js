@@ -79,7 +79,7 @@ function Aggregator(jsonarray, itypes) {
   this.exec = function(options) {
     var tmpArray, startTime = new Date().getTime();
 
-    var spkObject = options._spk_  || {},
+    var spkObject = _.pick(options._spk_ || {}, function(value, key){return itypes[key];}),
         refiner  =  options._where_  || {},
         selector =  (options._select_=='*')? Object.keys(itypes): options._select_ , //the rendering column
         groupby = options._groupby_;
@@ -202,8 +202,10 @@ function Aggregator(jsonarray, itypes) {
         }
 
         var group, groupItem, comboGroupPK = '|'+ comboPK+'|';
-        if(!this.dimensions[comboGroupPK]) {
-          this.dimensions[comboGroupPK] = self.crossfilter.dimension(function(d) {
+        if(this.dimensions[comboGroupPK]) {
+          this.dimensions[comboGroupPK].dispose();
+        }
+        this.dimensions[comboGroupPK] = self.crossfilter.dimension(function(d) {
             if(hasGroupBy) {
               group = groupby.map(function(column) {
                 return d[column];
@@ -212,8 +214,8 @@ function Aggregator(jsonarray, itypes) {
             } else {
               return Math.floor(size* (d[comboPK] - min) /(max-min));
             }
-          });
-        }
+        });
+        //}
         grouping = this.dimensions[comboGroupPK].group();
 
       } else if(spks.length >= 2 ) { //two~ dimensions samping
@@ -225,10 +227,13 @@ function Aggregator(jsonarray, itypes) {
             multiParams[onePK].min  = self.dimensions[onePK].bottom(1)[0][onePK];
         });
 
-        if(!this.dimensions[comboPK]) { //pk equal 'pk0|pk1'
-          var dimPKsSizeObj, dimGroupbyObj, dimParam;
-              groupColumns= spks.filter(function(column){return multiParams[column].max !== multiParams[column].min;});
-          this.dimensions[comboPK] = self.crossfilter.dimension(function(d) {
+        if(this.dimensions[comboPK]) { //pk equal 'pk0|pk1'
+          this.dimensions[comboPK].dispose();
+        }
+        var dimPKsSizeObj, dimGroupbyObj, dimParam;
+            groupColumns= spks.filter(function(column){return multiParams[column].max !== multiParams[column].min;});
+              
+        this.dimensions[comboPK] = self.crossfilter.dimension(function(d) {
            
             dimPKsSizeObj = groupColumns.map(function(onePK){
               dimParam = multiParams[onePK];
@@ -242,8 +247,8 @@ function Aggregator(jsonarray, itypes) {
             } else {
               return '|'+ dimPKsSizeObj.join('|')+'|';
             }
-          });
-        }
+        });
+        //}
         grouping = this.dimensions[comboPK].group();
       }
       
