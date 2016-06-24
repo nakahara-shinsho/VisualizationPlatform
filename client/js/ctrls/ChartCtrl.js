@@ -59,14 +59,7 @@ define(['ctrl/ColorManager', 'ctrl/DesignManager', 'ctrl/DataManager'],
       if(this._widget_.update) { 
         this._widget_.update(changedAttrs);
       }
-      //this.checkLinkage(changedAttrs);
    };
-  
-  //options is the context coming from other environments
-  //MyClass.prototype.getVirtualDataset = function(vtname, screenContext, sizeObj) {
-       //var query = this.dataManager().getQueryObject();
-  //     return this.dataManager().getDataFromServer(vtname, screenContext, sizeObj);
-  //};
   
   //get chart widget and its corresponding data
   MyClass.prototype.getContent= function (vtname, vttype, screenContext, sizeObj) {

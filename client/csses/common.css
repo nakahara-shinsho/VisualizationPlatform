@@ -110,6 +110,13 @@ charts.gridster li .board .chart-buttons button:not([disabled]) i:hover {
 charts.gridster li .board .chart-buttons button:disabled {
   color: #888;
 }
+charts.gridster li .board .loading {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  z-index: 9999;
+  background: url("/imgs/loading.gif") no-repeat center center rgba(0,0,0,0.25);
+}
 
 charts.gridster {
   margin: 0;

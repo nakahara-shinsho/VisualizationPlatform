@@ -22,6 +22,7 @@ define([
       this.$docker = $(document.body);
       this.listenTo(framework.mediator, 'board:datamapping', this.toogle);
       this.listenTo(framework.mediator, 'board:active', this.switchData);
+      this.listenTo(framework.mediator, 'board:delete', this.deleteChart);
     },
 
     dataMapped: function() {
@@ -82,7 +83,7 @@ define([
         return;
       }
 
-      if (dimType.endsWith('Array') && dimType.startsWith(colType) ) {
+      if (dimType=='Array' || (dimType.endsWith('Array') && dimType.startsWith(colType) )) {
         container.append(ev.originalEvent.dataTransfer.getData('html'));
       } else {
         if (colType !== dimType) {
@@ -176,6 +177,21 @@ define([
           this.curView = view;
       }
     },
+    
+     /**
+     * @param {string} id - id of chart
+     */
+    deleteChart: function (view) {
+      if(this.curView == view ) {
+        //clear the contents
+        //this.$contents.empty();
+        //hide me
+        this.close(view);
+        //initial value
+        this.curView = null;
+      }
+    },
+    
     
     toogle: function (view) {
       if (!this.isOpened()) {

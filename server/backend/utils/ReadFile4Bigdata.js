@@ -10,70 +10,87 @@ function ReadFile4Bigdata (entrance, filename) {
       Aggregator = require('./Aggregator'),
       d3 = require('d3');
 
-  {
-    var startTime = (new Date()).getTime();
-    var table = fs.readFileSync(entrance + filename, 'utf8'),
-        format = filename.split('.').pop().toLowerCase();
+  
+  var startTime = (new Date()).getTime();
+  var table = fs.readFileSync(entrance + filename, 'utf8');
+  var format = filename.split('.').pop().toLowerCase();
     
-    this.jsonarray = (format=='csv')? d3.csv.parse(table):
-                    (format=='tsv')? d3.tsv.parse(table): table;
-    console.log('CSV file read END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
-
-    this.calculateInitValues(); //types, range
-    console.log('calculate Init Values END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
+  var jsonarray = (format=='csv')? d3.csv.parse(table):
+                     (format=='tsv')? d3.tsv.parse(table): table;
+  console.log('CSV file read END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
     
-    this.response = {_table_:{format: 'json'} };
-    this.response._table_.types  = this.types;   //not change with options
-    this.response._table_.ranges = this.ranges; //not change with options
-    this.response._table_.big = BIG.ROW;
+  this.calculateInitValues(jsonarray, d3); //types, range
+  console.log('calculate Init Values END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
+  
+  this.response = {_table_:{format: 'json'} };
+  this.response._table_.types  = this.types;
+  this.response._table_.ranges = this.ranges; //not change with options
+  this.response._table_.big = BIG.ROW;
     
-    this.aggregator = new Aggregator(this.jsonarray, this.types);
-    
-    console.log('prepare aggregator END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
-
-  }
+  this.aggregator = new Aggregator(jsonarray, this.itypes);
+   
+  console.log('prepare aggregator END: ' + ((new Date()).getTime() - startTime) + 'miliseconds');
 }
 
-ReadFile4Bigdata.prototype.calculateInitValues = function() {
-    var self=this,
-        itypes={},
-        header = Object.keys(this.jsonarray[0]);
+ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
+    var self = this,
+        itypes = {},
+        header = Object.keys(jsonarray[0]);
     
     //initialize itypes value
     header.forEach(function(column){
       itypes[column] = true; //is number
     });
 
-    this.jsonarray.forEach(function(row, index, array){
+    //itypes
+    jsonarray.forEach(function(row, index, array){
       header.forEach(function(column){
         if(itypes[column]) { //isNumber value
-           itypes[column] = /*!isNaN(+row[column]) &&*/ isFinite(row[column]); //check and set isString value
+           itypes[column] = !isNaN(+row[column]) && isFinite(row[column]); //check and set isString value
         }
       });
     });
-
-    header = header.filter(function(column){ return itypes[column];});
+    /*
+    //test
+    header.filter(function(column){
+      return itypes[column];
+    });
+    */
 
     //ranges
     var ranges = {};
-    header.forEach(function(column){
-      ranges[column] = [Infinity, -Infinity];
+    var iheader = header.filter(function(column){
+       return itypes[column];
     });
-    this.jsonarray.forEach(function(row, index, array){
-      header.forEach(function(column){
+    jsonarray.forEach(function(row, index, array) {
+      iheader.forEach(function(column){
           row[column] = +row[column];
-          if(ranges[column][0] > row[column]) {ranges[column][0] = row[column];  } //min value
-          if(ranges[column][1] < row[column]) {ranges[column][1] = row[column];  } //max value
       });
     });
-    this.ranges = ranges;
+    iheader.forEach(function(column){
+      ranges[column]= d3.extent(jsonarray.map(function(d){
+          return d[column];
+      }));
+    });
 
+    var sheader = header.filter(function(column){
+       return !itypes[column];
+    });
+    sheader.forEach(function(column){
+      ranges[column]= d3.map(jsonarray, function(d){
+            return d[column];
+      }).keys().slice(0, 50);
+    });
+    this.ranges = ranges;
+    
     //types
     var types = {};
     header.forEach(function(column){
-      types[column] = 'number';
+      types[column] = (itypes[column]) ?'number': 'string';
     });
+    this.itypes = itypes;
     this.types = types;
+
     return;
   };
   
@@ -94,6 +111,7 @@ ReadFile4Bigdata.prototype.calculateInitValues = function() {
       this.aggregator.clear();
     }
   };
+  
 
 
 module.exports = ReadFile4Bigdata;

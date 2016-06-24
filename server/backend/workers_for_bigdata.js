@@ -1,10 +1,9 @@
-require('./util/wrapperConsoleForLog4js.js')
+//require('./util/wrapperConsoleForLog4js.js');
 var amqp = require('amqplib'),
       config = require('config'),
       fs = require('fs');
 var entrance = __dirname+'/bigdata/',
     ReadFileClass = require('./utils/ReadFile4Bigdata.js'); 
-    //callback = new (require('./utils/ReadFile4Bigdata.js'))();
 
 function collector (path) {
     var files = [];

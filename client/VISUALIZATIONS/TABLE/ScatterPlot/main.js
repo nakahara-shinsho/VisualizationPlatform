@@ -28,7 +28,7 @@ define(["css!./main"], function () {
   ScatterPlot.prototype.update = function (changed) {
     var self = this;
     if (changed.hasOwnProperty("COLOR_MANAGER")) {
-      this.updateColors();
+      this.redraw();
     }
     else if (changed.hasOwnProperty("DESIGN_MANAGER")) {
       this.redraw();
@@ -224,8 +224,8 @@ define(["css!./main"], function () {
       .attr("class", "y axis")
       .call(self.yAxis)
     .append("text")
-      .attr("transform", "translate("+ (-self.margin.left) +',' + self.height/2 +") rotate(-90)")
-      .text((ycolumn)?ycolumn:"Y");
+      .attr("transform", "translate("+ (self.width + self.margin.right/2 ) +',' + self.height/2 +") rotate(90)")
+      .text((ycolumn)? ycolumn:"Y");
 };
 
   /**
