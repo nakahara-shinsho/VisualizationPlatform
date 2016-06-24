@@ -10,18 +10,13 @@ function Aggregator(jsonarray, itypes) {
   this.crossfilter = crossfilter(jsonarray);
   this.dimensions = {};
   this.prefilters = {};
+  this.prespkobj = {};
   
   this.scale = function(size){
-    /*
-    return Math.floor( 
-           (size >4000) ? size/8:
-           (size >3500) ? size/7: 
-           (size >3000) ? size/6:
-           (size >2500) ? size/5:
-           (size >2000) ? size/4: 
-           (size >1500) ? size/3:
-           (size >1000) ? size/2: size) ;*/
-           return size;
+    
+    return (size >2100) ? 1000:
+           (size >1100) ? 800: 
+           (size >500) ? 500: size ;
   };
 
   this.findOneDimKey = function() {
@@ -79,14 +74,16 @@ function Aggregator(jsonarray, itypes) {
   this.exec = function(options) {
     var tmpArray, startTime = new Date().getTime();
 
-    var spkObject = options._spk_  || {},
+    var spkObject = _.mapObject(_.pick(options._spk_ || {}, function(value, key){return itypes[key];}), function(val, key) {
+            return self.scale(+val);
+          }),
         refiner  =  options._where_  || {},
         selector =  (options._select_=='*')? Object.keys(itypes): options._select_ , //the rendering column
         groupby = options._groupby_;
     
     var hasGroupBy = !_.isEmpty(groupby),
         spks = Object.keys(spkObject),
-        comboPK = spks.join('|'),
+        comboPK = spks.sort().join('|'), //
         refinerKeys = Object.keys(refiner);
     
     var currentArray = {}, clearfilters = {};
@@ -202,7 +199,11 @@ function Aggregator(jsonarray, itypes) {
         }
 
         var group, groupItem, comboGroupPK = '|'+ comboPK+'|';
-        if(!this.dimensions[comboGroupPK]) {
+        if(!this.dimensions[comboGroupPK] || !_.isEqual(this.prespkobj, spkObject)) {
+          this.prespkobj = _.clone(spkObject);
+          if(this.dimensions[comboGroupPK]) { 
+            this.dimensions[comboGroupPK].dispose(); 
+          }
           this.dimensions[comboGroupPK] = self.crossfilter.dimension(function(d) {
             if(hasGroupBy) {
               group = groupby.map(function(column) {
@@ -220,14 +221,19 @@ function Aggregator(jsonarray, itypes) {
         var multiParams = {};
         spks.forEach(function(onePK){
             multiParams[onePK] = {};
-            multiParams[onePK].size = self.scale(+spkObject[onePK]);
+            multiParams[onePK].size = +spkObject[onePK];
             multiParams[onePK].max  = self.dimensions[onePK].top(1)[0][onePK];
             multiParams[onePK].min  = self.dimensions[onePK].bottom(1)[0][onePK];
         });
 
-        if(!this.dimensions[comboPK]) { //pk equal 'pk0|pk1'
+        if(!this.dimensions[comboPK] || !_.isEqual(this.prespkobj, spkObject)) {
+          this.prespkobj = _.clone(spkObject);
+          if(this.dimensions[comboPK]) { 
+            this.dimensions[comboPK].dispose();
+          }
           var dimPKsSizeObj, dimGroupbyObj, dimParam;
               groupColumns= spks.filter(function(column){return multiParams[column].max !== multiParams[column].min;});
+              
           this.dimensions[comboPK] = self.crossfilter.dimension(function(d) {
            
             dimPKsSizeObj = groupColumns.map(function(onePK){

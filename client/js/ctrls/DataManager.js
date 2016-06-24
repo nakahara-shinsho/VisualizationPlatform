@@ -282,21 +282,29 @@ define(['ctrl/COMMON'], function (COMMON) {
        pksObj = {}, 
        sizeObj = (size)? size: this._ctrl.size(); 
        mapperProps = this.getMapperProps();
+  
    Object.keys(mapperProps).forEach(function(key) {
      var nameOfSize = mapperProps[key].spk;
-     if( nameOfSize && sizeObj[nameOfSize] ) {
-       var columns = self.getMapper(key), 
-           type = typeof(columns);
-       if(type =='string') {
-         pksObj[columns] = sizeObj[nameOfSize];
-       }
-       if(type =='Array') {
-         var dataTypes = self.getDataType();
-         columns.forEach(function(column){
-           if(dataTypes[column]=='number') { //only add number columns as sampling SPKs
-              pksObj[column] = sizeObj[nameOfSize];
+     if( nameOfSize ) {
+       var columns = self.getMapper(key);
+        if(Array.isArray(columns)) {
+         //var dataTypes = self.getDataType();
+         columns.forEach(function(column) {
+           //if(dataTypes[column]=='number') { //only add number columns as sampling SPKs-- i don't know datatypes at the beginning
+           if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) {
+             pksObj[column] = +nameOfSize;
+           } else if(sizeObj[nameOfSize]) {
+             pksObj[column] = sizeObj[nameOfSize]; 
            }
+           //}
          });
+       }
+       else { //single column mapping
+         if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) {
+           pksObj[column] = +nameOfSize;
+         } else if(sizeObj[nameOfSize]) {
+           pksObj[column] = sizeObj[nameOfSize];
+         }
        }
      }
    });
@@ -307,15 +315,14 @@ DataManager.prototype.getGroupByColumns = function() {
    var key= 'groupby', 
        prop = this.getMapperProps(key);
    if(prop) { //have group props
-     var columns = this.getMapper(key),
-         type = typeof(columns);
+     var columns = this.getMapper(key);
      if(prop.type =='string') {
-        if(type == 'string') {
+        if(Array.isArray(columns)) {
+          return columns;
+        } else {
           return [columns];
         }
-        if(type == 'Array') {
-          return columns;
-        } 
+       
      }
    }
    return null;

@@ -46,7 +46,7 @@ ReadFile4Bigdata.prototype.calculateInitValues = function(jsonarray, d3) {
     jsonarray.forEach(function(row, index, array){
       header.forEach(function(column){
         if(itypes[column]) { //isNumber value
-           itypes[column] = /*!isNaN(+row[column]) &&*/ isFinite(row[column]); //check and set isString value
+           itypes[column] = !isNaN(+row[column]) && isFinite(row[column]); //check and set isString value
         }
       });
     });
