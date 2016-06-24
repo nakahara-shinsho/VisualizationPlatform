@@ -317,15 +317,10 @@ define(["util/AxisSelectable",
          .x(self.scaleX)
          .on("brushstart", function(){
            d3.event.sourceEvent.stopPropagation();
-           d3.selectAll(".brush").call(self.brush.clear());
          })
          .on("brushend", brushed);
    
-   if(!self.io.isHighlightMode()) {
-        d3.selectAll(".brush").call(self.brush.clear());
-   }
    g1.select(".svgMain").append("g")
-//   self.svg.append("g")
      .attr("class","x brush")
      .call(self.brush)
      .selectAll("rect")
