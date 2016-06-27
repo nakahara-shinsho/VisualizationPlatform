@@ -280,7 +280,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  DataManager.prototype.getPrimaryKeyColumns = function(size) {
    var self=this, 
        pksObj = {}, 
-       sizeObj = (size)? size: this._ctrl.size(); 
+       sizeObj = (size)? size: this._ctrl.size(),
        mapperProps = this.getMapperProps();
   
    Object.keys(mapperProps).forEach(function(key) {
@@ -301,9 +301,9 @@ define(['ctrl/COMMON'], function (COMMON) {
        }
        else { //single column mapping
          if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) {
-           pksObj[column] = +nameOfSize;
+           pksObj[columns] = +nameOfSize;
          } else if(sizeObj[nameOfSize]) {
-           pksObj[column] = sizeObj[nameOfSize];
+           pksObj[columns] = sizeObj[nameOfSize];
          }
        }
      }

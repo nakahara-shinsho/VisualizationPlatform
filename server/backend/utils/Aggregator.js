@@ -12,18 +12,23 @@ function Aggregator(jsonarray, itypes) {
   this.prefilters = {};
   this.prespkobj = {};
   
-  this.scale = function(size){ // it it necessary to consider the size of spks ?
+  this.scale = function(size, num){ // it it necessary to consider the size of spks ?
+    if(!num) { return size;  }
     
+    var limit = (num>=3)?  100: (num>=2)? 500: 4100;
+    
+    return (size < limit)? size: limit; 
+    /*
     return (size >2100) ? 1000:
            (size >1100) ? 800: 
-           (size >500) ? 500: size ;
+           (size >500) ? 500: size ;*/
   };
 
   this.findOneDimKey = function() {
     return Object.keys(this.dimensions)[0];
   };
 
-  this.findOneNumberDimKey = function() {
+  this.findOneNumberDimKey = function(spks) {
     var key = null;
     for(var column in this.dimensions) {
       if(itypes[column]) {
@@ -42,15 +47,15 @@ function Aggregator(jsonarray, itypes) {
     }
   };
   
-  this.createDimensions = function(dimKeys, comboPK) {
+  this.createDimensions = function(dimKeys) {
     
     var dimsLength2Keep = dimKeys.length,
         clearColumns = _.difference(Object.keys(this.dimensions), dimKeys);
-
+/*
     if( dimKeys.indexOf(comboPK) <0 ) {
        dimsLength2Keep +=1;
     }
-
+*/
     if( (dimsLength2Keep + clearColumns.length) > LIMIT_NUM_OF_COLUMNS ) { //clear all dimensions excepts the keys and current pk
       clearColumns.forEach(function(column) {
          self.dimensions[column].dispose();
@@ -74,10 +79,14 @@ function Aggregator(jsonarray, itypes) {
   this.exec = function(options) {
     var tmpArray, startTime = new Date().getTime();
 
-    var spkObject = _.mapObject(_.pick(options._spk_ || {}, function(value, key){return itypes[key];}), function(val, key) {
-            return self.scale(+val);
-          }),
-        refiner  =  options._where_  || {},
+    var spkObject = _.pick(options._spk_ || {}, function(value, key){return itypes[key];}), 
+        spknum = _.size(spkObject);
+
+    spkObject =_.mapObject(spkObject, function(val, key) {
+        return self.scale(+val, spknum);
+    });
+
+    var refiner  =  options._where_  || {},
         selector =  (options._select_=='*')? Object.keys(itypes): options._select_ , //the rendering column
         groupby = options._groupby_;
     
@@ -94,11 +103,12 @@ function Aggregator(jsonarray, itypes) {
         return {};
       } 
       
-      this.createDimensions(_.union(refinerKeys, spks), comboPK); //create necessary dimensions
+      this.createDimensions(_.union(refinerKeys, spks)); //create necessary dimensions
+      //this.createDimensions(refinerKeys); //create necessary dimensions
       console.log( 'createDimension(ms): ' + (new Date().getTime() - startTime));
 
       //no refiner, no spks -- TBD: how to process long columns? 
-      if(Object.keys(this.dimensions).length <=0) {
+      if(Object.keys(this.dimensions).length <=0 && spks.length <=0 ) {
         console.error('(1)sending all the data without sampling');
         return  (jsonarray.length> LIMIT_NUM_OF_ROWS)? _.sample(jsonarray, LIMIT_NUM_OF_ROWS): jsonarray;
       }
@@ -157,7 +167,7 @@ function Aggregator(jsonarray, itypes) {
       }
       
       var grouping=null;
-      var numberKey = this.findOneNumberDimKey();
+      var numberKey = this.findOneNumberDimKey(spks);
       if(!numberKey) {
         //return only the groupby result: TBD
         if(hasGroupBy) {
