@@ -260,7 +260,7 @@ define(["util/AxisSelectable",
        xcol = dataManager.getMapper('xaxis');
 
    var brushmove = function(){
-       brushend();
+       //brushend();
    };
 
    var brushend = function(){
