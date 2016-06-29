@@ -1,6 +1,6 @@
 
 //define global debug flag
-if (typeof DEBUG === 'undefined') DEBUG = true;
+if ( (typeof DEBUG) === 'undefined') DEBUG = true;
 
 requirejs.config({
   baseUrl: '../', //mainjs's parent folder
