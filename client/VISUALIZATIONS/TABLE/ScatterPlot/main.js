@@ -157,13 +157,14 @@ define(["css!./main"], function () {
         self.brushend(self, xcolumn, ycolumn);
       });
       
-    //draw frame to brush
+    //draw brush frame
     var brushframe = self.svg.append("rect")
       .attr("class", 'frame')
       .attr("x", 0)
       .attr("y", 0)
       .attr("width",  this.width)
       .attr("height", this.height)
+      .style("cursor", "crosshair")
       .call(self.brush).on("mousedown", function () {
         d3.event.stopPropagation();
       });
@@ -186,6 +187,7 @@ define(["css!./main"], function () {
       .style("fill", function (d) {
         return colorManager.getColorOfRow(d);
       })
+      .style("cursor", "crosshair")
       .on('mousedown', function() { d3.event.stopPropagation(); });
     
     //hide unfocused data for highligh mode
