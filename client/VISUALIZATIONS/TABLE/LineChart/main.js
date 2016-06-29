@@ -260,7 +260,7 @@ define(["util/AxisSelectable",
        xcol = dataManager.getMapper('xaxis');
 
    var brushmove = function(){
-      var s = brush.extent();
+       brushend();
    };
 
    var brushend = function(){
@@ -291,8 +291,7 @@ define(["util/AxisSelectable",
    var brushg = self.svg_g.append('g')
      .attr("class","x brush")
      .call(brush);
- 
-  
+   
   brushg.selectAll("rect")
      .attr("height", self.height);
 
@@ -302,11 +301,12 @@ define(["util/AxisSelectable",
     .attr("d", arc);
  */
 
-  if(self.io.isHighlightMode())
-  {
+  if(self.io.isHighlightMode()) {
     //show the actual range 
     var xrange = dataManager.getRowRefiner(xcol);
+    if(!_.isEmpty(xrange)) {
      self.svg_g.selectAll(".brush").call(brush.extent(xrange));
+    }
   } else {
     //clear the full range
      self.svg_g.selectAll(".brush").call(brush.clear());
