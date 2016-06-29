@@ -323,7 +323,7 @@ define(['ctrl/COMMON'], function (COMMON) {
                 break;
               }
             }
-       } else if( row[colorDomainName] ) { //string column
+       } else if(row.hasOwnProperty(colorDomainName) ) { //string column
            color = colormap[row[colorDomainName]];
        }
        //console.log(color);

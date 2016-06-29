@@ -27,13 +27,16 @@ define(['ctrl/COMMON'], function (COMMON) {
  DataManager.prototype._writeRowRefiner =  function(changedAttrs, options) { 
      var myRowRefiner = $.extend(true, {}, this._readRowRefiner(), changedAttrs);
      myRowRefiner = _.pick(myRowRefiner, function(range, column) { //delete null range before save 
-        return !!range;
+        return !_.isEmpty(range);
      });
      this._model.set({'dataRefiner': myRowRefiner}, options);
      if(options && !options.silent) {
        this.updateChart('REFINER', changedAttrs);
        this._ctrl.trigger("change:_data_link_", changedAttrs, this._model.get('vtname'),
          this._getInferData('_default_table_key_'));
+       /*this.updateChart('REFINER', myRowRefiner); //experimental to use all conditions in the chart
+       this._ctrl.trigger("change:_data_link_", myRowRefiner, this._model.get('vtname'),
+         this._getInferData('_default_table_key_'));*/
      }
  };
  
@@ -343,7 +346,7 @@ DataManager.prototype.getRenderingColumns = function() {
    return columns;
 };
 
-DataManager.prototype.getColumnsInVT = function() {
+DataManager.prototype.getRequestColumns = function() {
   if(_.isEmpty(this.getMapperProps()) ){
     return '*'; //select all data columns
   }
@@ -643,7 +646,7 @@ DataManager.prototype.clearAll = function(key, value) {
                           };
       var startTime = new Date().getTime();
       conditions._context_ = $.extend(true, {}, window.framework.context, screenContext);
-      conditions._select_  = this.getColumnsInVT();
+      conditions._select_  = this.getRequestColumns();
       conditions._extra_select_= this._readExtraColumnRefiner();
 
       //TBD&I: if chart is highlight mode, the all condtions besides deepColumns' shouldn't be sent to server
@@ -769,7 +772,7 @@ DataManager.prototype.clearAll = function(key, value) {
   
   DataManager.prototype.isIncompleteData = function() {
     var types = this.getDataType(),
-        selector_columns = this.getColumnsInVT(),
+        selector_columns = this.getRequestColumns(),
         data_columns = _.keys(this.getData()[0]);
 
     if(selector_columns == '*') {
@@ -992,7 +995,7 @@ DataManager.prototype.clearAll = function(key, value) {
         default: break;
       }
     } else { //switching MODE
-      isdeep = (big !== BIG.NONE);
+      isdeep = (big !== undefined && big > BIG.NONE);
     }
     
     return isdeep;

@@ -270,14 +270,14 @@ function Aggregator(jsonarray, itypes) {
         grouping.reduce(
           function reduceAdd(p,v) {
             selector.forEach(function(column) {
-              p[column] = v[column];//override to goet the first value of its group for 'String' columns 
+              p[column] = (itypes[column])? p[column]+v[column] : v[column];
             });
              p.size += 1;
             return p;
           },
           function reduceRemove(p,v) {
             selector.forEach(function(column) {
-              p[column] = v[column];
+              p[column] = (itypes[column])? p[column]-v[column] : v[column];
             });
             p.size -= 1;
             return p;
@@ -285,7 +285,7 @@ function Aggregator(jsonarray, itypes) {
           function reduceInitial(){
             var p = {size: 0};
             selector.forEach(function(column) {
-              p[column] = null;
+              p[column] = (itypes[column])? 0: null;
             });
             return p;
           }
@@ -303,7 +303,7 @@ function Aggregator(jsonarray, itypes) {
           function(p) {
             var row = {};
             selector.forEach(function(column) {
-               row[column] = p.value[column];   
+               row[column] = (itypes[column])? p.value[column] /p.value.size : p.value[column];
             });
             
             row['|size|'] = p.value.size; //return size in its group
