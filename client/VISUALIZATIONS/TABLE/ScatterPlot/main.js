@@ -157,13 +157,14 @@ define(["css!./main"], function () {
         self.brushend(self, xcolumn, ycolumn);
       });
       
-    //draw frame to brush
+    //draw brush frame
     var brushframe = self.svg.append("rect")
       .attr("class", 'frame')
       .attr("x", 0)
       .attr("y", 0)
       .attr("width",  this.width)
       .attr("height", this.height)
+      .style("cursor", "crosshair")
       .call(self.brush).on("mousedown", function () {
         d3.event.stopPropagation();
       });
@@ -185,8 +186,9 @@ define(["css!./main"], function () {
       .attr("r", 3)
       .style("fill", function (d) {
         return colorManager.getColorOfRow(d);
-      });
-      
+      })
+      .style("cursor", "crosshair")
+      .on('mousedown', function() { d3.event.stopPropagation(); });
     
     //hide unfocused data for highligh mode
     if(this.io.isHighlightMode()) {
@@ -259,35 +261,28 @@ define(["css!./main"], function () {
    */
   ScatterPlot.prototype.brushend = function (chart, xcolumn, ycolumn) {
     var filterset = {},
-        mappedColumns = chart.io.dataManager().getMappedColumns();
+        dataManager = chart.io.dataManager(),
+        mappedColumns = dataManager.getMappedColumns();
     
     d3.event.sourceEvent.stopPropagation();
      
-    mappedColumns.forEach(function(column) {
-        if(!_.has(filterset, column)){
+    Object.keys(dataManager.getDataType()).forEach(function(column) {
+        //if(!_.has(filterset, column)){
            filterset[column] = null;
-        }
+        //}
     });
 
-    if (chart.brush.empty()) {
-       chart.io.dataManager().setRowRefiner(filterset); //clear refiner of all visible columns 
-    }
-    else {
+    if (!chart.brush.empty()) {
         var e = chart.brush.extent(),
-            selector = chart.io.dataManager().getColumnRefiner();
+            selector = dataManager.getColumnRefiner();
         if(xcolumn == ycolumn) {
             filterset[xcolumn]= [Math.max(e[0][0], e[0][1]), Math.min(e[1][0], e[1][1])];
         } else {
             filterset[xcolumn]= [e[0][0], e[1][0]];
             filterset[ycolumn]= [e[0][1], e[1][1]];
         }
-        chart.io.dataManager().setRowRefiner(filterset);
-        
-        //if(!chart.io.isHighlightMode()) {
-            //set the current columns into selector
-        //    chart.io.dataManager().setColumnRefiner([p.x, p.y]);
-        //}
     }
+    dataManager.setRowRefiner(filterset);  
   };
 
   ScatterPlot.prototype.updateColors = function() {

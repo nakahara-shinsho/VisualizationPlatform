@@ -14,9 +14,9 @@
 }
 
 .linechart rect.extent {
-  fill-opacity: 0.2;
-  stroke-opacity: 0.2;
-  fill: blue;
+  fill-opacity: 0.3;
+  stroke-opacity: 0.3;
+  fill: #bcbd22;
 }
 
 .linechart .axis path{
@@ -32,20 +32,20 @@
 /* layout */
 .linechart #legend_line_chart {
   background-color: white;
-    float: left;
-    height: 125px;
-    position: absolute;
-    right: 19%;
-    top: 30px;
-    width: 88px;
+  float: left;
+  height: 125px;
+  position: absolute;
+  right: 19%;
+  top: 30px;
+  width: 88px;
 }
 
 .linechart #multi_series_line_chart {
   color: black;
-    float: right;
-    margin-top: 160px;
-    position: absolute;
-    right: 30%;
+  float: right;
+  margin-top: 160px;
+  position: absolute;
+  right: 30%;
 
 }
 
@@ -60,32 +60,32 @@
 
 .linechart #circleTooltip {
   fill: none;
-    stroke: none;
-    pointer-events: all;
+  stroke: none;
+  pointer-events: all;
 }
 
 .linechart #control_line_chart {
   float: right;
-    height: 80px;
-    overflow: auto;
-    position: absolute;
-    right: 31%;
-    top: 165px;
-    width: 78px;
-    color: black;
+  height: 80px;
+  overflow: auto;
+  position: absolute;
+  right: 31%;
+  top: 165px;
+  width: 78px;
+  color: black;
 }
 
 .linechart #control_panel_line_chart {
   background-color: whitesmoke;
-    border: 1px none gray;
-    box-shadow: 0 3px 3px 2px #888;
-    color: gray;
-    height: 334px;
-    left: -12%;
-    margin-top: 65px;
-    position: absolute;
-    top: 115px;
-    width: 135px;
+  border: 1px none gray;
+  box-shadow: 0 3px 3px 2px #888;
+  color: gray;
+  height: 334px;
+  left: -12%;
+  margin-top: 65px;
+  position: absolute;
+  top: 115px;
+  width: 135px;
 }
 
 .linechart #change_color_line_chart {
@@ -97,9 +97,9 @@
 
 .linechart #pick_color_line_chart {
   left: 80px;
-    position: absolute;
-    top: 215px;
-    width: 43px;
+  position: absolute;
+  top: 215px;
+  width: 43px;
 }
 
 .linechart .rect_line_chart {
@@ -108,5 +108,5 @@
 
 .linechart #slider_line_chart {
   position: relative;
-    top: 250px;
+  top: 250px;
 }

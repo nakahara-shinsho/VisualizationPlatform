@@ -75,7 +75,7 @@ define(["util/AxisSelectable",
     // initialize
     this.initialize(containerWidth, containerHeight);    
     // create chart header
-    this.createChartHeader();
+    //this.createChartHeader();
     // create line chart
     this.drawLineChart();
     
@@ -94,15 +94,10 @@ define(["util/AxisSelectable",
     this.margin = {top: 20, right: 40, bottom: 40, left: 40};
     
     // set width, height
-    this.width  = containerWidth;
-    this.height = containerHeight;
+    this.width  = containerWidth - this.margin.right - this.margin.left;
+    this.height = containerHeight - this.margin.top - this.margin.bottom;
     // set for legend
     this.legendSize = 290;
-    // set for scales
-    this.x = d3.scale.linear().range([0, this.width]);
-    this.y = d3.scale.linear().range([this.height, 0]);
-    this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
-    this.yAxis = d3.svg.axis().scale(this.y).orient("left");
     
 
     // init for others
@@ -114,7 +109,17 @@ define(["util/AxisSelectable",
     this.svg_g = null;
     this.svg = null;
     this.tooltip = new CustomTooltip("tooltip", 200);
+
+    // set for scales
+    this.x = d3.scale.linear().range([0, this.width]);
+    this.y = d3.scale.linear().range([this.height, 0]);
+    this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
+    this.yAxis = d3.svg.axis().scale(this.y).orient("left");
+
+    this.createChartHeader();
+
   };
+
 
   /**
    * Convert received data to understandable data format for this chart
@@ -235,7 +240,9 @@ define(["util/AxisSelectable",
         return colorManager.getColorOfColumn(d.name);
       })
       .on("click", function(d) {
-        self.io.dataManager().setControl(d.name, d3.event);
+        if (d3.event.ctrlKey) {
+          self.io.dataManager().setControl(d.name, d3.event);
+        }
       });
     
     //self.drawTooltips();
@@ -248,35 +255,63 @@ define(["util/AxisSelectable",
   };
 
   LineChart.prototype.drawBrush = function(){
-   var self = this;
-   
-   var brushed = function(){
+   var self = this, 
+       dataManager = this.io.dataManager(),
+       xcol = dataManager.getMapper('xaxis');
+
+   var brushmove = function(){
+       //brushend();
+   };
+
+   var brushend = function(){
       d3.event.sourceEvent.stopPropagation();
-      var filter = {}, xcol = self.io.dataManager().getMapper('xaxis');
+      var filter = {};
       filter[xcol] = brush.empty() ? null : brush.extent();
-      self.io.dataManager().setRowRefiner(filter);
+      dataManager.setRowRefiner(filter);
       if(!self.io.isHighlightMode())
       {
-        d3.selectAll(".brush").call(brush.clear());
+        self.svg_g.call(brush.clear()); //clear the selected range of brush
       }
    };
    
-   var brush = d3.svg.brush()
+   var brush = d3.svg.brush() //create recttangle brush
          .x(self.x)
          .on("brushstart", function(){
            d3.event.sourceEvent.stopPropagation();
-           d3.selectAll(".brush").call(brush.clear());
+           //self.svg_g.selectAll(".brush").call(brush.clear());
          })
-         .on("brushend", brushed);
+         .on("brush",    brushmove)
+         .on("brushend", brushend);
    
    if(!self.io.isHighlightMode()) {
-        d3.selectAll(".brush").call(brush.clear());
+         self.svg_g.selectAll(".brush").call(brush.clear());
    }
-   self.svg.append("g")
+   
+   //define(draw/append) brush
+   var brushg = self.svg_g.append('g')
      .attr("class","x brush")
-     .call(brush)
-     .selectAll("rect")
-     .attr("height", self.height + self.margin.top + self.margin.bottom);
+     .call(brush);
+   
+  brushg.selectAll("rect")
+     .attr("height", self.height);
+
+  /*
+  brushg.selectAll(".resize").append("path")
+    .attr("transform", "translate(0," +  self.height / 2 + ")")
+    .attr("d", arc);
+ */
+
+  if(self.io.isHighlightMode()) {
+    //show the actual range 
+    var xrange = dataManager.getRowRefiner(xcol);
+    if(!_.isEmpty(xrange)) {
+     self.svg_g.selectAll(".brush").call(brush.extent(xrange));
+    }
+  } else {
+    //clear the full range
+     self.svg_g.selectAll(".brush").call(brush.clear());
+  }
+
  };
 
 

@@ -21,8 +21,17 @@ define(['model/BoardCollection','view/BoardViewExt'], function (BoardCollection,
       var self = this, 
           id = view.model.get('id');
       
+      //delete view in viewlist
       delete self._Views[id];
-      
+
+      //delete all linking message in the other view
+      for(var otherview in self._Views) {
+        if(id in otherview.linkViews) {
+          delete otherview.linkViews[id];
+        }
+      }
+
+      //delete model message in database
       this.collection.removeModel(view.model)
         .fail(function(err){
           console.log(err);

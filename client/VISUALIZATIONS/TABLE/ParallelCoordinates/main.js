@@ -31,7 +31,7 @@ define(["util/CustomTooltip",
     // Data Mapper
     this.io.dataManager().setMapperProps({
       //columnsString: {type: 'string', label: 'Columns(String)', map2:[]},
-      axiscolumns: {type: '', label: 'Axises columns', map2:[], spk: '10'}
+      axiscolumns: {type: '', label: 'Axises columns', map2:[], spk: '20'}
     });
 
     // Design Mapper
@@ -212,13 +212,13 @@ define(["util/CustomTooltip",
       .attr("height", self.containerHeight)
       .append("g")
       .attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
-    var refreshButton = self.container
+    /*var refreshButton = self.container
           .append("div").attr("class", "parallelCoordinatesButton")
           .append("a").attr("class","btn btn-default")
           .text("REFRESH")
           .on("click", function(){
             self.refresh();
-          });
+          });*/
     return;
   };
 
