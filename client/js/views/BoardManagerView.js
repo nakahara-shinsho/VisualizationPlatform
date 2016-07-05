@@ -140,8 +140,12 @@ define(['js/app',
       var self = this;
 
       var sepIndex = key.lastIndexOf('/');
-      var vtname = key.substring(sepIndex + 1);
-      var vttype = key.substring(0, sepIndex);
+      var vtname = key.substring(sepIndex + 1),
+          vttype = key.substring(0, sepIndex);
+      var max_rows = this.model.get('maxRows'),
+          max_cols = this.model.get('maxColumns') ,
+          init_width = ( Math.floor(max_cols/3) > 0 )? Math.floor(max_cols/3):1 ,
+          init_height = (Math.floor(max_rows/5) >0)? max_rows/5 : 1 ;
       
       var clickedBoard = this.clickedPosition();
       // create BoardModel to get new id
@@ -149,8 +153,8 @@ define(['js/app',
         .done(function (mymodel) {
           self.gridster.add_widget.apply(self.gridster,
             ["<li id=" + mymodel.get('id') + "></li>",
-                1, // block.size_x
-                1,
+                init_width , // block.size_x
+                init_height,
                 clickedBoard.col, //block.col
                 clickedBoard.row
               ]);
@@ -227,8 +231,9 @@ define(['js/app',
         var widgetMargin = this.model.get('margin'),
             height =  this.$grid_ul.parent().height();
         
-        var rows = this.model.get('maxRows');
-        var cellHeight= height/rows - widgetMargin -widgetMargin/rows;
+        var max_cols = this.model.get('maxColumns'),
+            max_rows = this.model.get('maxRows');
+        var cellHeight= height/max_rows - widgetMargin -widgetMargin/max_rows;
         
         if (this.gridster) {
           this.gridster.destroy();
@@ -238,8 +243,8 @@ define(['js/app',
         //define instance variable of gridster
         this.gridster = this.$grid_ul.gridster({
           namespace: 'charts.gridster',
-          max_cols: this.model.get('maxColumns'),
-          max_rows: this.model.get('maxRows'),
+          max_cols: max_cols,
+          max_rows: max_rows,
           widget_base_dimensions: ['auto', cellHeight],
           autogenerate_stylesheet: true,//responsive design
           widget_margins: [widgetMargin, widgetMargin],

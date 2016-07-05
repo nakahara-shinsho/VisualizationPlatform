@@ -93,7 +93,7 @@ define(['ctrl/COMMON'], function (COMMON) {
          colorIndexes = COMMON.makeObject(this._model.get('colorIndexes'), {});
      if(colorIndex >=0  && (indexOfStartOrEnd === 0 || indexOfStartOrEnd == 1 ) ){
          colorIndexes[indexOfStartOrEnd] = colorIndex;
-         this._model.set('colorIndexes', $.extend(true, {}, colorIndexes) );
+         this._model.set('colorIndexes', colorIndexes);
      }
   };
 
@@ -115,7 +115,7 @@ define(['ctrl/COMMON'], function (COMMON) {
     } else {  //the natural number order such as {1:1,2:2,4:4,5:5}
             delete colorIndexes[itemIndex];
     }
-    this._model.set('colorIndexes', $.extend(true, {}, colorIndexes));//clone and then save
+    this._model.set('colorIndexes',colorIndexes);
     return true;
   };
 
@@ -264,9 +264,9 @@ define(['ctrl/COMMON'], function (COMMON) {
   
   ColorManager.prototype.isColumnDomain = function(domainName) {
      var column = (domainName) ? domainName: this.getDomainName(),
-         dataTypes = this._ctrl.dataManager().getDataType();
+         mapper = this._ctrl.dataManager().getMapper();
      if(!_.isEmpty(column)) {
-        return dataTypes && _.has(dataTypes, column);
+        return mapper && !_.has(mapper, column);
      }
      return false;
   };

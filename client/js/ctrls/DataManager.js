@@ -339,7 +339,7 @@ DataManager.prototype.getRenderingColumns = function() {
    
    Array.prototype.push.apply(columns, this.getMappedColumns());
 
-   if(colorDomainName !=='' && colorManager.isColumnDomain(colorDomainName)){
+   if(colorDomainName !=='' && colorManager.isColumnDomain(colorDomainName) && columns.indexOf(colorDomainName) < 0 ){
      columns.push(colorManager.getDomainName());
    }
 
@@ -921,8 +921,8 @@ DataManager.prototype.clearAll = function(key, value) {
       
       var deepStatus = DEEPLINK.NONE,
           bSelector = (linkedMessage.constructor == Array),
-          local_wkName = this._model.get('vtname'),
-          local_vtName = this._getInferData('_default_table_key_'),
+          local_vtName = this._model.get('vtname'),
+          local_wkName = this._getInferData('_default_table_key_'),
           family = this._getInferData('_family_');
       
       //if(linked_wkName == local_wkName) {
@@ -968,8 +968,8 @@ DataManager.prototype.clearAll = function(key, value) {
            return true;
          }
       }
-      
-      if(this._ctrl.isHighlightMode()) {
+
+      if(this._ctrl.isHighlightMode()) { // is all necessary dat is prepared, do not update from server
           return false; //unnecessary to update the data from server --having got all data
       }
       

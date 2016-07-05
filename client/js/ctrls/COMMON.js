@@ -8,7 +8,7 @@ define(function(){
         if( param.constructor == String) {
           ret = JSON.parse(param);
         } else {
-          ret = param;
+          ret = _.clone(param);
         } 
       }
       return ret;
