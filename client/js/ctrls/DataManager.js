@@ -24,10 +24,11 @@ define(['ctrl/COMMON'], function (COMMON) {
       this._dataset_url_root = 'api/data/';//the root of virtual table
  };
  
- DataManager.prototype._writeRowRefiner =  function(changedAttrs, options) { 
-     var myRowRefiner = $.extend(true, {}, this._readRowRefiner(), changedAttrs);
+ DataManager.prototype._writeRowRefiner =  function(changedAttrs, options) {
+     var myRowRefiner = $.extend(true, this._readRowRefiner(), changedAttrs),
+        dataRanges = this.getDataRange();
      myRowRefiner = _.pick(myRowRefiner, function(range, column) { //delete null range before save 
-        return !_.isEmpty(range);
+        return !_.isEmpty(range) && !_.isEqual(range, dataRanges[column]);
      });
      this._model.set({'dataRefiner': myRowRefiner}, options);
      if(options && !options.silent) {
@@ -82,13 +83,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype._readColumnRefiner = function() {
-    var retColumns = this._model.get('dataSelector');
-    if(retColumns === undefined || retColumns ==='') { //return all columns
-      retColumns = _.keys(this.getDataType());
-    } else {
-      retColumns= COMMON.makeObject(retColumns, []);
-    }
-    return retColumns;
+    return this._model.get('dataSelector');
  };
  
  DataManager.prototype._writeMapper =  function(mappings, options) {
@@ -229,7 +224,13 @@ define(['ctrl/COMMON'], function (COMMON) {
   };
   
  DataManager.prototype.getColumnRefiner = function() {
-      return this._readColumnRefiner();
+      var retColumns = this._readColumnRefiner();
+      if(retColumns === undefined || retColumns ==='') { //return all columns
+        retColumns = _.keys(this.getDataType());
+      } else {
+        retColumns= COMMON.makeObject(retColumns, []);
+      }
+      return retColumns;
   };  
  
  DataManager.prototype.setValue = function (){
@@ -333,11 +334,11 @@ DataManager.prototype.getGroupByColumns = function() {
 
 //get data-mapped or color-mapped columns if not-existed in client
 DataManager.prototype.getRenderingColumns = function() {
-   var columns = [],  
+   var columns = this.getMappedColumns(),  
        colorManager= this._ctrl.colorManager(),
        colorDomainName= colorManager.getDomainName();
    
-   Array.prototype.push.apply(columns, this.getMappedColumns());
+   columns = _.union(columns, this._readColumnRefiner(), _.keys(this._readRowRefiner()) ); //coloring column + mapper columns + refinedColumns
 
    if(colorDomainName !=='' && colorManager.isColumnDomain(colorDomainName) && columns.indexOf(colorDomainName) < 0 ){
      columns.push(colorManager.getDomainName());
@@ -424,7 +425,7 @@ DataManager.prototype.clearAll = function(key, value) {
          range = filterset[column];
          if(dataTypes[column]=='number') {
             value = +row[column];
-            if(value< range[0] || value > range[1]){
+            if(value< +range[0] || value > +range[1]){
                 bHighlight = false;
                 break;
             }
@@ -632,19 +633,21 @@ DataManager.prototype.clearAll = function(key, value) {
   
  //get virtual table data from server, 'options' is parameters for filtering data
   DataManager.prototype.getDataFromServer = function(virtualTable, screenContext, sizeObj) {
-      if(this._ctrl.loading) {
-          return;
-      }
 
       var self = this,
           deferred = $.Deferred(),
           conditions = { } ,
           query_options = { type: 'POST', 
                             cache: false,
-                            timeout: 100000, //3 seconds 
+                            timeout: 100000, //100 seconds 
                             url: this._dataset_url_root + virtualTable,
                           };
       var startTime = new Date().getTime();
+
+      if(this._ctrl.loading) {
+        return deferred.reject();
+      }
+
       conditions._context_ = $.extend(true, {}, window.framework.context, screenContext);
       conditions._select_  = this.getRequestColumns();
       conditions._extra_select_= this._readExtraColumnRefiner();
