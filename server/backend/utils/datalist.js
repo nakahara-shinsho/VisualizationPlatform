@@ -27,10 +27,12 @@ function MyClass () {
               name          : list[i],
               modified_time : fs.statSync(fullPath).mtime
             };
+	    console.log(list[i]);
             data.list.push(tmp);
           }
       }
     }catch(e){
+        console.log("Show DIR " + __dirname);
         console.log("error:"+e.message);
         data.list.push({name:'dummy', modified_time: (new Date()).toLocaleDateString()});
     }

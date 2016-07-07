@@ -517,7 +517,7 @@ define(["util/CustomTooltip",
   LineChart.prototype.drawChart = function (data) {
     var self = this;
     var highlights = self.io.dataManager().getMapperProps("yaxis").map2;
-    if(self.io.isHighlightMode()){
+    if(!self.io.isHighlightMode()){
       highlights = self.io.dataManager().getColumnRefiner();
     }
     var line = d3.svg.line()

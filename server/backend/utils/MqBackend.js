@@ -1,5 +1,5 @@
 module.exports = MqBackend;
-
+var sqlite_tool = new (require('../sqlite/sqlite_tool.js'))();
 //TBD: use 'topic' to improve flexibility
 function MqBackend(ch) {
   var self = this;
@@ -17,11 +17,23 @@ function MqBackend(ch) {
     });
     */
     wk_names.forEach(function(wk_name) {  
-      if(chart_type) { //notify and show on client screen
-        self.notify(chart_type, wk_name, prepare_data_callback.vts(wk_name));
-      }
       if(!self.requestQueueList[wk_name]) {
-        self.create(entrance, wk_name, prepare_data_callback); //file as worker name
+	  if (sqlite_tool.isDb(wk_name)) {
+	      var tables = sqlite_tool.getTables(entrance, wk_name);
+	      tables.forEach(function (tableName) {
+		      var newName =  wk_name + "(" + tableName + ")";
+		      if(chart_type) { //notify and show on client screen
+//			  self.notify(chart_type, wk_name, prepare_data_callback.vts(wk_name));			  
+			  self.notify(chart_type, newName, prepare_data_callback.vts(newName));
+		      }
+		      self.create(entrance, wk_name, prepare_data_callback, tableName);
+		  });
+	  } else {
+	      if(chart_type) { //notify and show on client screen
+		  self.notify(chart_type, wk_name, prepare_data_callback.vts(wk_name));
+	      }
+	      self.create(entrance, wk_name, prepare_data_callback); //file as worker name	  
+	  }
       }
     });
   };
@@ -35,20 +47,26 @@ function MqBackend(ch) {
   };
   
   // worker
-  this.create = function(entrance, wk_name, prepare_data_callback) {
+  this.create = function(entrance, wk_name, prepare_data_callback, tableName) {
       //receive
       ch.assertExchange('topic_rpc', 'topic', {durable: false});
       ch.assertQueue('', {exclusive: true}).then(function(qok) {
         //console.log('------------------- queue name['+ wk_name +']= '+ qok.queue);
-        self.requestQueueList[wk_name] = qok.queue;
-        ch.bindQueue(qok.queue, 'topic_rpc', wk_name +'.#'); //wk_name.vt_name
+       if (tableName != undefined) {
+		  var newName =  wk_name + "(" + tableName + ")";
+		  self.requestQueueList[newName] = qok.queue;
+		  ch.bindQueue(qok.queue, 'topic_rpc', newName +'.#'); //wk_name.vt_name
+       } else {
+		  self.requestQueueList[wk_name] = qok.queue;
+		  ch.bindQueue(qok.queue, 'topic_rpc', wk_name +'.#'); //wk_name.vt_name
+	}
         return ch.consume(qok.queue, function(msg){
-                self.reply(msg, entrance, wk_name, prepare_data_callback);
+                self.reply(msg, entrance, wk_name, prepare_data_callback, tableName);
          }, {noAck: true});
     });
   };
    
-  this.reply = function(msg, entrance, wk_name, prepare_data_callback) {
+  this.reply = function(msg, entrance, wk_name, prepare_data_callback, tableName) {
     if(msg && msg.content) { //delete a file will trigger reply with null of msg
        
       if(prepare_data_callback.syn) {
@@ -57,7 +75,7 @@ function MqBackend(ch) {
               new Buffer(JSON.stringify(jsondata)), {correlationId: msg.properties.correlationId} );
         console.log(JSON.stringify(jsondata).slice(0,50));
       } else if(prepare_data_callback.asyn) {
-        prepare_data_callback.asyn(JSON.parse(msg.content.toString()), entrance, wk_name)
+	  prepare_data_callback.asyn(JSON.parse(msg.content.toString()), entrance, wk_name, tableName)
          .always(function(jsondata) {
             ch.sendToQueue(msg.properties.replyTo,
                new Buffer(JSON.stringify(jsondata)),{correlationId: msg.properties.correlationId});

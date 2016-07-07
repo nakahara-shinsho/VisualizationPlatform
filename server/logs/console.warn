@@ -1,0 +1,6 @@
+[2016-07-07 16:31:35.819] [WARN] warn - Error: Cannot find module './utils/MqBackend' (/home/umedan/VisualizationPlatform/node_modules/when/lib/makePromise.js (tryCatchReject) :840)
+[2016-07-07 16:31:58.198] [WARN] warn - Error: Cannot find module './utils/MqBackend' (/home/umedan/VisualizationPlatform/node_modules/when/lib/makePromise.js (tryCatchReject) :840)
+[2016-07-07 16:32:46.314] [WARN] warn - Error: Cannot find module './utils/MqBackend' (/home/umedan/VisualizationPlatform/node_modules/when/lib/makePromise.js (tryCatchReject) :840)
+[2016-07-07 16:35:02.516] [WARN] warn - Error: Cannot find module './utils/MqBackend' (/home/umedan/VisualizationPlatform/node_modules/when/lib/makePromise.js (tryCatchReject) :840)
+[2016-07-07 16:35:18.031] [WARN] warn - Error: Cannot find module './utils/MqBackend' (/home/umedan/VisualizationPlatform/node_modules/when/lib/makePromise.js (tryCatchReject) :840)
+[2016-07-07 16:41:21.046] [WARN] warn - Error: Cannot find module './utils/MqBackend' (/home/umedan/VisualizationPlatform/node_modules/when/lib/makePromise.js (tryCatchReject) :840)
