@@ -117,8 +117,8 @@ define(['ctrl/COMMON'], function (COMMON) {
  DataManager.prototype.getDataRange = function(key) {
     var range = this._getInferData('_dataRanges_', {});
     if(key) {
-        range = range[key];
-    } 
+        range = (range[key])? range[key]: {};
+    }
     return range;
  };
  
@@ -498,27 +498,28 @@ DataManager.prototype.clearAll = function(key, value) {
      }
      return columns;
  };
-  
+ 
  DataManager.prototype._autoCheckDataTypes = function(table, myDataTypes) {
     var self=this,
         types = (myDataTypes)? myDataTypes:{};
     
-    if(_.isEmpty(types) && table.length > 0) {
-            var BreakException={};
-            Object.keys(table[0]).forEach(function(key) {
-                types[key] = 'number';
-                try {
-                table.forEach(function(row) {
-                    if(! $.isNumeric(row[key])) {
-                    throw BreakException;
-                    }
-                    
-                });
-                } catch(e) {
-                if(e == BreakException) types[key] = 'string';
-                else throw e;
-                }
+    if(table.length > 0) {
+      var BreakException={};
+      Object.keys(table[0]).forEach(function(key) {
+        if(!types[key]) {
+          types[key] = 'number';
+          try {
+            table.forEach(function(row) {
+              if(! $.isNumeric(row[key])) {
+                throw BreakException;
+              }
             });
+          } catch(e) {
+            if(e == BreakException) types[key] = 'string';
+            else throw e;
+          }
+        }
+      });
     }
     this.setDataType(types);
     return types;
@@ -527,14 +528,17 @@ DataManager.prototype.clearAll = function(key, value) {
  DataManager.prototype._autoCheckDataRanges = function(table, dataTypes, myDataRanges){
    var self = this, max, min,
        ranges = (myDataRanges)? myDataRanges:{};
-   if(_.isEmpty(ranges) && table.length > 0) {
+
+   if(table.length > 0) {
        _.keys(dataTypes).forEach(function(column){
+         if(!ranges[column]) {
            if(dataTypes[column] === 'number') {
                ranges[column] = d3.extent(table, function(row) { return +row[column]; });
            } else {
                var nest= d3.nest().key(function(row){ return row[column]; }).entries(table);
                ranges[column] = nest.map(function(d){return d.key;});
            }
+         }
        });
    }
    this.setDataRange(ranges);

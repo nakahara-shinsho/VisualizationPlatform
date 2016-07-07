@@ -235,15 +235,17 @@ define(['ctrl/COMMON'], function (COMMON) {
   ColorManager.prototype.getRangeOfDataset = function(dataset) {
     var items=[], 
         mapperPropsObj = this._ctrl.dataManager().getMapperProps();
-
+    
+    //get the range of one mapper property
     for( var prop in mapperPropsObj) {
         if(mapperPropsObj[prop].label.trim() == dataset){
             items = mapperPropsObj[prop].map2;
             break;
         }
     }
+    //get the range of one column 
     if(items.length === 0 ) {
-        items = this.getRangeOfColumn(dataset);
+        items = this._ctrl.dataManager().getDataRange(dataset);
     }
     return items;
   };
@@ -279,11 +281,11 @@ define(['ctrl/COMMON'], function (COMMON) {
      }
      return false;
   };
-  
+  /*
   ColorManager.prototype.getRangeOfColumn = function(column) {
     return this._ctrl.dataManager().getDataRange(column);
   };
- 
+ */
  ColorManager.prototype.getColorOfColumn = function(columnName) {
     var  color = this._defalutColor,
          colormap = this.getColormap();
