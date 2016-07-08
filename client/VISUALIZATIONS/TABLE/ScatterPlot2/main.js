@@ -336,7 +336,11 @@ define(["css!./main"], function () {
           if(axisColor !== undefined){
             return axisColor;
           }
-          return colorManager.getColorOfRow(d);
+          var col = colorManager.getColorOfRow(d);
+          if(col === "#555"){
+            col = "orange";
+          }
+          return col;
         });
       }
     });
@@ -428,28 +432,38 @@ define(["css!./main"], function () {
     if(self.brush === undefined || self.io.isDrilldownMode()){
       self.brush = d3.svg.brush()
         .x(self.x)
+        .y(self.y)
         .on("brushstart", function(){
           d3.event.sourceEvent.stopPropagation();
         })
         .on("brushend", function(){
           d3.event.sourceEvent.stopPropagation();
-          var filter = {}, xcol = self.io.dataManager().getMapper('xaxis');
-          var diff = self.brush.extent()[1] - self.brush.extent()[0];
-          if(self.brush.extent() !== undefined && diff > 0){
-            filter[xcol] = self.brush.extent();
-            self.io.dataManager().setRowRefiner(filter);
+          var filter = {};
+          // X AXIS
+          var xcol = self.io.dataManager().getMapper('xaxis');
+          var xDiff = self.brush.extent()[1][0] - self.brush.extent()[0][0];
+          if(self.brush.extent() !== undefined && xDiff > 0){
+            filter[xcol] = [self.brush.extent()[0][0], self.brush.extent()[1][0]];
           }else{
             filter[xcol] = null;
-            self.io.dataManager().setRowRefiner(filter);
           }
+          // Y AXIS
+          var ycol = self.io.dataManager().getMapper('yaxis');
+          var yDiff = self.brush.extent()[1][1] - self.brush.extent()[0][1];
+          if(self.brush.extent() !== undefined && xDiff > 0){
+            filter[ycol] = [self.brush.extent()[0][1], self.brush.extent()[1][1]];
+          }else{
+            filter[ycol] = null;
+          }
+          // FILTER
+          self.io.dataManager().setRowRefiner(filter);
+
         });
       }
       self.svg.append("g")
       .attr("class","x brush")
       .call(self.brush)
-      .selectAll("rect")
-      .attr("y", -10)
-      .attr("height", self.axisHeight + 10 + self.xConfig.label.height);
+      .selectAll("rect");
   };
 
   ScatterPlot.prototype.updateColors = function() {
