@@ -12,18 +12,17 @@ function Aggregator(jsonarray, itypes) {
   this.prefilters = {};
   this.prespkobj = {};
   
-  this.scale = function(size){
-    
-    return (size >2100) ? 1000:
-           (size >1100) ? 800: 
-           (size >500) ? 500: size ;
+  this.scale = function(size, pks_num){ // it it necessary to consider the size of spks ?
+    if(!pks_num) { return size;  }
+    var limit = (pks_num>=3)?  100: (pks_num>=2)? 500: 4100;
+    return (size < limit)? size: limit; 
   };
 
   this.findOneDimKey = function() {
     return Object.keys(this.dimensions)[0];
   };
 
-  this.findOneNumberDimKey = function() {
+  this.findOneNumberDimKey = function(spks) {
     var key = null;
     for(var column in this.dimensions) {
       if(itypes[column]) {
@@ -36,20 +35,13 @@ function Aggregator(jsonarray, itypes) {
   
 
   this.clear = function() {
-    if(this.grouping) {
-      //this.grouping.dispose();
-      //this.grouping = null;
-    }
+    
   };
   
-  this.createDimensions = function(dimKeys, comboPK) {
+  this.createDimensions = function(dimKeys) {
     
     var dimsLength2Keep = dimKeys.length,
         clearColumns = _.difference(Object.keys(this.dimensions), dimKeys);
-
-    if( dimKeys.indexOf(comboPK) <0 ) {
-       dimsLength2Keep +=1;
-    }
 
     if( (dimsLength2Keep + clearColumns.length) > LIMIT_NUM_OF_COLUMNS ) { //clear all dimensions excepts the keys and current pk
       clearColumns.forEach(function(column) {
@@ -74,10 +66,14 @@ function Aggregator(jsonarray, itypes) {
   this.exec = function(options) {
     var tmpArray, startTime = new Date().getTime();
 
-    var spkObject = _.mapObject(_.pick(options._spk_ || {}, function(value, key){return itypes[key];}), function(val, key) {
-            return self.scale(+val);
-          }),
-        refiner  =  options._where_  || {},
+    var spkObject = _.pick(options._spk_ || {}, function(value, key){return itypes[key];}), 
+        spknum = _.size(spkObject);
+
+    spkObject =_.mapObject(spkObject, function(val, key) {
+        return self.scale(+val, spknum);
+    });
+
+    var refiner  =  options._where_  || {},
         selector =  (options._select_=='*')? Object.keys(itypes): options._select_ , //the rendering column
         groupby = options._groupby_;
     
@@ -87,18 +83,26 @@ function Aggregator(jsonarray, itypes) {
         refinerKeys = Object.keys(refiner);
     
     var currentArray = {}, clearfilters = {};
-    
+
+    var flag_keep_dim = _.isEqual(this.prespkobj, spkObject), //keep the sampling dimension
+        flag_keep_group = _.isEqual(this.prefilters, refiner) && this.grouping &&  flag_keep_dim,  //keep the group.all() result
+        flag_keep_map = _.isEqual(this.preselector, selector) && flag_keep_group,  //keep the map result
+        flag_keep_reduce = flag_keep_map; //keep the reduce result
+        
     try {
+
       //firstly, check and send back empty data for initializing data mapping panel
       if(!selector) { 
         return {};
-      } 
+      }
+      this.preselector = selector.slice(0); 
+     
+      this.createDimensions(_.union(refinerKeys, spks)); //create necessary dimensions
       
-      this.createDimensions(_.union(refinerKeys, spks), comboPK); //create necessary dimensions
       console.log( 'createDimension(ms): ' + (new Date().getTime() - startTime));
 
       //no refiner, no spks -- TBD: how to process long columns? 
-      if(Object.keys(this.dimensions).length <=0) {
+      if(Object.keys(this.dimensions).length <=0 && spks.length <=0 ) {
         console.error('(1)sending all the data without sampling');
         return  (jsonarray.length> LIMIT_NUM_OF_ROWS)? _.sample(jsonarray, LIMIT_NUM_OF_ROWS): jsonarray;
       }
@@ -156,8 +160,8 @@ function Aggregator(jsonarray, itypes) {
         return this.dimensions[refinerKeys[0] || this.findOneDimKey()].top(Infinity);
       }
       
-      var grouping=null;
-      var numberKey = this.findOneNumberDimKey();
+      //var grouping=null;
+      var numberKey = this.findOneNumberDimKey(spks);
       if(!numberKey) {
         //return only the groupby result: TBD
         if(hasGroupBy) {
@@ -168,8 +172,13 @@ function Aggregator(jsonarray, itypes) {
                 return JSON.stringify(groupby.map(function(column){tmpObj[column] = d[column];}) );
               });
             }
-            grouping = this.dimensions[comboGroupKey].group();
-            currentArray = grouping.all().map(function(d){
+            if(!flag_keep_group) {
+              if(this.grouping) {
+                this.grouping.dispose();
+              }
+              this.grouping = this.dimensions[comboGroupKey].group();
+            }
+            currentArray = this.grouping.all().map(function(d){
               tmpKeyObj = JSON.parse(d.key);
               tmpKeyObj['|size|'] = d.value;
               return tmpKeyObj;
@@ -181,8 +190,12 @@ function Aggregator(jsonarray, itypes) {
           return this.dimensions[refinerKeys[0] || this.findOneDimKey()].top(LIMIT_NUM_OF_ROWS);
         }
       }
-
-      //TBD: max==min problem,  test filter after grouping
+      
+      //return previous result;
+      if(flag_keep_reduce && this.preaggresult) {
+        console.log( 'happy! send out previous result .');
+        return this.preaggresult;
+      }
       
       //sampling
       var prefix = null;
@@ -199,7 +212,7 @@ function Aggregator(jsonarray, itypes) {
         }
 
         var group, groupItem, comboGroupPK = '|'+ comboPK+'|';
-        if(!this.dimensions[comboGroupPK] || !_.isEqual(this.prespkobj, spkObject)) {
+        if(! flag_keep_dim ) {
           this.prespkobj = _.clone(spkObject);
           if(this.dimensions[comboGroupPK]) { 
             this.dimensions[comboGroupPK].dispose(); 
@@ -209,15 +222,21 @@ function Aggregator(jsonarray, itypes) {
               group = groupby.map(function(column) {
                 return d[column];
               });
-              return group.join('|') + Math.floor(size* (d[comboPK] - min) /(max-min)); 
+              return group.join('|') + Math.round(size* (d[comboPK] - min) /(max-min)); 
             } else {
-              return Math.floor(size* (d[comboPK] - min) /(max-min));
+              return Math.round(size* (d[comboPK] - min) /(max-min));
             }
           });
         }
-        grouping = this.dimensions[comboGroupPK].group();
-
-      } else if(spks.length >= 2 ) { //two~ dimensions samping
+        if(!flag_keep_group){
+          if(this.grouping) {
+                this.grouping.dispose();
+          }
+          this.grouping = this.dimensions[comboGroupPK].group(function(d){
+            return (d = d);
+          });
+        }
+      } else { //two~ dimensions samping
         var multiParams = {};
         spks.forEach(function(onePK){
             multiParams[onePK] = {};
@@ -226,7 +245,7 @@ function Aggregator(jsonarray, itypes) {
             multiParams[onePK].min  = self.dimensions[onePK].bottom(1)[0][onePK];
         });
 
-        if(!this.dimensions[comboPK] || !_.isEqual(this.prespkobj, spkObject)) {
+        if(! flag_keep_dim ) {
           this.prespkobj = _.clone(spkObject);
           if(this.dimensions[comboPK]) { 
             this.dimensions[comboPK].dispose();
@@ -238,7 +257,7 @@ function Aggregator(jsonarray, itypes) {
            
             dimPKsSizeObj = groupColumns.map(function(onePK){
               dimParam = multiParams[onePK];
-              return Math.floor(dimParam.size * (d[onePK] - dimParam.min) / (dimParam.max- dimParam.min));
+              return Math.round(dimParam.size * (d[onePK] - dimParam.min) / (dimParam.max- dimParam.min));
             });
             if(hasGroupBy) {
               dimGroupbyObj = groupby.map(function(column){
@@ -250,24 +269,29 @@ function Aggregator(jsonarray, itypes) {
             }
           });
         }
-        grouping = this.dimensions[comboPK].group();
+
+        if(!flag_keep_group){
+          if(this.grouping) {
+                this.grouping.dispose();
+          }
+          this.grouping = this.dimensions[comboPK].group();
+        }
       }
       
       console.log( 'groupingDimension(ms): ' + (new Date().getTime() - startTime));
 
-      if(grouping) { //grouping should have value always
-        
-        grouping.reduce(
+      if(!flag_keep_map) { //grouping should have value always
+        this.grouping.reduce(
           function reduceAdd(p,v) {
             selector.forEach(function(column) {
-              p[column] = v[column];//override to goet the first value of its group for 'String' columns 
+              p[column] = (itypes[column])? p[column]+v[column] : v[column];
             });
              p.size += 1;
             return p;
           },
           function reduceRemove(p,v) {
             selector.forEach(function(column) {
-              p[column] = v[column];
+              p[column] = (itypes[column])? p[column]-v[column] : v[column];
             });
             p.size -= 1;
             return p;
@@ -275,7 +299,7 @@ function Aggregator(jsonarray, itypes) {
           function reduceInitial(){
             var p = {size: 0};
             selector.forEach(function(column) {
-              p[column] = null;
+              p[column] = (itypes[column])? 0: null;
             });
             return p;
           }
@@ -283,7 +307,9 @@ function Aggregator(jsonarray, itypes) {
 
         console.log( 'reduceDimension(ms): ' + (new Date().getTime() - startTime));
 
-        tmpArray = grouping.all().filter(function(d) { return d.value.size > 0; });
+        tmpArray = this.grouping.all().filter(function(d) { 
+          return d.value.size > 0; 
+        });
         if(tmpArray.length> LIMIT_NUM_OF_ROWS) {
           tmpArray = _.sample(tmpArray, LIMIT_NUM_OF_ROWS);
         }
@@ -293,23 +319,27 @@ function Aggregator(jsonarray, itypes) {
           function(p) {
             var row = {};
             selector.forEach(function(column) {
-               row[column] = p.value[column];   
+              row[column] = (itypes[column])? p.value[column] /p.value.size : p.value[column];
             });
-            
             row['|size|'] = p.value.size; //return size in its group
-            
             return row;
           }
         );//map end
         console.log( 'summaryDimension(ms): ' + (new Date().getTime() - startTime));
 
-        grouping.dispose();
+        //grouping.dispose();
         console.log( 'group dispose(ms): ' + (new Date().getTime() - startTime));
+
+        this.preaggresult = currentArray;
         return currentArray;
       } //if(grouping) end
       
     } catch (e) {
       console.log(e);
+      if(this.grouping) {
+        this.grouping.dispose();
+        this.grouping= null;
+      }
       return {};
     }
 

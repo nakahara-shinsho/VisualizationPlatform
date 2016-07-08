@@ -89,7 +89,7 @@ define([
         render: function () {
             var self = this;
             
-            if(DEBUG) console.log(" header RENDER::", app.session.toJSON());
+            if(DEBUG) console.log("header RENDER::", app.session.toJSON());
             this.$el.html(
               this.template({
                 logged_in: app.session.get("logged_in"),
