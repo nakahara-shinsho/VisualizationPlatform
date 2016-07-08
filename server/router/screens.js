@@ -181,15 +181,16 @@ module.exports.screens = function(app, db) {
           } else {
             if (!rows.length) {
               var stmt_insert = "INSERT INTO screen " +
-                  "(user, id, description, margin, maxColumns) "+
-                  "VALUES ($user, $id , $description, $margin, $maxColumns)";
+                  "(user, id, description, margin, maxColumns, maxRows) "+
+                  "VALUES ($user, $id , $description, $margin, $maxColumns, $maxRows)";
               db.run(stmt_insert,
               {
                 $user: model.user,
                 $id: model.id,
                 $description: model.description,
                 $margin: model.margin,
-                $maxColumns: model.maxColumns
+                $maxColumns: model.maxColumns,
+                $maxRows: model.maxRows
               }, function(err) {
                 if(err){ //insert error
                   errHandle(err);
