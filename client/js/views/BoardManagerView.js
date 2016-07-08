@@ -216,7 +216,7 @@ define(['js/app',
             self.boardsView.addBoardView(block.id);
         });
     
-        self.defineResponsive();
+        //self.defineResponsive();
         //watching this model
         //framework.undoer.register(this.model);
         //framework.undoer.startTracking();
@@ -229,12 +229,13 @@ define(['js/app',
       defineLayout: function () {
         var self = this;
         var widgetMargin = this.model.get('margin'),
-            height =  this.$grid_ul.parent().height();
+            height =  this.$grid_ul.parent().height(),
+            width = this.$grid_ul.parent().width();
         
         var max_cols = this.model.get('maxColumns'),
             max_rows = this.model.get('maxRows');
-        var cellHeight= height/max_rows - widgetMargin -widgetMargin/max_rows;
-        
+        var cellHeight= (height - widgetMargin) / max_rows - widgetMargin,
+            cellWidth = (width- widgetMargin) / max_cols - widgetMargin;
         if (this.gridster) {
           this.gridster.destroy();
           this.$grid_ul.empty();
@@ -242,21 +243,22 @@ define(['js/app',
         
         //define instance variable of gridster
         this.gridster = this.$grid_ul.gridster({
-          namespace: 'charts.gridster',
+          //namespace: 'charts.gridster',
           max_cols: max_cols,
           max_rows: max_rows,
-          widget_base_dimensions: ['auto', cellHeight],
-          autogenerate_stylesheet: true,//responsive design
+          widget_base_dimensions: ['auto', cellHeight], //cell's width is responsable 
+          //widget_base_dimensions: [cellWidth, cellHeight],
+          //autogrow_cols: true,
+          autogenerate_stylesheet: true,//default value is responsive design
           widget_margins: [widgetMargin, widgetMargin],
           avoid_overlapped_widgets: true,
-          helper: 'clone',
+          helper: 'clone', //non-documented 
+          min_cols: 2,
+          min_rows: 3,
           resize: {
             enabled: true,
             stop: function (e, ui, $widget) {
-              self.boardsView.resize(+$($widget).attr('id')//, 
-                  //this.resize_coords.data.width,
-                  //this.resize_coords.data.height
-                );
+              self.boardsView.resize(+$($widget).attr('id') );
               self.model.set('cells', self.gridster.serialize());
             }
           },
@@ -283,7 +285,7 @@ define(['js/app',
         var self = this;
         
         //override resizing functionality for responsive design
-        self.$grid_ul.data('_container_height_',  self.gridster.$wrapper.height());
+       /* self.$grid_ul.data('_container_height_',  self.gridster.$wrapper.height());
         var old_update_widgets_dimensions = self.gridster.update_widgets_dimensions;
         self.gridster.update_widgets_dimensions = function() {
           var oldHeight  = self.$grid_ul.data('_container_height_'), 
@@ -306,7 +308,7 @@ define(['js/app',
           self.boardsView.resize(+$($widget).attr('id'), 
                 $widget.data('coords').coords.width,
                 $widget.data('coords').coords.height);
-        };
+        };*/
       },
       
       fit2window: function(index) {
