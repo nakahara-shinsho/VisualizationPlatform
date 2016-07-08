@@ -44,18 +44,35 @@ function PDB (family) {
       var query = JSON.parse(fs.readFileSync(this.queryFile, 'utf8'));
 
       // Calc Slice InverVal
-      //updateSliceInterval(query);
+      updateSliceInterval(query,options, this.realFile);
       // Update Filter
-      updateFilter(query);
+      updateFilter(query, options);
 
       var tmpobj = tmp.fileSync({postfix:".json"});
-      var command = "echo '" + JSON.stringify(query) + "' > " + tmpobj.name+  ";cd " + dataPath + "; pdb2csv -conf " + tmpobj.name  +" -pdb " + this.realFile;
+      var command = "echo '" + JSON.stringify(query) + "' > " + tmpobj.name+  ";cd " + dataPath + "; pdb2csv -p 16 -conf " + tmpobj.name  +"  -pdb " + this.realFile;
       console.log(command);
       var result = exec(command);
       tmpobj.removeCallback();
       response._table_ = {};
       response._table_.big = BIG.BOTH;
       response._table_.format = "csv";
+
+      /*********************
+       * HARD CORDED RANGE *
+       *********************/
+      response._table_.ranges =  {
+        "Timestamp":[0,6047999999999],
+        "Offset":[28672,72829469184],
+        "count(Offset)":[1,100]
+      };
+
+      /*
+      response._table_.types = {
+        "count(start)":"number",
+        "start":"number",
+        "length":"number"
+      };
+       */
       response._table_.filled = decoder.write(result);
       response._table_.family = family;
       deferred.resolve(response);
@@ -65,16 +82,80 @@ function PDB (family) {
     /**********
      * Filter *
      **********/
-    function updateFilter(query){
-      console.log(query);
-      //query.where[0].between.lower = 1;
-      //query.where[0].between.upper = 1000000;
-    }
-    function updateSliceInverval(query){
-      query.group_by.forEach(function(q){
-        if(q.column === "start"){
+    function updateFilter(query, options){
+      if(options._where_ !== undefined &&
+         query.query.where !== undefined){
+        for(var col in options._where_){
+          query.query.where.forEach(function(q){
+            if(q.between !== undefined){
+              // remove aggregation-type name;
+              var realColName = col;
+              if(col.indexOf("(") !== -1){
+                realColName = col.split("(")[1].replace(")","");
+              }
+              if(realColName == q.column){
+                q.between.lower = parseInt(options._where_[col][0]);
+                q.between.upper = parseInt(options._where_[col][1]);
+              }
+            }
+          });
         }
-      });
+      }
+    }
+    function updateSliceInterval(query,options, file){
+      if(query.query !== undefined &&
+         query.query.group_by !== undefined &&
+         options._spk_ !== undefined){
+        for(var col in options._spk_){
+          // remove aggregation-type name;
+          var realColName = col;
+          if(col.indexOf("(") !== -1){
+            realColName = col.split("(")[1].replace(")","");
+          }
+          query.query.group_by.forEach(function(q){
+            if(realColName == q.column){
+              /***********************
+               * HARD CODED FOR TEST *
+               ***********************/
+              var pixel = 8;
+              var info = [];
+              if(realColName === "Offset"){
+                var min = 28672;
+                var max = 72829469184;
+                if(options._where_ !== undefined){
+                  for(var key in options._where_){
+                    if(key == "Offset"){
+                      min = parseInt(options._where_[key][0]);
+                      max = parseInt(options._where_[key][1]);
+                    }
+                  }
+                }
+                q.sliceInterval = parseInt(pixel*(max - min) /parseInt(options._spk_[col]));
+                if(q.sliceInterval == 0){
+                  q.sliceInterval = 1;
+                }
+              }else if(realColName === "Timestamp"){
+                if(options._where_ !== undefined && options._where_[q.column] !== undefined){
+                  info.push(parseInt(options._where_[q.column][0]));
+                  info.push(parseInt(options._where_[q.column][1]));
+                }else{
+                  var command = "cd " + dataPath + "; pdb2csv -e .time_range -pdb " + file;
+                  var result = exec(command);
+                  info   = decoder.write(result).split("\n")[1].split(",");
+                }
+                var range  =  parseInt(info[1]) - parseInt(info[0]);
+                q.sliceInterval = parseInt((pixel*range) / parseInt(options._spk_[col]));
+                if(q.sliceInterval == 0){
+                  q.sliceInterval = 1;
+                }
+              }
+              /***********************
+               * HARD CODED FOR TEST *
+               ***********************/
+            }
+          });
+        }
+      }
     }
     /******************
      * For Time Range *
