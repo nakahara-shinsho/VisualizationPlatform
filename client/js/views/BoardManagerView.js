@@ -229,13 +229,13 @@ define(['js/app',
       defineLayout: function () {
         var self = this;
         var widgetMargin = this.model.get('margin'),
-            height =  this.$grid_ul.parent().height(),
-            width = this.$grid_ul.parent().width();
+            height =  this.$grid_ul.parent().height();
+            //width = this.$grid_ul.parent().width();
         
         var max_cols = this.model.get('maxColumns'),
             max_rows = this.model.get('maxRows');
-        var cellHeight= (height - widgetMargin) / max_rows - widgetMargin,
-            cellWidth = (width- widgetMargin) / max_cols - widgetMargin;
+        var cellHeight= Math.round((height - widgetMargin) / max_rows - widgetMargin);
+            //cellWidth = (width- widgetMargin) / max_cols - widgetMargin;
         if (this.gridster) {
           this.gridster.destroy();
           this.$grid_ul.empty();
@@ -246,6 +246,7 @@ define(['js/app',
           //namespace: 'charts.gridster',
           max_cols: max_cols,
           max_rows: max_rows,
+          widget_selector: "li", //defalut value
           widget_base_dimensions: ['auto', cellHeight], //cell's width is responsable 
           //widget_base_dimensions: [cellWidth, cellHeight],
           //autogrow_cols: true,
@@ -280,12 +281,13 @@ define(['js/app',
           }//function end
         }).data('gridster');
       },
-        
+      
+      //for gridster ~0.6.9
       defineResponsive: function() {
         var self = this;
         
         //override resizing functionality for responsive design
-       /* self.$grid_ul.data('_container_height_',  self.gridster.$wrapper.height());
+        self.$grid_ul.data('_container_height_',  self.gridster.$wrapper.height());
         var old_update_widgets_dimensions = self.gridster.update_widgets_dimensions;
         self.gridster.update_widgets_dimensions = function() {
           var oldHeight  = self.$grid_ul.data('_container_height_'), 
@@ -308,36 +310,19 @@ define(['js/app',
           self.boardsView.resize(+$($widget).attr('id'), 
                 $widget.data('coords').coords.width,
                 $widget.data('coords').coords.height);
-        };*/
+        };
       },
       
       fit2window: function(index) {
           var self = this,
               $renderedArea = this.$grid_ul;
           
-          var oldHeight  = $renderedArea.get(0).scrollHeight, 
-              newHeight  = $renderedArea.parent().height();
-              ratio = newHeight/oldHeight;
-              
-          var newCellHeight = self.gridster.options.widget_base_dimensions[1] * ratio + 
-                self.gridster.options.widget_margins[1]*(ratio-1)*(1+1/self.gridster.rows);
+          var newHeight  = $renderedArea.parent().height(),
+              newCellHeight = Math.floor( (newHeight - self.gridster.options.widget_margins[1]) / self.gridster.get_highest_occupied_cell().row - self.gridster.options.widget_margins[1]);
           
-          self.gridster.resize_widget_dimensions({
-               namespace: 'charts.gridster',
-               widget_base_dimensions: [self.gridster.options.widget_base_dimensions[0], newCellHeight],
-               min_rows: self.gridster.get_highest_occupied_cell().row,
-               min_cols: self.gridster.get_highest_occupied_cell().col
-          });
-          
-          $renderedArea.css('height', newHeight);
-          
-          /*if(index <3) {
-            var $parent = $renderedArea.parent();
-            if( ($parent.get(0).scrollHeight - parseInt($parent.css('padding-top')) - parseInt($parent.css('padding-bottom')) ) != $parent.height() || 
-                ($parent.get(0).scrollWidth -  parseInt($parent.css('padding-right')) - parseInt($parent.css('padding-left')) ) != $parent.width()) {
-                self.fit2window(index+1);
-            }
-          }*/
+          self.gridster.options.max_rows = self.gridster.options.min_rows= self.gridster.get_highest_occupied_cell().row;
+          self.gridster.options.widget_base_dimensions[1] = newCellHeight;
+          self.gridster.recalculate_faux_grid();
       },
       
       destroy: function () {
