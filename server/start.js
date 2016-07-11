@@ -1,4 +1,4 @@
-require('./util/wrapperConsoleForLog4js.js');
+//require('./util/wrapperConsoleForLog4js.js');
 
 GLOBAL.config = require('config') ;
 GLOBAL.mqFrontend = new (require('./stream/MqFrontend'))

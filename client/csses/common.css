@@ -485,11 +485,26 @@ footer .copyright a:hover {
   width: 25%;
   padding: 1px;
 }
+.screens .imglist figure button {
+  line-height: 12px;
+  text-align: center;
+  font-weight: bold;
+  padding: 1px 1px 1px 1px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: Transparent;
+  color: #008080;
+  opacity: 0.1;
+}
+.screens .imglist figure button:hover {
+  opacity: 1;
+}
 .screens .imglist figure img {
   display: block;
   width: 100%;
   text-align: center;
-  cursor: crosshair;
+  cursor: pointer;
 }
 .editor {
   position: absolute;
