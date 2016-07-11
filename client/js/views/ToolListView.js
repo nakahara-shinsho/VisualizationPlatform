@@ -88,7 +88,7 @@ define(["js/app",
           }).done(function(response, textStatus, jqXHR) {
              $img.parent().remove();
           }).fail(function(jqXHR, textStatus, errorThrown) {
-            console.log('error when geting datalist!');
+            console.log('error when deletinh tool!');
           });
         }
       }, //function end

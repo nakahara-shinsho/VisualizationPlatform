@@ -1,8 +1,8 @@
 
 
 
-//left
- .screens {
+//on the left side
+.screens {
   display: flex;
   height: 100%;
   flex-grow: 1;
@@ -27,15 +27,34 @@
 	padding: 1px;
 } 
 
- .screens .imglist figure img {
+.screens .imglist figure button {
+     line-height: 12px;
+     text-align: center;
+     //border: none;
+     //font-size: 20px;
+     font-weight bold;
+     padding: 1px 1px 1px 1px; 
+     position: absolute;
+     top:0;
+     right:0;
+     background-color: Transparent;
+     color  #008080
+     opacity: 0.1;
+}
+
+.screens .imglist figure button:hover {
+   opacity: 1;
+}
+
+.screens .imglist figure img {
   display: block;
   width: 100%;
   text-align: center;
-  cursor: crosshair;
+  cursor: pointer;
 }
 
-//right
- .editor {
+//on the right side
+.editor {
   position: absolute;
   top: 0
   left: 0

@@ -73,7 +73,7 @@ define(["js/app",
        */
       onDragSnapshotItem: function(ev) {
         // Get title of node from p tag
-        var title = $(ev.target).html().trim();
+        var title = $(ev.target).attr('id');
         if (title) {
           ev.originalEvent.dataTransfer.setData("data",
             JSON.stringify({title: title, from: 'screenItem'}));
