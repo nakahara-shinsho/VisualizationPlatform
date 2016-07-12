@@ -67,17 +67,22 @@ define(["js/app",
             format: $img.attr('data-format') 
         });
       },
-    
+
       onDeleteTool: function(ev){
+        var self = this;
         ev.preventDefault();
-        var $clickedButtonElement = $(ev.currentTarget);
-        var $img = $clickedButtonElement.parent().siblings('img');
-        
+
         var del = confirm("Are you sure for deleting this tool?");
         if (del === true) {
-          var params  = "id="+$img.attr('data-id');
-          params += "&format="+ $img.attr('data-format');
-          params += "&user="+ app.session.user.get('userId');
+          var $clickedButtonElement = $(ev.currentTarget),
+            userId = app.session.user.get('userId'),
+            $img = $clickedButtonElement.parent().siblings('img'),
+            toolId = $img.attr('data-id'),
+            toolFormat = $img.attr('data-format'),
+            params  = "id=" + toolId;
+          
+          params += "&format="+ toolFormat;
+          params += "&user="+ userId;
 
           //delete data in database
           $.ajax({ //query databases worker
@@ -86,13 +91,20 @@ define(["js/app",
            type: 'DELETE', //or GET if no options' data
            timeout: 10000, //ms
           }).done(function(response, textStatus, jqXHR) {
+             //if the current status is using tool, delete tool in status table
+             if(toolId == self.model.get('tool').id) {
+               self.model.set('tool', {});
+             }
+
+             //remove image
              $img.parent().remove();
           }).fail(function(jqXHR, textStatus, errorThrown) {
             console.log('error when deletinh tool!');
           });
         }
       }, //function end
-    
+
+      
       onEditTool: function(ev) {
         ev.preventDefault();
         var $clickedButtonElement = $(ev.currentTarget),

@@ -28,12 +28,14 @@ function collector (path) {
 amqp.connect('amqp:'+ config.get('RabbitMQ.server.host')).then(function (conn) {
   return conn.createChannel().then(function (ch) {
     var mqBackend = new (require('./utils/MqBackend'))(ch);
-    collector(entrance).forEach(function(wk_name) {
-      var instance = new ReadFileClass(entrance,wk_name);
+    collector(entrance).forEach(function(file_name) {
+
+      var wk_name = file_name.replace(/\./g, '_'),
+          instance = new ReadFileClass(entrance, file_name);
       setInterval(function(){
         mqBackend.notify('TABLE', wk_name, instance.vts(wk_name));
       }, 3000);
-      mqBackend.create(entrance, wk_name, instance);
+      mqBackend.create(entrance, instance, wk_name, file_name);
     });
   });
 }).then(null, console.warn);

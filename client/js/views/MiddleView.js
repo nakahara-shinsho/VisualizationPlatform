@@ -55,8 +55,8 @@ define([
 
       this.model = new StatusModel({user: app.session.user.get('userId')});
 
-        var self = this;
-        this.model.fetch({
+      var self = this;
+      this.model.fetch({
             silent: true,
             data: { user: app.session.user.get('userId') },
             success: function(model, response, options) {
@@ -67,8 +67,8 @@ define([
             error: function(model, xhr, options){
               console.log('can not get status data!');
             }
-        });
-      },
+      });
+    },
     
      //
      render: function() {

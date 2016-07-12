@@ -15,10 +15,10 @@ define([
   'model/ToolModel'
 ], function (
 	app,
-    ScreenCtrl,
+  ScreenCtrl,
 	SidebarView,
 	BoardManagerView,
-    ToolModel
+  ToolModel
 ) {
   /**
    * Constructor create MiddleView

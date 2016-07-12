@@ -77,7 +77,10 @@ define(['text!vis/config.json'], function(cts){
             //wkname
             _.each(wks, function(vts, wkname) {
               tableItems[wkname]= {name: wkname};
-              if(vts.length > 1 ) {
+              if(vts.length <= 1 ) {
+                tableItems[wkname].items = self.addChartLibs(ctg, wkname);
+              }
+              else {
                 var obj= {},wkvtName;
                 vts.forEach(function(vtname) {
                   wkvtName = wkname+'.'+vtname; 

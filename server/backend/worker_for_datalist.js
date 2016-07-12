@@ -8,6 +8,6 @@ amqp.connect('amqp:'+ config.get('RabbitMQ.server.host')).then(function (conn) {
       gconfig = JSON.parse( fs.readFileSync(__dirname+'/config.json', 'utf8') );
       entrance = gconfig.dataPath.toString();
     var mqBackend = new (require('./utils/MqBackend'))(ch);
-    mqBackend.create(entrance, 'datalist', 'datalist', require('./utils/datalist'));
+    mqBackend.create(entrance, require('./utils/datalist'), 'datalist', 'datalist');
   });
 }).then(null, console.warn);

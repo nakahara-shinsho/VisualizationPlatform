@@ -7,22 +7,15 @@ function MqBackend(ch) {
   this.requestQueueList ={};
   
   this.starts = function(chart_type, entrance, file_names, prepare_data_callback) {
-    /*Object.keys(this.requestQueueList).forEach(function(wk_name){
-      if(wk_names.indexOf(wk_name) <0) {
-          //ch.unbindQueue(self.requestQueueList[wk_name],'topic_rpc', wk_name +'.#');
-          //ch.deleteQueue(self.requestQueueList[wk_name]); //request queue: left them for furtherly using
-          //ch.deleteQueue('__rpc__.'+ wvk_name); //response queue: left them for furtherly using ?
-          delete self.requestQueueList[wk_name];
-        }
-    });
-    */
+    
     file_names.forEach(function(file_name) {  
       var wk_name = file_name.replace(/\./g, '_');
+      
       if(chart_type) { //notify and show on client screen
         self.notify(chart_type, wk_name, prepare_data_callback.vts(wk_name));
       }
       if(!self.requestQueueList[wk_name]) {
-        self.create(entrance, file_name, wk_name, prepare_data_callback); //file as worker name
+        self.create(entrance, prepare_data_callback, wk_name, file_name); //file as worker name
       }
     });
   };
@@ -36,7 +29,7 @@ function MqBackend(ch) {
   };
   
   // worker
-  this.create = function(entrance, file_name, wk_name, prepare_data_callback) {
+  this.create = function(entrance, prepare_data_callback, wk_name, file_name) {
       //receive
       ch.assertExchange('topic_rpc', 'topic', {durable: false});
       ch.assertQueue('', {exclusive: true}).then(function(qok) {
