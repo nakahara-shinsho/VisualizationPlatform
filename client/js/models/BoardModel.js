@@ -18,18 +18,5 @@ define( function () {
     }
   });
   
-   //convert String to Object
-  function makeObject (param, initValue ) {
-      var ret = initValue;
-      if(param) {
-        if( param.constructor == String) {
-          ret = JSON.parse(param);
-        }else {
-          ret = param; 
-        }
-      }
-      return ret;
-  } 
-  
   return MyClass;
 });

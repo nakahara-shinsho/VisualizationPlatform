@@ -24,16 +24,20 @@ define(['ctrl/COMMON'], function (COMMON) {
       this._dataset_url_root = 'api/data/';//the root of virtual table
  };
  
- DataManager.prototype._writeRowRefiner =  function(changedAttrs, options) { 
-     var myRowRefiner = $.extend(true, {}, this._readRowRefiner(), changedAttrs);
+ DataManager.prototype._writeRowRefiner =  function(changedAttrs, options) {
+     var myRowRefiner = $.extend(true, this._readRowRefiner(), changedAttrs),
+        dataRanges = this.getDataRange();
      myRowRefiner = _.pick(myRowRefiner, function(range, column) { //delete null range before save 
-        return !!range;
+        return !_.isEmpty(range) && !_.isEqual(range, dataRanges[column]);
      });
      this._model.set({'dataRefiner': myRowRefiner}, options);
      if(options && !options.silent) {
        this.updateChart('REFINER', changedAttrs);
        this._ctrl.trigger("change:_data_link_", changedAttrs, this._model.get('vtname'),
          this._getInferData('_default_table_key_'));
+       /*this.updateChart('REFINER', myRowRefiner); //experimental to use all conditions in the chart
+       this._ctrl.trigger("change:_data_link_", myRowRefiner, this._model.get('vtname'),
+         this._getInferData('_default_table_key_'));*/
      }
  };
  
@@ -79,13 +83,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype._readColumnRefiner = function() {
-    var retColumns = this._model.get('dataSelector');
-    if(retColumns === undefined || retColumns ==='') { //return all columns
-      retColumns = _.keys(this.getDataType());
-    } else {
-      retColumns= COMMON.makeObject(retColumns, []);
-    }
-    return retColumns;
+    return this._model.get('dataSelector');
  };
  
  DataManager.prototype._writeMapper =  function(mappings, options) {
@@ -119,8 +117,8 @@ define(['ctrl/COMMON'], function (COMMON) {
  DataManager.prototype.getDataRange = function(key) {
     var range = this._getInferData('_dataRanges_', {});
     if(key) {
-        range = range[key];
-    } 
+        range = (range[key])? range[key]: {};
+    }
     return range;
  };
  
@@ -226,7 +224,13 @@ define(['ctrl/COMMON'], function (COMMON) {
   };
   
  DataManager.prototype.getColumnRefiner = function() {
-      return this._readColumnRefiner();
+      var retColumns = this._readColumnRefiner();
+      if(retColumns === undefined || retColumns ==='') { //return all columns
+        retColumns = _.keys(this.getDataType());
+      } else {
+        retColumns= COMMON.makeObject(retColumns, []);
+      }
+      return retColumns;
   };  
  
  DataManager.prototype.setValue = function (){
@@ -330,20 +334,20 @@ DataManager.prototype.getGroupByColumns = function() {
 
 //get data-mapped or color-mapped columns if not-existed in client
 DataManager.prototype.getRenderingColumns = function() {
-   var columns = [],  
+   var columns = this.getMappedColumns(),  
        colorManager= this._ctrl.colorManager(),
        colorDomainName= colorManager.getDomainName();
    
-   Array.prototype.push.apply(columns, this.getMappedColumns());
+   columns = _.union(columns, this._readColumnRefiner(), _.keys(this._readRowRefiner()) ); //coloring column + mapper columns + refinedColumns
 
-   if(colorDomainName !=='' && colorManager.isColumnDomain(colorDomainName)){
+   if(colorDomainName !=='' && colorManager.isColumnDomain(colorDomainName) && columns.indexOf(colorDomainName) < 0 ){
      columns.push(colorManager.getDomainName());
    }
 
    return columns;
 };
 
-DataManager.prototype.getColumnsInVT = function() {
+DataManager.prototype.getRequestColumns = function() {
   if(_.isEmpty(this.getMapperProps()) ){
     return '*'; //select all data columns
   }
@@ -421,7 +425,7 @@ DataManager.prototype.clearAll = function(key, value) {
          range = filterset[column];
          if(dataTypes[column]=='number') {
             value = +row[column];
-            if(value< range[0] || value > range[1]){
+            if(value< +range[0] || value > +range[1]){
                 bHighlight = false;
                 break;
             }
@@ -494,27 +498,28 @@ DataManager.prototype.clearAll = function(key, value) {
      }
      return columns;
  };
-  
+ 
  DataManager.prototype._autoCheckDataTypes = function(table, myDataTypes) {
     var self=this,
         types = (myDataTypes)? myDataTypes:{};
     
-    if(_.isEmpty(types) && table.length > 0) {
-            var BreakException={};
-            Object.keys(table[0]).forEach(function(key) {
-                types[key] = 'number';
-                try {
-                table.forEach(function(row) {
-                    if(! $.isNumeric(row[key])) {
-                    throw BreakException;
-                    }
-                    
-                });
-                } catch(e) {
-                if(e == BreakException) types[key] = 'string';
-                else throw e;
-                }
+    if(table.length > 0) {
+      var BreakException={};
+      Object.keys(table[0]).forEach(function(key) {
+        if(!types[key]) {
+          types[key] = 'number';
+          try {
+            table.forEach(function(row) {
+              if(! $.isNumeric(row[key])) {
+                throw BreakException;
+              }
             });
+          } catch(e) {
+            if(e == BreakException) types[key] = 'string';
+            else throw e;
+          }
+        }
+      });
     }
     this.setDataType(types);
     return types;
@@ -523,14 +528,17 @@ DataManager.prototype.clearAll = function(key, value) {
  DataManager.prototype._autoCheckDataRanges = function(table, dataTypes, myDataRanges){
    var self = this, max, min,
        ranges = (myDataRanges)? myDataRanges:{};
-   if(_.isEmpty(ranges) && table.length > 0) {
+
+   if(table.length > 0) {
        _.keys(dataTypes).forEach(function(column){
+         if(!ranges[column]) {
            if(dataTypes[column] === 'number') {
                ranges[column] = d3.extent(table, function(row) { return +row[column]; });
            } else {
                var nest= d3.nest().key(function(row){ return row[column]; }).entries(table);
                ranges[column] = nest.map(function(d){return d.key;});
            }
+         }
        });
    }
    this.setDataRange(ranges);
@@ -629,21 +637,23 @@ DataManager.prototype.clearAll = function(key, value) {
   
  //get virtual table data from server, 'options' is parameters for filtering data
   DataManager.prototype.getDataFromServer = function(virtualTable, screenContext, sizeObj) {
-      if(this._ctrl.loading) {
-          return;
-      }
 
       var self = this,
           deferred = $.Deferred(),
           conditions = { } ,
           query_options = { type: 'POST', 
                             cache: false,
-                            timeout: 100000, //3 seconds 
+                            timeout: 100000, //100 seconds 
                             url: this._dataset_url_root + virtualTable,
                           };
       var startTime = new Date().getTime();
+
+      if(this._ctrl.loading) {
+        return deferred.reject();
+      }
+
       conditions._context_ = $.extend(true, {}, window.framework.context, screenContext);
-      conditions._select_  = this.getColumnsInVT();
+      conditions._select_  = this.getRequestColumns();
       conditions._extra_select_= this._readExtraColumnRefiner();
 
       //TBD&I: if chart is highlight mode, the all condtions besides deepColumns' shouldn't be sent to server
@@ -769,7 +779,7 @@ DataManager.prototype.clearAll = function(key, value) {
   
   DataManager.prototype.isIncompleteData = function() {
     var types = this.getDataType(),
-        selector_columns = this.getColumnsInVT(),
+        selector_columns = this.getRequestColumns(),
         data_columns = _.keys(this.getData()[0]);
 
     if(selector_columns == '*') {
@@ -918,8 +928,8 @@ DataManager.prototype.clearAll = function(key, value) {
       
       var deepStatus = DEEPLINK.NONE,
           bSelector = (linkedMessage.constructor == Array),
-          local_wkName = this._model.get('vtname'),
-          local_vtName = this._getInferData('_default_table_key_'),
+          local_vtName = this._model.get('vtname'),
+          local_wkName = this._getInferData('_default_table_key_'),
           family = this._getInferData('_family_');
       
       //if(linked_wkName == local_wkName) {
@@ -965,8 +975,8 @@ DataManager.prototype.clearAll = function(key, value) {
            return true;
          }
       }
-      
-      if(this._ctrl.isHighlightMode()) {
+
+      if(this._ctrl.isHighlightMode()) { // is all necessary dat is prepared, do not update from server
           return false; //unnecessary to update the data from server --having got all data
       }
       
@@ -992,7 +1002,7 @@ DataManager.prototype.clearAll = function(key, value) {
         default: break;
       }
     } else { //switching MODE
-      isdeep = (big !== BIG.NONE);
+      isdeep = (big !== undefined && big > BIG.NONE);
     }
     
     return isdeep;

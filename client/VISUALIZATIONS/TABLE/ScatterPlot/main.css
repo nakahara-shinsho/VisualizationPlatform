@@ -42,11 +42,11 @@
 
 .scatterplot .y.axis line {
   stroke: #ddd;
-   stroke-width: 1px;
+  stroke-width: 1px;
 }
 
 .scatterplot .x.axis line {
   stroke: #ddd;
-   stroke-width: 1px;
+  stroke-width: 1px;
 }
 

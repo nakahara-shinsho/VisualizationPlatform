@@ -8,13 +8,13 @@ define(function(){
         if( param.constructor == String) {
           ret = JSON.parse(param);
         } else {
-          ret = param;
+          ret = _.clone(param);
         } 
       }
       return ret;
   };
   
-  //compare two arrray have the same elements without considering their orders
+ //compare two arrray have the same elements without considering their orders
  //@param: @arr1, @arr2
  MyClass.prototype.isEqualArray = function(arr1, arr2) {
     if(arr1.length !== arr2.length)

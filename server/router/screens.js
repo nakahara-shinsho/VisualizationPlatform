@@ -1,6 +1,6 @@
 //save/get screen data-- the screen could be current screen, or a bookmarked screen
 module.exports.screens = function(app, db) {
-  var modelName = '###screen ';
+  var modelName = '###SCREEN ';
   var url = '/api/screen';
   var uuid = require('node-uuid');
   
@@ -12,7 +12,7 @@ module.exports.screens = function(app, db) {
   db.run("CREATE TABLE IF NOT EXISTS screen (" +
          "id TEXT not null, "+ 
          "user TEXT not null, "+ 
-         "format TEXT(50), " +
+         "format TEXT(50), " + // is format necessary ? 2016/7/11
          "description TEXT default '', "+ //screen description
          "imgurl TEXT default '', " + //snpshot path
          "maxRows INTEGER not null default 5, " +
@@ -181,15 +181,16 @@ module.exports.screens = function(app, db) {
           } else {
             if (!rows.length) {
               var stmt_insert = "INSERT INTO screen " +
-                  "(user, id, description, margin, maxColumns) "+
-                  "VALUES ($user, $id , $description, $margin, $maxColumns)";
+                  "(user, id, description, margin, maxColumns, maxRows) "+
+                  "VALUES ($user, $id , $description, $margin, $maxColumns, $maxRows)";
               db.run(stmt_insert,
               {
                 $user: model.user,
                 $id: model.id,
                 $description: model.description,
                 $margin: model.margin,
-                $maxColumns: model.maxColumns
+                $maxColumns: model.maxColumns,
+                $maxRows: model.maxRows
               }, function(err) {
                 if(err){ //insert error
                   errHandle(err);
@@ -317,11 +318,17 @@ module.exports.screens = function(app, db) {
         });
     };
   
-  var deleteScreens = function (req, res) {
-    res.send();
-  };
-  var deleteScreenWithId = function (req, res) {
-    res.send();
+   var deleteScreen = function (req, res) {
+   var stmt_delete = "DELETE FROM screen WHERE id=$id AND user=$user";
+     db.run(stmt_delete, { $id: req.query.id, /*$format: req.query.format,*/ $user: req.query.user},
+           function(error) {
+                if(error){
+                  errHandle(error);
+                  res.status(500).send({error: error.message});
+                }else{
+                  res.json({message: 'Successful!' });
+                }
+             });
   };
   
   //get screen with lastest or create new screen
@@ -330,11 +337,12 @@ module.exports.screens = function(app, db) {
     getLastScreenWithoutId(req, res);
   });
   
-  //delete list?
+  //delete screen
   app.delete(url, function(req, res) {
     logHandle(modelName+' DELETE: '+ JSON.stringify(req.query));
-    deleteScreens(req,res);
+    deleteScreen(req,res);
   });
+
   //save screen(without id)
   app.put(url, function (req, res) {
     logHandle(modelName+' PUT: ' + JSON.stringify(req.query));
@@ -366,7 +374,7 @@ module.exports.screens = function(app, db) {
   //delete scree with id
   app.delete(url+'/:id', function(req, res) {
     logHandle(modelName+' DELETE(id): ' + req.params.id);
-    deleteScreenWithId(req, res);
+    deleteScreen(req, res);
   });
   
   app.post(url+'_clone', function(req, res) {

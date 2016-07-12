@@ -140,8 +140,12 @@ define(['js/app',
       var self = this;
 
       var sepIndex = key.lastIndexOf('/');
-      var vtname = key.substring(sepIndex + 1);
-      var vttype = key.substring(0, sepIndex);
+      var vtname = key.substring(sepIndex + 1),
+          vttype = key.substring(0, sepIndex);
+      var max_rows = this.model.get('maxRows'),
+          max_cols = this.model.get('maxColumns') ,
+          init_width = ( Math.floor(max_cols/3) > 0 )? Math.floor(max_cols/3):1 ,
+          init_height = (Math.floor(max_rows/5) >0)? max_rows/5 : 1 ;
       
       var clickedBoard = this.clickedPosition();
       // create BoardModel to get new id
@@ -149,8 +153,8 @@ define(['js/app',
         .done(function (mymodel) {
           self.gridster.add_widget.apply(self.gridster,
             ["<li id=" + mymodel.get('id') + "></li>",
-                1, // block.size_x
-                1,
+                init_width , // block.size_x
+                init_height,
                 clickedBoard.col, //block.col
                 clickedBoard.row
               ]);
@@ -212,7 +216,7 @@ define(['js/app',
             self.boardsView.addBoardView(block.id);
         });
     
-        self.defineResponsive();
+        //self.defineResponsive();
         //watching this model
         //framework.undoer.register(this.model);
         //framework.undoer.startTracking();
@@ -226,10 +230,12 @@ define(['js/app',
         var self = this;
         var widgetMargin = this.model.get('margin'),
             height =  this.$grid_ul.parent().height();
+            //width = this.$grid_ul.parent().width();
         
-        var rows = this.model.get('maxRows');
-        var cellHeight= height/rows - widgetMargin -widgetMargin/rows;
-        
+        var max_cols = this.model.get('maxColumns'),
+            max_rows = this.model.get('maxRows');
+        var cellHeight= Math.round((height - widgetMargin) / max_rows - widgetMargin);
+            //cellWidth = (width- widgetMargin) / max_cols - widgetMargin;
         if (this.gridster) {
           this.gridster.destroy();
           this.$grid_ul.empty();
@@ -237,21 +243,23 @@ define(['js/app',
         
         //define instance variable of gridster
         this.gridster = this.$grid_ul.gridster({
-          namespace: 'charts.gridster',
-          max_cols: this.model.get('maxColumns'),
-          max_rows: this.model.get('maxRows'),
-          widget_base_dimensions: ['auto', cellHeight],
-          autogenerate_stylesheet: true,//responsive design
+          //namespace: 'charts.gridster',
+          max_cols: max_cols,
+          max_rows: max_rows,
+          widget_selector: "li", //defalut value
+          widget_base_dimensions: ['auto', cellHeight], //cell's width is responsable 
+          //widget_base_dimensions: [cellWidth, cellHeight],
+          //autogrow_cols: true,
+          autogenerate_stylesheet: true,//default value is responsive design
           widget_margins: [widgetMargin, widgetMargin],
           avoid_overlapped_widgets: true,
-          helper: 'clone',
+          helper: 'clone', //non-documented 
+          min_cols: 2,
+          min_rows: 3,
           resize: {
             enabled: true,
             stop: function (e, ui, $widget) {
-              self.boardsView.resize(+$($widget).attr('id')//, 
-                  //this.resize_coords.data.width,
-                  //this.resize_coords.data.height
-                );
+              self.boardsView.resize(+$($widget).attr('id') );
               self.model.set('cells', self.gridster.serialize());
             }
           },
@@ -273,7 +281,8 @@ define(['js/app',
           }//function end
         }).data('gridster');
       },
-        
+      
+      //for gridster ~0.6.9
       defineResponsive: function() {
         var self = this;
         
@@ -308,29 +317,12 @@ define(['js/app',
           var self = this,
               $renderedArea = this.$grid_ul;
           
-          var oldHeight  = $renderedArea.get(0).scrollHeight, 
-              newHeight  = $renderedArea.parent().height();
-              ratio = newHeight/oldHeight;
-              
-          var newCellHeight = self.gridster.options.widget_base_dimensions[1] * ratio + 
-                self.gridster.options.widget_margins[1]*(ratio-1)*(1+1/self.gridster.rows);
+          var newHeight  = $renderedArea.parent().height(),
+              newCellHeight = Math.floor( (newHeight - self.gridster.options.widget_margins[1]) / self.gridster.get_highest_occupied_cell().row - self.gridster.options.widget_margins[1]);
           
-          self.gridster.resize_widget_dimensions({
-               namespace: 'charts.gridster',
-               widget_base_dimensions: [self.gridster.options.widget_base_dimensions[0], newCellHeight],
-               min_rows: self.gridster.get_highest_occupied_cell().row,
-               min_cols: self.gridster.get_highest_occupied_cell().col
-          });
-          
-          $renderedArea.css('height', newHeight);
-          
-          /*if(index <3) {
-            var $parent = $renderedArea.parent();
-            if( ($parent.get(0).scrollHeight - parseInt($parent.css('padding-top')) - parseInt($parent.css('padding-bottom')) ) != $parent.height() || 
-                ($parent.get(0).scrollWidth -  parseInt($parent.css('padding-right')) - parseInt($parent.css('padding-left')) ) != $parent.width()) {
-                self.fit2window(index+1);
-            }
-          }*/
+          self.gridster.options.max_rows = self.gridster.options.min_rows= self.gridster.get_highest_occupied_cell().row;
+          self.gridster.options.widget_base_dimensions[1] = newCellHeight;
+          self.gridster.recalculate_faux_grid();
       },
       
       destroy: function () {

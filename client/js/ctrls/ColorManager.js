@@ -93,7 +93,7 @@ define(['ctrl/COMMON'], function (COMMON) {
          colorIndexes = COMMON.makeObject(this._model.get('colorIndexes'), {});
      if(colorIndex >=0  && (indexOfStartOrEnd === 0 || indexOfStartOrEnd == 1 ) ){
          colorIndexes[indexOfStartOrEnd] = colorIndex;
-         this._model.set('colorIndexes', $.extend(true, {}, colorIndexes) );
+         this._model.set('colorIndexes', colorIndexes);
      }
   };
 
@@ -115,7 +115,7 @@ define(['ctrl/COMMON'], function (COMMON) {
     } else {  //the natural number order such as {1:1,2:2,4:4,5:5}
             delete colorIndexes[itemIndex];
     }
-    this._model.set('colorIndexes', $.extend(true, {}, colorIndexes));//clone and then save
+    this._model.set('colorIndexes',colorIndexes);
     return true;
   };
 
@@ -235,15 +235,17 @@ define(['ctrl/COMMON'], function (COMMON) {
   ColorManager.prototype.getRangeOfDataset = function(dataset) {
     var items=[], 
         mapperPropsObj = this._ctrl.dataManager().getMapperProps();
-
+    
+    //get the range of one mapper property
     for( var prop in mapperPropsObj) {
         if(mapperPropsObj[prop].label.trim() == dataset){
             items = mapperPropsObj[prop].map2;
             break;
         }
     }
+    //get the range of one column 
     if(items.length === 0 ) {
-        items = this.getRangeOfColumn(dataset);
+        items = this._ctrl.dataManager().getDataRange(dataset);
     }
     return items;
   };
@@ -264,9 +266,9 @@ define(['ctrl/COMMON'], function (COMMON) {
   
   ColorManager.prototype.isColumnDomain = function(domainName) {
      var column = (domainName) ? domainName: this.getDomainName(),
-         dataTypes = this._ctrl.dataManager().getDataType();
+         mapper = this._ctrl.dataManager().getMapper();
      if(!_.isEmpty(column)) {
-        return dataTypes && _.has(dataTypes, column);
+        return mapper && !_.has(mapper, column);
      }
      return false;
   };
@@ -279,11 +281,11 @@ define(['ctrl/COMMON'], function (COMMON) {
      }
      return false;
   };
-  
+  /*
   ColorManager.prototype.getRangeOfColumn = function(column) {
     return this._ctrl.dataManager().getDataRange(column);
   };
- 
+ */
  ColorManager.prototype.getColorOfColumn = function(columnName) {
     var  color = this._defalutColor,
          colormap = this.getColormap();
@@ -323,7 +325,7 @@ define(['ctrl/COMMON'], function (COMMON) {
                 break;
               }
             }
-       } else if( row[colorDomainName] ) { //string column
+       } else if(row.hasOwnProperty(colorDomainName) ) { //string column
            color = colormap[row[colorDomainName]];
        }
        //console.log(color);

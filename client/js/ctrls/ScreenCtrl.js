@@ -29,6 +29,7 @@ define([
                  idInputed = idElement.val(),//should check the input is not empty
                  description = dialog.getModalBody().find("textarea[name='description']").val(),
                  maxColumns = dialog.getModalBody().find("select[name='maxColumns'] option:selected").val(),
+                 maxRows = dialog.getModalBody().find("select[name='maxRows'] option:selected").val(),
                  margin = dialog.getModalBody().find("select[name='margin'] option:selected").val();
              var ajaxOptions = {
                url: url,
@@ -38,6 +39,7 @@ define([
                        id: idInputed,
                        description: description,
                        maxColumns: +maxColumns,
+                       maxRows: +maxRows,
                        margin: +margin
                 }
              };
