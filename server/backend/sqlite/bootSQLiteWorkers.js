@@ -1,10 +1,9 @@
-//require('../util/wrapperConsoleForLog4js.js')
-var amqp = require('amqplib'),
-      config = require('config'),
-      fs = require('fs');
-var entrance = __dirname+'/data/',
-    callback = new (require('./utils/ReadFile.js'))();
- 
+require('../../util/wrapperConsoleForLog4js.js')
+var amqp = require('amqplib');
+var config = require('config') ;
+var fs = require('fs');
+var callback = new (require('./ReadDb.js'))();
+var entrance = __dirname+'/data/';
 function collector (path) {
     var files = [];
     var list = fs.readdirSync(path); //get all contents under path
@@ -14,7 +13,8 @@ function collector (path) {
         var st = fs.statSync(fullPath);
         if(st.isFile()){
           var ext = list[i].split('.').pop().toLowerCase();
-          if(ext==='csv' || ext==='tsv') {
+          if(ext==='csv' || ext==='tsv'
+	     || ext==='db' || ext ==='sqlite3') {
             files.push(list[i]);
           }
         }
@@ -27,9 +27,10 @@ function collector (path) {
 
 amqp.connect('amqp:'+ config.get('RabbitMQ.server.host')).then(function (conn) {
   return conn.createChannel().then(function (ch) {
-    var mqBackend = new (require('./utils/MqBackend'))(ch);
+    var fs = require('fs');
+    var mqBackend = new (require('../utils/MqBackend'))(ch);
     setInterval(function(){
-      mqBackend.starts('TABLE', entrance, collector(entrance), callback);
-    }, 3000);
+    mqBackend.starts('TABLE', entrance, collector(entrance), callback);    
+	}, 3000);
   });
 }).then(null, console.warn);

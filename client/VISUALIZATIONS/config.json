@@ -34,6 +34,9 @@
         },
         { type: 'ParallelCoordinates',
           path: 'TABLE/ParallelCoordinates'
+        },
+        { type: 'Legend',
+          path: 'TABLE/Legend'
         }
     ],
     STREAM: [],
