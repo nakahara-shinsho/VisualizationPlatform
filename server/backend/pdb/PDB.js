@@ -1,5 +1,5 @@
-function PDB (family) {
 
+function PDB (family, core, mode) {
   var BIG = {
     NONE: 0,
     ROW: 1,
@@ -27,21 +27,27 @@ function PDB (family) {
 
   this.asyn = function(options, entrance, filename) { //filename is worker_name
     if(filename.indexOf("::") !== -1){
-      var fileinfo = filename.split("::");
+      var fileinfo = filename.split("::"); // [PDBName, vtName]
       if(fileinfo.length == 2){
         this.name      = filename;
-        this.queryFile = __dirname + "/../pdb/VirtualTable/" + fileinfo[0]+".json.template";
-        this.realFile  = fileinfo[1]+".db";
+        this.queryFile = __dirname + "/VirtualTable/" + fileinfo[1]+".json.template";
+        this.realFile  = fileinfo[0]+".db";
       }
     }
     console.log("[INFO] : Receive Request @ WorkerName :: " +  this.name);
-    console.log('[INFO] : request options:  ' + JSON.stringify(options)  );
+    console.log('[INFO] : Request options:  ' + JSON.stringify(options)  );
     var deferred = $.Deferred();
     var response = {};
-    var dataPath = "/home/kuroda/devel/VisualizationPlatform/server/backend/pdb/sample/";
+    var dataPath = entrance;
     if(this.queryFile !== undefined){
       // create query
       var query = JSON.parse(fs.readFileSync(this.queryFile, 'utf8'));
+
+      // Calc Range
+      var ranges = {};
+      calcRange(query, options, this.realFile);
+      console.log("== RANGES ==");
+      console.log(ranges);
 
       // Calc Slice InverVal
       updateSliceInterval(query,options, this.realFile);
@@ -49,36 +55,68 @@ function PDB (family) {
       updateFilter(query, options);
 
       var tmpobj = tmp.fileSync({postfix:".json"});
-      var command = "echo '" + JSON.stringify(query) + "' > " + tmpobj.name+  ";cd " + dataPath + "; pdb2csv -p 16 -conf " + tmpobj.name  +"  -pdb " + this.realFile;
+      var command = "echo '" + JSON.stringify(query) + "' > " + tmpobj.name+  ";cd " + dataPath + ";";
+      command += "pdb2csv -p "+ core +" -conf " + tmpobj.name  +"  -pdb " + this.realFile;
+      command += "; rm -f " + tmpobj.name;
       console.log(command);
       var result = exec(command);
-      tmpobj.removeCallback();
       response._table_ = {};
       response._table_.big = BIG.BOTH;
       response._table_.format = "csv";
-
-      /*********************
-       * HARD CORDED RANGE *
-       *********************/
-      response._table_.ranges =  {
-        "Timestamp":[0,6047999999999],
-        "Offset":[28672,72829469184],
-        "count(Offset)":[1,100]
-      };
-
-      /*
-      response._table_.types = {
-        "count(start)":"number",
-        "start":"number",
-        "length":"number"
-      };
-       */
+      response._table_.ranges = ranges;
       response._table_.filled = decoder.write(result);
       response._table_.family = family;
       deferred.resolve(response);
     }
     return deferred.promise();
 
+
+
+    /*********
+     * Range *
+     *********/
+    // Calc Range for SetInterval
+    function calcRange(query,options, pdbFile){
+      var rangeQuery = { "query":{"select":[],"approx_aggregate": true},"option":{"csv_comma": ","}};
+      if(options._select_ !== undefined){
+        options._select_.forEach(function(col){
+          if(col.indexOf(")") == -1){
+            rangeQuery.query.select.push({"column":col,"aggregate":"min"});
+            rangeQuery.query.select.push({"column":col,"aggregate":"max"});
+            rangeQuery.query.select.push({"column":col,"aggregate":"count"});
+          }
+        });
+        var tmpobj = tmp.fileSync({postfix:".json"});
+        var command = "echo '" + JSON.stringify(rangeQuery) + "' > " + tmpobj.name+  ";cd " + dataPath + ";";
+        command += "pdb2csv -conf " + tmpobj.name  +"  -pdb " + pdbFile + ";";
+        command += " rm -f " + tmpobj.name;
+        var result = exec(command);
+        var index2name = {};
+        var colName;
+        decoder.write(result).split("\n").forEach(function(row,i){
+          if(i == 0){
+            row.split(",").forEach(function(col,j){
+              if(col.indexOf("count") == -1){
+                colName = col.split("(")[1].split(")")[0];
+                if(ranges[colName] == undefined){
+                  ranges[colName] = [];
+                }
+              }else{
+                colName = col;
+                if(ranges[colName] == undefined){
+                  ranges[colName] = [0];
+                }
+              }
+              index2name[j] = colName;
+            });
+          }else{
+            row.split(",").forEach(function(col,j){
+              ranges[index2name[j]].push(+col);
+            });
+          }
+        });
+      }
+    }
     /**********
      * Filter *
      **********/
@@ -114,11 +152,15 @@ function PDB (family) {
           }
           query.query.group_by.forEach(function(q){
             if(realColName == q.column){
+              console.log(" >>" + realColName);
+              console.log(ranges[realColName]);
               /***********************
                * HARD CODED FOR TEST *
                ***********************/
               var pixel = 8;
+              /***********************/
               var info = [];
+              // get max/min
               if(realColName === "Offset"){
                 var min = 28672;
                 var max = 72829469184;
@@ -157,80 +199,6 @@ function PDB (family) {
         }
       }
     }
-    /******************
-     * For Time Range *
-     ******************/
-    function getTimeStampColumnName(query){
-      // for type = time columnName
-      for(var i=0; i< query.columns.length ; i++){
-        if(query.columns[i].type == "time"){
-          return query.columns[i].name;
-        }
-      }
-      return undefined;
-    }
-    function updateTimeRange(){
-      query.where.time_range.lower = 0;
-      query.where.time_range.upper = -1;
-
-      if(options._where_ !== undefined){
-        for(var i=0; i<options._where_.length; i++){
-          var vt = options._where_[i];
-          if(vt[timestampColumnName] !== undefined && vt[timestampColumnName] !== null){
-            if(vt[timestampColumnName][0] !== undefined && vt[timestampColumnName][1] !== undefined){
-              query.where.time_range.lower = parseInt(vt[timestampColumnName][0]);
-              query.where.time_range.upper = parseInt(vt[timestampColumnName][1]);
-            }
-            break;
-          }else if(vt[timestampColumnNameGroupBy] !== undefined && vt[timestampColumnNameGroupBy] !== null){
-            if(vt[timestampColumnNameGroupBy][0] !== undefined && vt[timestampColumnNameGroupBy][1] !== undefined){
-              query.where.time_range.lower = parseInt(vt[timestampColumnNameGroupBy][0]);
-              query.where.time_range.upper = parseInt(vt[timestampColumnNameGroupBy][1]);
-              break;
-            }
-          }
-        }
-      }
-      if(options._extra_where_ !== undefined){
-        for(var vtname in options._extra_where_){
-          var vt = options._extra_where_[vtname];
-          if(vt[timestampColumnName] !== undefined && vt[timestampColumnName] !== null){
-            if(vt[timestampColumnName][0] !== undefined && vt[timestampColumnName][1] !== undefined){
-              query.where.time_range.lower = parseInt(vt[timestampColumnName][0]);
-              query.where.time_range.upper = parseInt(vt[timestampColumnName][1]);
-            }
-            break;
-          }else if(vt[timestampColumnNameGroupBy] !== undefined && vt[timestampColumnNameGroupBy] !== null){
-            if(vt[timestampColumnNameGroupBy][0] !== undefined && vt[timestampColumnNameGroupBy][1] !== undefined){
-              query.where.time_range.lower = parseInt(vt[timestampColumnNameGroupBy][0]);
-              query.where.time_range.upper = parseInt(vt[timestampColumnNameGroupBy][1]);
-              break;
-            }
-          }
-        }
-      }
-    }
-    /**********************
-     * For Slice Interval *
-     **********************/
-/*
-    function updateSliceInterval(file){
-      if(options._spk_ !== undefined){
-        for(var k in options._spk_){
-          var columnName = k.replace("group_by(","").replace(")","");
-          query.columns.forEach(function(column){
-            if(column.sliceInterval !== undefined && column.name == columnName){
-              var command = "cd " + dataPath + "; pdb2csv -e .time_range -pdb " + file;
-              var result = exec(command);
-              var info   = decoder.write(result).split("\n")[1].split(",");
-              var range  =  parseInt(info[1]) - parseInt(info[0]);
-              column.sliceInterval = parseInt(Number(range) / Number(options._spk_[k]));
-            }
-          });
-        }
-      }
-    }
- */
   };
 }
 
