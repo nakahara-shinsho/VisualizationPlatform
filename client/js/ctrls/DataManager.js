@@ -956,7 +956,7 @@ DataManager.prototype.clearAll = function(key, value) {
         }
       }
       else       
-      if(family && family.indexOf(linked_wkname+'.'+linked_vtName) >=0) { 
+      if(family && family.indexOf(linked_wkName+'.'+linked_vtName) >=0) { 
           deepStatus = DEEPLINK.GLOBAL;
           //GLOBAL: outside the worker
       }
