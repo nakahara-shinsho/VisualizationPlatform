@@ -34,17 +34,17 @@ define([ 'ctrl/COMMON',
         start: initval
       });
      
-      var $min = $slider.find('.noUi-handle:first').text(initval[0]),
-          $max = $slider.find('.noUi-handle:last').text(initval[1]);
+      var $min = $slider.find('.noUi-handle:first').text(d3.format(".3s")(initval[0])),
+          $max = $slider.find('.noUi-handle:last').text(d3.format(".3s")(initval[1]));
       
       this.slider_dom.noUiSlider
       .on('change', function (values, handle) {
         var newval = [(+values[0]).toFixed(limit), (+values[1]).toFixed(limit)];
         
         if(initval[0]!= newval[0] || initval[1]!= newval[1]){
-            $min.text(newval[0]);
-            $max.text(newval[1]);
-            ioctrl.setValue($ctrl.attr('id'), newval);
+           $min.text(d3.format(".3s")(newval[0]));
+           $max.text(d3.format(".3s")(newval[1]));
+           ioctrl.setValue($ctrl.attr('id'), newval);
         }
       });
       this.slider_dom.noUiSlider
@@ -52,8 +52,8 @@ define([ 'ctrl/COMMON',
         var newval = [(+values[0]).toFixed(limit), (+values[1]).toFixed(limit)];
         
         if(initval[0]!= newval[0] || initval[1]!= newval[1]){
-            $min.text(newval[0]);
-            $max.text(newval[1]);
+            $min.text(d3.format(".3s")(newval[0]));
+            $max.text(d3.format(".3s")(newval[1]));
         }
       });
       

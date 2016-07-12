@@ -1,6 +1,6 @@
 define(["js/app",
         "text!templates/tool_list.html",
-        "text!templates/image.html"
+        "text!templates/tool_list_image.html"
        ],
        function (app, toolsTpl, imgTpl) {
   /**

@@ -23,7 +23,7 @@ define(['ctrl/COMMON'], function (COMMON) {
       this._data = {_default_table_key_: '_table_', _$mapper_props_:{}, _infer_: {} };
       this._dataset_url_root = 'api/data/';//the root of virtual table
  };
- 
+
  DataManager.prototype._writeRowRefiner =  function(changedAttrs, options) {
      var myRowRefiner = $.extend(true, this._readRowRefiner(), changedAttrs),
         dataRanges = this.getDataRange();
@@ -33,8 +33,10 @@ define(['ctrl/COMMON'], function (COMMON) {
      this._model.set({'dataRefiner': myRowRefiner}, options);
      if(options && !options.silent) {
        this.updateChart('REFINER', changedAttrs);
-       this._ctrl.trigger("change:_data_link_", changedAttrs, this._model.get('vtname'),
-         this._getInferData('_default_table_key_'));
+       var local_wkvtArr = this._model.get('vtname').split('.'),
+           local_vtName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.pop(),
+           local_wkName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.join('.');
+       this._ctrl.trigger("change:_data_link_", changedAttrs, local_vtName, local_wkName);
        /*this.updateChart('REFINER', myRowRefiner); //experimental to use all conditions in the chart
        this._ctrl.trigger("change:_data_link_", myRowRefiner, this._model.get('vtname'),
          this._getInferData('_default_table_key_'));*/
@@ -76,8 +78,10 @@ define(['ctrl/COMMON'], function (COMMON) {
       }
       if(options && !options.silent) {
          this.updateChart('SELECTOR', selector);
-         this._ctrl.trigger("change:_data_link_", selector, this._model.get('vtname'), 
-           this._getInferData('_default_table_key_'));
+         var local_wkvtArr = this._model.get('vtname').split('.'),
+             local_vtName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.pop(),
+             local_wkName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.join('.');
+         this._ctrl.trigger("change:_data_link_", selector, local_vtName, local_wkName);
       }
     }
  };
@@ -810,7 +814,7 @@ DataManager.prototype.clearAll = function(key, value) {
       if(eventMessage.constructor == Object ) { //Row Refiner
         statusOfLink =this._checkDeepLink(eventMessage, linked_vtName, lined_wkName);
         if(statusOfLink) {
-            this._deepLink4RowRefiner(eventMessage,/*lined_wkName,*/ linked_vtName, statusOfLink);
+            this._deepLink4RowRefiner(eventMessage, linked_vtName, lined_wkName,statusOfLink);
         } else {
             this._simpleLink4RowRefiner(eventMessage);
         }
@@ -819,7 +823,7 @@ DataManager.prototype.clearAll = function(key, value) {
       if(eventMessage.constructor == Array  ){ //Column refiner
          statusOfLink = this._checkDeepLink(eventMessage, linked_vtName, lined_wkName);
          if(statusOfLink) {
-            this._deepLink4ColumnRefiner(eventMessage, /*linked_wkName,*/ linked_vtName, statusOfLink);
+            this._deepLink4ColumnRefiner(eventMessage, linked_vtName, lined_wkName, statusOfLink);
         } else {
             this._simpleLink4ColumnRefiner(eventMessage);
         }
@@ -847,7 +851,7 @@ DataManager.prototype.clearAll = function(key, value) {
   };
   
   //update linked charts with server query
-  DataManager.prototype._deepLink4RowRefiner= function(linkedRefiner, linked_vtName, statusOfLink) {
+  DataManager.prototype._deepLink4RowRefiner= function(linkedRefiner, linked_vtName, linked_wkName,statusOfLink) {
         var self = this, 
             chartInst = this._ctrl.chartInstance(),
             allColumns =  _.keys(this.getDataType() ),
@@ -867,7 +871,7 @@ DataManager.prototype.clearAll = function(key, value) {
             this._writeExtraRowRefiner(obj);
             //add extra refiner
           }
-                   
+          
           this.getDataFromServer(this._model.get('vtname')).done(
               function() {
                 if(chartInst.update) {
@@ -895,7 +899,7 @@ DataManager.prototype.clearAll = function(key, value) {
     };
   
   //update linked charts with server query
-  DataManager.prototype._deepLink4ColumnRefiner = function(selector, linked_vtName, statusOfLink ) {
+  DataManager.prototype._deepLink4ColumnRefiner = function(selector, linked_vtName, linked_wkName, statusOfLink ) {
      var self = this, obj = {},
         chartInst = this._ctrl.chartInstance();
         
@@ -928,11 +932,12 @@ DataManager.prototype.clearAll = function(key, value) {
       
       var deepStatus = DEEPLINK.NONE,
           bSelector = (linkedMessage.constructor == Array),
-          local_vtName = this._model.get('vtname'),
-          local_wkName = this._getInferData('_default_table_key_'),
+          local_wkvtArr = this._model.get('vtname').split('.'),
+          local_vtName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.pop(),
+          local_wkName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.join('.');
           family = this._getInferData('_family_');
       
-      //if(linked_wkName == local_wkName) {
+      if(linked_wkName == local_wkName) {
         if( linked_vtName == local_vtName ) {
           //check whether all columns have its actual data
           var  bret = this._isDeepUpdate(
@@ -947,14 +952,14 @@ DataManager.prototype.clearAll = function(key, value) {
           if(family && family.indexOf(linked_vtName) >=0) {
               deepStatus = DEEPLINK.WORKER;
               //WORKER : inside the same worker
-          } 
+          }
         }
-      //}
-      /*else       
-      if(family && family.indexOf(linked_wkname+'.'+linked_vtName) >=0) { //no use?
+      }
+      else       
+      if(family && family.indexOf(linked_wkname+'.'+linked_vtName) >=0) { 
           deepStatus = DEEPLINK.GLOBAL;
           //GLOBAL: outside the worker
-      }*/
+      }
       return deepStatus;
   };
   

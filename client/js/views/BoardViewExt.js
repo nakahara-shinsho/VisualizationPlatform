@@ -17,6 +17,7 @@ define(['view/BoardView'], function (BoardView) {
       var self = this,
           params = arguments;
       if( _.isEmpty(this.linkViews)) return;
+      
       Object.keys(this.linkViews).forEach(function(id){
            var view = self.parent._Views[id],
                dataManager = view.chartctrl.dataManager();

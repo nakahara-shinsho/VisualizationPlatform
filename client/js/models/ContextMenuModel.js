@@ -9,18 +9,18 @@ define(['text!vis/config.json'], function(cts){
         vtattrs = vttype.split('/'),
         data = {kind: vtattrs[0], chart: vtattrs[1]};
     
-    $.ajax({type: 'get', cache: false, url: this.url, timeout:10000, data: data}).then(function (datalist) {
+    $.ajax({type: 'get', cache: false, url: this.url, timeout:10000, data: data}).then(function (wks) {
         var items = {};
-        Object.keys(datalist).forEach(function(wkname){
-          if(datalist[wkname].length <=1 ) {
+        _.each(wks, function(vts, wkname){
+          if(vts.length <= 1 ) {
             items[wkname] = {name: wkname};
           } else {
             var obj= {};
-            datalist[wkname].forEach(function(vtname){
-              obj[ wkname+'.'+vtname] = {name: vtname};
+            vts.forEach(function(vtname) {
+              obj[wkname+'.'+vtname] = {name: vtname};
             });
             items[wkname] = {name: wkname, items: obj };
-          }
+         }
         });
         console.log(items);
         return deferred.resolve({items: items});
@@ -38,6 +38,23 @@ define(['text!vis/config.json'], function(cts){
     return this;
   };
   
+  MyClass.prototype.addChartLibs = function(ctg, wkvtName){
+    var tempKey, tempName, items ={};
+    if(this.modules[ctg]) {
+       this.modules[ctg].forEach(function(me) {
+         if(me.constructor == Object) { //customized path
+            tempKey  = me.path+'/'+wkvtName;
+            tempName = me.type;
+         } else { //default path (chart's type == chart's path)
+            tempKey = ctg+ '/'+ me +'/'+ wkvtName;
+            tempName = me;
+         }
+         items[tempKey] = {name: tempName};
+      });
+    }
+    return items;
+  };
+
   MyClass.prototype.getDatalistOfCharts = function(){
     var self = this;
     var contextMenu={}, advancedItems = {}, treeItems={}, tableItems={}, streamItems={};
@@ -48,76 +65,31 @@ define(['text!vis/config.json'], function(cts){
           STREAM:{ name: 'Basic chart for time series...'  }
       };
     var deferred = $.Deferred();
-    var tempKey, tempName;
+  
 
     $.ajax({type: 'get', cache: false, url: this.url}).then(function (jsondata) {
       console.log('Virtual Tables: ',jsondata);
-      $.each(jsondata, function(ctg, vts){
+      $.each(jsondata, function(ctg, wks){
         switch (ctg) {
           case 'TABLE':
-            //wkname
-            Object.keys(vts).forEach(function(table){
-              tableItems[table]= {name: table };//
-              if(self.modules[ctg]) {
-                self.modules[ctg].forEach(function(me){
-                  if(me.constructor == Object) { //customized path
-                    tempKey  = me.path+'/'+table;
-                    tempName = me.type;
-                  } else { //default path (chart's type == chart's path)
-                    tempKey = 'TABLE/'+ me +'/'+table;
-                    tempName = me;
-                  }
-                  if(!tableItems[table].items){
-                    tableItems[table].items ={};
-                  }
-                  tableItems[table].items[tempKey] = {name: tempName};
-                });
-              }
-            });
-            break;
           case 'TREE':
-            Object.keys(vts).forEach(function(table){
-              treeItems[table]= {name: table };
-              if(self.modules[ctg]){
-                self.modules[ctg].forEach(function(me){
-                  if(me.constructor == Object) {
-                    tempKey = me.path+'/'+table;
-                    tempName = me.type;
-                  } else {
-                    tempKey = 'TREE/'+me+'/'+table;
-                    tempName = me;
-                  }
-                  if(!treeItems[table].items){
-                    treeItems[table].items ={};
-                  }
-                  treeItems[table].items[tempKey] = {name: tempName};
-                });
-              }
-            });
-            break;
           case 'STREAM':
-            Object.keys(vts).forEach(function(table){
-              streamItems[table]= {name: table };
-              if(self.modules[ctg]){
-                self.modules[ctg].forEach(function(me){
-                  if(me.constructor == Object) {
-                    tempKey = me.path+'/'+table;
-                    tempName = me.type;
-                  } else {
-                    tempKey = 'STREAM/'+me+'/'+table;
-                    tempName = me;
-                  }
-                  if(!streamItems[table].items){
-                    streamItems[table].items ={};
-                  }
-                  streamItems[table].items[tempKey] = {name: tempName};
+            //wkname
+            _.each(wks, function(vts, wkname) {
+              tableItems[wkname]= {name: wkname};
+              if(vts.length > 1 ) {
+                var obj= {},wkvtName;
+                vts.forEach(function(vtname) {
+                  wkvtName = wkname+'.'+vtname; 
+                  obj[wkvtName] = {name: vtname, items: self.addChartLibs(ctg, wkvtName)};
                 });
+                tableItems[ wkname].items = obj;
               }
             });
             break;
-
+         
           default : //'advanced'
-            $.each(vts, function (type, names){
+            $.each(wks, function (type, names){
               names.forEach(function(name) {
                 if(!advancedItems[type]){ //type--GanttChart
                   advancedItems[type] = { name: type, items: {}};
@@ -126,7 +98,6 @@ define(['text!vis/config.json'], function(cts){
                   tempKey = (self.modules[type].path)? self.modules[type].path : type;
                   advancedItems[type].items[ tempKey +'/'+name] = {name: name};
                 } else {
-                  //advancedItems[type].disabled = true;
                   advancedItems[type].items[ type+'/'+name] = {name: name, disabled: true};
                 }
               });

@@ -1,10 +1,10 @@
-require('../util/wrapperConsoleForLog4js.js')
+//require('../util/wrapperConsoleForLog4js.js')
 var amqp = require('amqplib'),
       config = require('config'),
       fs = require('fs');
 var entrance = __dirname+'/data/',
     callback = new (require('./utils/ReadFile.js'))();
- 
+
 function collector (path) {
     var files = [];
     var list = fs.readdirSync(path); //get all contents under path

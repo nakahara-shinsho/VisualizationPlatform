@@ -13,16 +13,9 @@ function ReadFile () {
   
   //public member for asyn call
   this.vts = function(wk_name) {
-      var ret = [];
-      if(wk_name) {
-        ret = [wk_name];
-      } else 
-      if(this.name){
-        ret = [this.name];
-      }
-      return ret;
+      return ['ORG', 'SUMMARY'];
   };
-  
+
   this.asyn = function(options, entrance, filename) { //filename is wk_name
     
     this.name = filename;
@@ -35,8 +28,8 @@ function ReadFile () {
     fs.readFile(entrance + filename, 'utf8', function(err, text){
       if(err){
         response._error_= {};
-        response._error_ .format = json;
-        response._error_ .filled  = err;
+        response._error_.format = 'json';
+        response._error_.filled = err;
         deferred.reject(response);
       } else {
         response._table_ = {};
