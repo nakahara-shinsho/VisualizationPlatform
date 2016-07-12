@@ -1,4 +1,4 @@
-//require('../../util/wrapperConsoleForLog4js.js')
+require('../../util/wrapperConsoleForLog4js.js')
 var amqp = require('amqplib');
 var config = require('config') ;
 var fs = require('fs');

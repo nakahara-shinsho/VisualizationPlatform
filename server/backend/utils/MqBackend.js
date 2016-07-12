@@ -20,9 +20,8 @@ function MqBackend(ch) {
     wk_names.forEach(function(wk_name) {  
       if(!self.requestQueueList[wk_name]) {
 	  if (sqlite_tool.isDb(wk_name)) {
-	      var tables = sqlite_tool.getTables(entrance, wk_name);
-	      var schemas = sqlite_tool.getSchemas(entrance, wk_name);
-	      var schemaObj = sqlite_tool.convertSchemasDataIntoObjectData(schemas);
+	      //worker for sqlite
+	      var schemaObj = sqlite_tool.getSchemaObject(entrance, wk_name);
 	      Object.keys(schemaObj).forEach(function(key) {
 		      var queries = queryTool.getMatchedQueriesFromSchema(key, schemaObj[key]);
 		      queries.forEach(function (query) {

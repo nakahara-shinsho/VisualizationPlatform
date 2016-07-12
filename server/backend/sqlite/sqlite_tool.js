@@ -7,6 +7,7 @@ function sqlite_tool() {
     const CRETATE_TABLE = /\s*CREATE\s+TABLE\s+/g;
     const COL_KEYWORD = /\s*\w+\s*/g;
     const COL_KEYWORDS = /\s*\w+\s*[\s*\w+*\s*]*[\,|\)]/g;    
+
     /**
      * get sqlite tables from file name
      * @param {string} file path
@@ -28,6 +29,7 @@ function sqlite_tool() {
 	    });
 	return tables;
     };
+
     /**
      * chekck whether sqlite file or not
      * @param {string} file name
@@ -41,6 +43,7 @@ function sqlite_tool() {
 	    return false;
 	}
     }
+
     /**
      * execute sqlite "select" from file name and table name
      * @param {string} file path
@@ -58,6 +61,7 @@ function sqlite_tool() {
 	var data = decoder.write(result);	
 	return data;
     }
+
     /**
      * execute sqlite command
      * @param {string} file path
@@ -74,6 +78,7 @@ function sqlite_tool() {
 	var data = decoder.write(result);	
 	return data;
     }
+
     /**
      * get schema using ".schema" command
      * @param {string} file path
@@ -96,6 +101,7 @@ function sqlite_tool() {
 	    });
 	return schemas;
     };	
+
     /**
      * get table from schema 
      * @param {string} schema
@@ -111,6 +117,7 @@ function sqlite_tool() {
 	}
 	return table;
     };
+
     /**
      * get tables from schema 
      * @param {string} schema
@@ -128,6 +135,7 @@ function sqlite_tool() {
 	    });
 	return tables;
     }
+
     /**
      * get columns from schema 
      * @param {string} schema
@@ -148,6 +156,7 @@ function sqlite_tool() {
 	}
 	return cols; 
     }
+
     /**
      * convert schema texts into schema object structure
      * @param {string array} schemas
@@ -167,6 +176,18 @@ function sqlite_tool() {
 	Object.keys(obj).forEach(function(key) {
 	});
 	return obj;
+    }
+
+    /**
+     * get schema object from sqlite file
+     * @param {string array} schemas
+     * @return {object} cols
+     */
+    this.getSchemaObject = function(path, filename) {
+	var tables = this.getTables(path, filename);
+	var schemas = this.getSchemas(path, filename);
+	var schemaObj = this.convertSchemasDataIntoObjectData(schemas);
+	return schemaObj;
     }
 };
 module.exports = sqlite_tool;
