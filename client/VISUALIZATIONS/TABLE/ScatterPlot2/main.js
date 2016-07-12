@@ -23,8 +23,8 @@ define(["css!./main"], function () {
     }
 
     this.io.dataManager().setMapperProps({
-      xaxis: { label: 'X Axis', type: 'number', map2: '', spk: 'width'},
-      yaxis: { label: 'Y Axis', type: 'number', map2: [], spk: 'height'}
+      xaxis: { label: 'X Axis', type: 'number', map2: '', size: 'width'},
+      yaxis: { label: 'Y Axis', type: 'number', map2: '', size: 'height'}
     });
     /// X Axis
     this.io.designManager()
@@ -48,8 +48,10 @@ define(["css!./main"], function () {
       .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
-    this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
+    this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMinManual", {type:"regx", name:"Y AXIS Min (Manual)", value: 0});
+    /// Brush
+    this.io.designManager().setControl("mouseActionMode"  , {type:"radio", name:"Mouse Action Mode",range:["CLICK", "1D-BRUSH","2D-BRUSH"], value:"2D-BRUSH"});
   };
 
   /**
@@ -65,21 +67,18 @@ define(["css!./main"], function () {
     } else if (changed.hasOwnProperty("DESIGN_MANAGER")) {
       self.redraw();
     } else if (changed.hasOwnProperty("DATA_MANAGER")) {
-      self.redraw();
-    }else if(changed.hasOwnProperty("MODE")){
-      if(self.io.isHighlightMode()){
-        self.brush = undefined;
+      if(self.brushAction == true && self.io.isHighlightMode()){
+        self.brushAction = false;
+      }else{
+        self.brushAction = false;
         self.redraw();
       }
-    }else{
-      self.redraw();
     }
-
     return self.svg_dom;
   };
 
     /**
-     * render Scatter Matrix Chart
+     * render Scatter Plot
      * @method render
      * @memberOf ScatterPlot
      */
@@ -99,7 +98,6 @@ define(["css!./main"], function () {
     var self = this;
     self.containerWidth  = containerWidth;
     self.containerHeight = containerHeight;
-    self.brush = undefined;
     self.redraw();
   };
 
@@ -154,15 +152,19 @@ define(["css!./main"], function () {
     this.containerWidth = containerWidth;
     this.containerHeight= containerHeight;
 
+    /** Mode **/
+    this._mode = "highlight"; // ["highlight","drilldown"]
     /** Brush **/
-    this.brush =undefined;
-
-
+    this.brush     = undefined;
+    this.brushAction = false;
     this.svg       = undefined;
     this.xSvg      = undefined;
     this.ySvg      = undefined;
     this.root_dom  = undefined;
     this.container = undefined;
+
+    // Reset Row Refiner
+    this.resetRowRefiner();
   };
   /**
    * setup
@@ -287,69 +289,64 @@ define(["css!./main"], function () {
         dataManager = this.io.dataManager(),
         data = dataManager.getFilteredRows(),
         xcolumn = dataManager.getMapper('xaxis'),
-        ycolumns = dataManager.getMapper('yaxis'),
+        ycolumn = dataManager.getMapper('yaxis'),
         filteredRows = dataManager.getFilteredRows();
-    if(filteredRows.length <=0 || _.isEmpty(xcolumn) || ycolumns.length == 0)  return;
+
+    if(filteredRows.length <=0 || _.isEmpty(xcolumn) || _.isEmpty(ycolumn))  return;
 
     var xrange = dataManager.getFilteredDataRange(xcolumn, filteredRows);
-    var yrange = [undefined, undefined];
-    ycolumns.forEach(function(ycolumn){
-      var tmp = dataManager.getFilteredDataRange(ycolumn, filteredRows);
-      if(yrange[0] === undefined || yrange[0] > tmp[0]){
-        yrange[0] = tmp[0];
-      }
-      if(yrange[1] === undefined || yrange[1] < tmp[1]){
-        yrange[1] = tmp[1];
-      }
-    });
+    var yrange = dataManager.getFilteredDataRange(ycolumn, filteredRows);
+    if(self.io.designManager().getValue("yaxisRangeMinAuto") == "OFF"){
+      yrange[0] = +self.io.designManager().getValue("yaxisRangeMinManual");
+    }else if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "OFF"){
+      yrange[1] = +self.io.designManager().getValue("yaxisRangeMaxManual");
+    }
     self.x = d3.scale.linear().range([0,self.axisWidth]).domain(xrange);
     self.y = d3.scale.linear().range([self.axisHeight,0]).domain(yrange);
     // drawX
-    self.drawAxis(xrange,yrange);
+    self.drawAxis(xcolumn,ycolumn);
     // draw brush
     self.drawBrush();
     // draw dots
-    var axisColor;
-    self.io.dataManager().getMapper("yaxis").forEach(function(ycolumn){
-      axisColor    = undefined;
-      if(colorManager.getDomainName()){
-        if(colorManager.getDomainName().toLowerCase() === "x axis"){
-          axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
-        }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
-          axisColor = colorManager.getColor(ycolumn);
+    var axisColor    = undefined;
+    //var colorManager = this.io.colorManager();
+    if(colorManager.getDomainName() === "X Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+    }else if(colorManager.getDomainName() === "Y Axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    }
+
+    this.svg.selectAll("circle")
+      .data(data)
+      .enter()
+      .append("circle")
+      .attr("cx", function (d) {
+        return self.x(+d[xcolumn]);
+      })
+      .attr("cy", function (d) {
+        return self.y(+d[ycolumn]);
+      })
+      .attr("r", 3)
+      .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
         }
-      }
-      var id = ycolumn.replace("(", "_").replace(")","");
-      if(id.length !== 0){
-        self.svg.selectAll("circle#"+id)
-          .data(data)
-          .enter()
-        .append("circle").attr("id", id)
-        .attr("cx", function (d) {
-          return self.x(+d[xcolumn]);
-        })
-        .attr("cy", function (d) {
-          return self.y(+d[ycolumn]);
-        })
-        .attr("r", 3)
-        .style("fill", function (d) {
-          if(axisColor !== undefined){
-            return axisColor;
-          }
-          var col = colorManager.getColorOfRow(d);
-          if(col === "#555"){
-            col = "orange";
-          }
-          return col;
-        });
-      }
-    });
+        return colorManager.getColorOfRow(d);
+      })
+      .append("title")
+      .text(function(d){
+        var title = "";
+        for(var k in d){
+          title +=  "[" + k + "]   : " + d[k] + "\n";
+        }
+        return title;
+      });
     //hide unfocused data for highligh mode
-    if(self.io.isHighlightMode()) {
-      self.svg
+    if(this.io.isHighlightMode()) {
+      this.svg
         .selectAll("circle")
         .classed("hideme", function (row) {
-          return !dataManager.isHighlightRow(row);
+           return !dataManager.isHighlightRow(row);
         });
     }
   };
@@ -359,9 +356,11 @@ define(["css!./main"], function () {
    * @memberOf ScatterPlot
    * @returns {undefined}
    */
-  ScatterPlot.prototype.drawAxis = function (xrange, yrange) {
+  ScatterPlot.prototype.drawAxis = function (xcolumn, ycolumn) {
     var self = this;
     var filteredRows = self.io.dataManager().getFilteredRows();
+    var xrange = self.io.dataManager().getFilteredDataRange(xcolumn, filteredRows);
+    var yrange = self.io.dataManager().getFilteredDataRange(ycolumn, filteredRows);
     drawXAxis();
     drawYAxis();
 
@@ -429,7 +428,26 @@ define(["css!./main"], function () {
    */
   ScatterPlot.prototype.drawBrush = function(){
     var self = this;
-    if(self.brush === undefined || self.io.isDrilldownMode()){
+    if(self.io.designManager().getValue("mouseActionMode") == "1D-BRUSH"){
+      self.brush = d3.svg.brush()
+        .x(self.x)
+        .on("brushstart", function(){
+          d3.event.sourceEvent.stopPropagation();
+        })
+        .on("brushend", function(){
+          d3.event.sourceEvent.stopPropagation();
+          self.brushAction = true;
+          var filter = {}, xcol = self.io.dataManager().getMapper('xaxis');
+          filter[xcol] = self.brush.empty() ? null : self.brush.extent();
+          self.io.dataManager().setRowRefiner(filter);
+        });
+      self.svg.append("g")
+        .attr("class", "x brush")
+        .call(self.brush)
+        .selectAll("rect")
+        .attr("y", -10)
+        .attr("height", self.axisHeight + 10 + self.xConfig.label.height);
+    }else if(self.io.designManager().getValue("mouseActionMode") == "2D-BRUSH"){
       self.brush = d3.svg.brush()
         .x(self.x)
         .y(self.y)
@@ -438,6 +456,7 @@ define(["css!./main"], function () {
         })
         .on("brushend", function(){
           d3.event.sourceEvent.stopPropagation();
+          self.brushAction = true;
           var filter = {};
           // X AXIS
           var xcol = self.io.dataManager().getMapper('xaxis');
@@ -445,48 +464,61 @@ define(["css!./main"], function () {
           if(self.brush.extent() !== undefined && xDiff > 0){
             filter[xcol] = [self.brush.extent()[0][0], self.brush.extent()[1][0]];
           }else{
-            filter[xcol] = null;
-          }
-          // Y AXIS
-          var ycol = self.io.dataManager().getMapper('yaxis');
-          var yDiff = self.brush.extent()[1][1] - self.brush.extent()[0][1];
-          if(self.brush.extent() !== undefined && xDiff > 0){
-            filter[ycol] = [self.brush.extent()[0][1], self.brush.extent()[1][1]];
-          }else{
-            filter[ycol] = null;
-          }
-          // FILTER
-          self.io.dataManager().setRowRefiner(filter);
-
-        });
-      }
-      self.svg.append("g")
-      .attr("class","x brush")
-      .call(self.brush)
-      .selectAll("rect");
+           filter[xcol] = null;
+         }
+         // Y AXIS
+         var ycol = self.io.dataManager().getMapper('yaxis');
+         var yDiff = self.brush.extent()[1][1] - self.brush.extent()[0][1];
+         if(self.brush.extent() !== undefined && xDiff > 0){
+           filter[ycol] = [self.brush.extent()[0][1], self.brush.extent()[1][1]];
+         }else{
+           filter[ycol] = null;
+         }
+         // FILTER
+         self.io.dataManager().setRowRefiner(filter);
+       });
+     self.svg.append("g")
+       .attr("class", "brush")
+       .call(self.brush)
+       .selectAll("rect");
+   }else{
+     self.brush = undefined;
+   }
   };
 
   ScatterPlot.prototype.updateColors = function() {
     var self = this;
     var colorManager = self.io.colorManager();
     var axisColor    = undefined;
-    self.io.dataManager().getMapper("yaxis").forEach(function(ycolumn){
-      if(colorManager.getDomainName().toLowerCase() !== undefined &&
-         colorManager.getDomainName().toLowerCase() === "x axis"){
-        axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
-      }else if(colorManager.getDomainName().toLowerCase() !== undefined &&
-        colorManager.getDomainName().toLowerCase() === "y axis"){
-        axisColor = colorManager.getColor(ycolumn);
-      }
-      var id = ycolumn.replace("(", "_").replace(")","");
-      self.svg.selectAll("circle#"+id)
-        .style("fill", function (d) {
-          if(axisColor !== undefined){
-            return axisColor;
-          }
-          return colorManager.getColorOfRow(d);
-        });
-    });
+    if(colorManager.getDomainName().toLowerCase() === "x axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("xaxis"));
+    }else if(colorManager.getDomainName().toLowerCase() === "y axis"){
+      axisColor = colorManager.getColor(self.io.dataManager().getMapper("yaxis"));
+    }
+
+
+    self.svg.selectAll("circle")
+      .style("fill", function (d) {
+        if(axisColor !== undefined){
+          return axisColor;
+        }
+        return colorManager.getColorOfRow(d);
+      });
   };
+   /**
+   * Reset RowRefiner
+   * @method resetRowRefiner
+   * @memberOf TableChart
+   */
+  ScatterPlot.prototype.resetRowRefiner = function(){
+    var self = this;
+    var filter = self.io.dataManager().getRowRefiner();
+    var newFilter = {};
+    for(var k in filter){
+      newFilter[k] = null;
+    }
+    self.io.dataManager().setRowRefiner(newFilter);
+  };
+
   return ScatterPlot;
 });
