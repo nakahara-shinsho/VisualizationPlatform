@@ -1,0 +1,4 @@
+server/logs/*
+server/backend/sqlite/VirtualTable/*
+server/backend/sqlite/data/*
+!.gitkeep

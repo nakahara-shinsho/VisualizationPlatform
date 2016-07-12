@@ -34,6 +34,9 @@
         },
         { type: 'ParallelCoordinates',
           path: 'TABLE/ParallelCoordinates'
+        },
+        { type: 'Legend',
+          path: 'TABLE/Legend'
         }
     ],
     STREAM: [],
@@ -48,5 +51,9 @@
     ConfusionMatrix: {
         type: 'ConfusionMatrix',
         path: 'Authenticated/fplus/ConfusionMatrix'
+    },
+    GanttChart: {
+        type: 'ConfusionMatrix',
+        path: 'Authenticated/GanttChart'
     }
 }

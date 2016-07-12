@@ -79,7 +79,7 @@ define(['ctrl/COMMON'], function (COMMON) {
   
   DesignManager.prototype.setControl = function() {
       if(arguments.length <=0) return;
-      
+
       if(arguments[0].constructor == Object) {
         _.each(arguments[0], function(item, key){
           this._mergeControl_(key, item);
