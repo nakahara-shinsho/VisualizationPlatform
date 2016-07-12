@@ -95,7 +95,6 @@ define(["js/app",
              if(toolId == self.model.get('tool').id) {
                self.model.set('tool', {});
              }
-
              //remove image
              $img.parent().remove();
           }).fail(function(jqXHR, textStatus, errorThrown) {
