@@ -37,7 +37,6 @@ define(['ctrl/COMMON'], function (COMMON) {
            local_vtName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.pop(),
            local_wkName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.join('.');
        this._ctrl.trigger("change:_data_link_", changedAttrs, local_vtName, local_wkName);
-       
      }
  };
  
@@ -85,7 +84,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype._readColumnRefiner = function() {
-    return this._model.get('dataSelector');
+    return this._model.get('dataSelector').slice(0); //clone
  };
  
  DataManager.prototype._writeMapper =  function(mappings, options) {
