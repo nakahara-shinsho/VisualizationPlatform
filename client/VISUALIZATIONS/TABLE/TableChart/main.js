@@ -36,6 +36,8 @@ define(["util/CustomTooltip",
       .setControl("InitSelectNum", {type: "regx", name: "Init Select Number", value:0});
     this.io.designManager()
       .setControl("SelectLimit", {type: "regx", name: "Select Number Limit", value:10});
+    this.io.designManager()
+      .setControl("ClickedColor", {type: "regx", name: "Clicked Color", value:"#f8c059"});
   };
 
   /**
@@ -49,7 +51,9 @@ define(["util/CustomTooltip",
     if(changed.hasOwnProperty("COLOR_MANAGER")){
       //self.redraw();
     }else if(changed.hasOwnProperty("DESIGN_MANAGER")){
-      //self.redraw();
+      if(self.io.designManager().getValue("ClickedColor").length == 7){
+        self.redraw();
+      }
     }else if(changed.hasOwnProperty("DATA_MANAGER")){
       if(changed.DATA_MANAGER.REFINER == null){
         self.resetRowRefiner();
@@ -477,16 +481,27 @@ define(["util/CustomTooltip",
         }
       });
     };
+    var color = self.io.designManager().getValue("ClickedColor");
     self.tbody.selectAll("tr")
       .style("background-color", function(){
         for(var i=0; i< clickedIds.length ; i++){
           if(d3.select(this).attr("id").indexOf(clickedIds[i]) !== -1){
-            return "orange";
+            return color;
+            break;
+          }
+        }
+	return null;
+      })
+      .style("color", function(){
+        for(var i=0; i< clickedIds.length ; i++){
+          if(d3.select(this).attr("id").indexOf(clickedIds[i]) !== -1){
+            return "white";
             break;
           }
         }
 	return null;
       });
+
   };
  /**
    * update display rows
@@ -584,6 +599,7 @@ define(["util/CustomTooltip",
     var self = this;
     self.resetRowRefiner();
     var num = self.io.designManager().getValue("InitSelectNum");
+    var color = self.io.designManager().getValue("ClickedColor");
     if(num > 0){
       var filterCols = self.io.dataManager().getMapper("primaryKeyString");
       filterCols.forEach(function(col){
@@ -595,7 +611,16 @@ define(["util/CustomTooltip",
             filterCols.forEach(function(col){
               self.initSelectFilter[col].push(d[col]);
             });
-            return "orange";
+            return color;
+          }
+          return null;
+        })
+        .style("color", function(d,i){
+          if(i < num){
+            filterCols.forEach(function(col){
+              self.initSelectFilter[col].push(d[col]);
+            });
+            return "white";
           }
           return null;
         });

@@ -9,6 +9,10 @@ th.header{
     font-size : 10pt;
 }
 
+tr.clicked{
+    background-color : "#08c071f";
+    color : "white";
+}
 
 /*Scroll Bar*/
 
