@@ -1,21 +1,34 @@
 
-/* base */
-th,td {
-    table-layout:fixed;
-    word-break:break-all;
+path.domain {
+    fill: none;
+    stroke: #c8c8c8;
 }
 
-th.header{
-    font-size : 10pt;
+text#caption{
+    font-size : 20pt;
 }
 
-tr.clicked{
-    background-color : "#08c071f";
-    color : "white";
+.linechart-yaxis{
+    float:left;
+}
+.linechart-main{
+    float:left;
+}
+
+.linechart-xaxis-caption{
+}
+
+path.line_chart.hideme{
+    stroke:  #666 !important;
+    opacity: 0.6 !important;
+}
+
+rect.extent{
+    fill: yellow;
+    fill-opacity:0.3;
 }
 
 /*Scroll Bar*/
-
 ::-webkit-scrollbar
 {
     overflow:hidden;
@@ -54,16 +67,3 @@ tr.clicked{
     border-radius:3px;
     background:#666;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

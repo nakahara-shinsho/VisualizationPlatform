@@ -31,6 +31,13 @@ define(["util/CustomTooltip",
     this.io.dataManager().setMapperProps({
 	primaryKeyString: {type: 'string', label: 'Primary Key String', map2: []}
     });
+    // Design Manager
+    this.io.designManager()
+      .setControl("InitSelectNum", {type: "regx", name: "Init Select Number", value:0});
+    this.io.designManager()
+      .setControl("SelectLimit", {type: "regx", name: "Select Number Limit", value:10});
+    this.io.designManager()
+      .setControl("ClickedColor", {type: "regx", name: "Clicked Color", value:"#f8c059"});
   };
 
   /**
@@ -44,15 +51,17 @@ define(["util/CustomTooltip",
     if(changed.hasOwnProperty("COLOR_MANAGER")){
       //self.redraw();
     }else if(changed.hasOwnProperty("DESIGN_MANAGER")){
-      //self.redraw();
+      if(self.io.designManager().getValue("ClickedColor").length == 7){
+        self.redraw();
+      }
     }else if(changed.hasOwnProperty("DATA_MANAGER")){
       if(changed.DATA_MANAGER.REFINER == null){
         self.resetRowRefiner();
       }
       if(!self.selfClick){
-        self.selfClick = false;
         self.redraw();
       }
+      self.selfClick = false;
     }
   };
 
@@ -67,6 +76,7 @@ define(["util/CustomTooltip",
     self.initialize(containerWidth, containerHeight);
     self.createHeader();
     self.createChart();
+    self.initSelect();
     return self.root_dom;
   };
 
@@ -88,43 +98,7 @@ define(["util/CustomTooltip",
       .style("overflow-y","scroll");
 
     // Update tbody
-    self.tbody
-      .selectAll("tr")
-      .data(self.io.dataManager().getData())
-      .enter()
-      .append("tr")
-      .attr("id", function(d){
-        var id = [];
-        for(var k in d){
-          id.push(d[k]);
-        }
-        if(id.length > 0){
-          return id.join("__");
-        }
-        return null;
-      })
-      .selectAll("td")
-      .data(function(row){
-        return d3.entries(row);
-      })
-      .enter()
-      .append("td")
-      .attr("id", function(d){return d.key;})
-      .attr("data-resizable-column-id",function(d){
-        return d.key;})
-      .style("width", function(d){
-	return self.rowConfig.width + "px";
-      })
-      .text(function(d){return d.value;});
-    // ROW CLICK
-    self.tbody.selectAll("tr")
-      .on("click",function(d){
-        // Update Filter
-      	self.updateFilter(d);
-        // Update Color
-        self.updateColor();
-      });
-    //self.createChart();
+    self.createTbody();
     return self.root_dom;
   };
   /**
@@ -138,6 +112,8 @@ define(["util/CustomTooltip",
       self.rowConfig = {width : 120};
     self.minimumColumnWidth = 150;
     self.selfClick = false;
+    self.initSelectFilter = {};
+
     /** Mode **/
     self._mode = "drilldown"; // ["highlight","drilldown"]
     self.containerWidth = containerWidth;
@@ -261,7 +237,58 @@ define(["util/CustomTooltip",
   };
 
   /**
-   * create bar chart depend on selected items by user
+   * create tbody
+   * @method creatTbody
+   * @memberOf TableChart
+   */
+  TableChart.prototype.createTbody = function () {
+    var self = this;
+    self.tbody
+      .selectAll("tr")
+      .data(self.io.dataManager().getData())
+      .enter()
+      .append("tr")
+      .attr("id", function(d){
+        var id = [];
+        for(var k in d){
+          id.push(d[k]);
+        }
+        if(id.length > 0){
+          return id.join("__");
+        }
+        return null;
+      })
+      .selectAll("td")
+      .data(function(row){
+        return d3.entries(row);
+      })
+      .enter()
+      .append("td")
+      .attr("id", function(d){return d.key;})
+      .attr("data-resizable-column-id",function(d){
+        return d.key;})
+      .style("width", function(d){
+	return self.rowConfig.width + "px";
+      })
+      .text(function(d){return d.value;});
+    // ROW CLICK
+    self.tbody.selectAll("tr")
+      .on("click",function(d){
+        var filterCol = self.io.dataManager().getMapper("primaryKeyString")[0];
+        var filters   = self.io.dataManager().getRowRefiner()[filterCol];
+        if(filters == undefined ||
+           filters.length  < self.io.designManager().getValue("SelectLimit") ||
+           filters.indexOf(d[filterCol]) !== -1){
+          self.selfClick = true;
+          // Update Filter
+      	  self.updateFilter(d);
+          // Update Color
+          self.updateColor();
+        }
+      });
+  };
+  /**
+   * create chart
    * @method creatChart
    * @memberOf TableChart
    */
@@ -311,44 +338,8 @@ define(["util/CustomTooltip",
     // Table Body
     var filterCols =
           self.io.dataManager().getMapper("primaryKeyString");
+    self.createTbody();
 
-    self.tbody
-      .selectAll("tr")
-      .data(self.io.dataManager().getData())
-      .enter()
-      .append("tr")
-      .attr("id", function(d){
-        var id = [];
-        for(var k in d){
-          id.push(d[k]);
-        }
-        if(id.length > 0){
-          return id.join("__");
-        }
-        return null;
-      })
-      .selectAll("td")
-      .data(function(row){
-        return d3.entries(row);
-      })
-      .enter()
-      .append("td")
-      .attr("id", function(d){return d.key;})
-      .attr("data-resizable-column-id",function(d){
-        return d.key;})
-      .style("width", function(d){
-	return self.rowConfig.width + "px";
-      })
-      .text(function(d){return d.value;});
-    // ROW CLICK
-    self.tbody.selectAll("tr")
-      .on("click",function(d){
-        self.selfClick = true;
-        // Update Filter
-      	self.updateFilter(d);
-        // Update Color
-        self.updateColor();
-      });
     function drawDropdown(){
       /// 1. Create Dropdown List
       var dropdiv = self.headers.append("div")
@@ -443,6 +434,9 @@ define(["util/CustomTooltip",
   TableChart.prototype.updateFilter = function (row) {
     var self = this;
     var currentFilter = self.io.dataManager().getRowRefiner();
+    if(self.initSelectFilter !== undefined){
+      currentFilter = self.initSelectFilter;
+    }
     var newFilter     = {};
     var filterCols =
           self.io.dataManager().getMapper("primaryKeyString");
@@ -466,6 +460,7 @@ define(["util/CustomTooltip",
         newFilter[col].push(row[col]);
       }
     });
+    self.initSelectFilter = undefined;
     self.io.dataManager().setRowRefiner(newFilter);
   };
  /**
@@ -486,16 +481,27 @@ define(["util/CustomTooltip",
         }
       });
     };
+    var color = self.io.designManager().getValue("ClickedColor");
     self.tbody.selectAll("tr")
       .style("background-color", function(){
         for(var i=0; i< clickedIds.length ; i++){
           if(d3.select(this).attr("id").indexOf(clickedIds[i]) !== -1){
-            return "orange";
+            return color;
+            break;
+          }
+        }
+	return null;
+      })
+      .style("color", function(){
+        for(var i=0; i< clickedIds.length ; i++){
+          if(d3.select(this).attr("id").indexOf(clickedIds[i]) !== -1){
+            return "white";
             break;
           }
         }
 	return null;
       });
+
   };
  /**
    * update display rows
@@ -583,6 +589,44 @@ define(["util/CustomTooltip",
       newFilter[k] = null;
     }
     self.io.dataManager().setRowRefiner(newFilter);
+  };
+ /**
+   * Init Select
+   * @method initSelect
+   * @memberOf TableChart
+   */
+  TableChart.prototype.initSelect = function(){
+    var self = this;
+    self.resetRowRefiner();
+    var num = self.io.designManager().getValue("InitSelectNum");
+    var color = self.io.designManager().getValue("ClickedColor");
+    if(num > 0){
+      var filterCols = self.io.dataManager().getMapper("primaryKeyString");
+      filterCols.forEach(function(col){
+        self.initSelectFilter[col] = [];
+      });
+      self.tbody.selectAll("tr")
+        .style("background-color", function(d,i){
+          if(i < num){
+            filterCols.forEach(function(col){
+              self.initSelectFilter[col].push(d[col]);
+            });
+            return color;
+          }
+          return null;
+        })
+        .style("color", function(d,i){
+          if(i < num){
+            filterCols.forEach(function(col){
+              self.initSelectFilter[col].push(d[col]);
+            });
+            return "white";
+          }
+          return null;
+        });
+    }else{
+      self.initSelectFilter = undefined;
+    }
   };
   return TableChart;
 
