@@ -37,23 +37,23 @@
         },
         { type: 'Legend',
           path: 'TABLE/Legend'
-        }
+        },
+	{
+            type: 'LineChartRowSplit',
+            path: 'Authenticated/LineChartRowSplit'
+	}
     ],
     STREAM: [],
     SourceCodeView: {
         type: 'SourceCodeView',
         path: 'Authenticated/SourceCodeView'
     },
-    LineChartRowSplit: {
-        type: 'LineChartRowSplit',
-        path: 'Authenticated/LineChartRowSplit'
-    },
     ConfusionMatrix: {
         type: 'ConfusionMatrix',
-        path: 'Authenticated/fplus/ConfusionMatrix'
+        path: 'Authenticated/ConfusionMatrix'
     },
     GanttChart: {
-        type: 'ConfusionMatrix',
+        type: 'GanttChart',
         path: 'Authenticated/GanttChart'
     }
 }
