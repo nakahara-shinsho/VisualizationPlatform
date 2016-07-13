@@ -51,6 +51,7 @@ define([
       //this.listenTo(framework.mediator, 'board:undo', this.undoUpdate.bind(this));
       //this.listenTo(framework.mediator, 'board:redo', this.redoUpdate.bind(this));
       this.listenTo(framework.mediator, 'board:toggle-caption', this.toggleCaption);
+      this.listenTo(framework.mediator, 'board:clear-filter', this.clearFilter);
       
       this.linkViews = {};//(id: view) pairs
       
@@ -87,13 +88,14 @@ define([
     
     events: {
       'click button.event-vt': 'showVirtualTables',
-      'click button.event-delete': 'deleteMe',
+      'click button.event-delete': 'onDeleteMe',
       'click button.event-design-panel': 'toggleDesignPanel',
       'click button.event-link-panel': 'toggleControlPanel',
       'click button.event-toggle-mode': 'toggleMode',
-      'click button.event-zoom': 'zoomMe',
-      'click button.event-image': 'imageMe',
+      'click button.event-zoom': 'onZoomMe',
+      'click button.event-image': 'onImagingMe',
       'click button.event-data-mapping-panel': 'toggleDataMappingPanel',
+      'click button.event-clear-filter': 'clearFilter',
       'dblclick .caption > p' : 'showCaptionControl',
       'click .chart, .caption': 'activeMe',
       'click select': 'updateLinkMenu',
@@ -179,7 +181,7 @@ define([
        $.extend(this.chartctrl.options, {width: width, height: height});
     },
     
-    zoomMe: function (evt) {
+    onZoomMe: function (evt) {
       var self = this;
       var $cell = this.$el.parents('li'),
           $ul = $cell.parents('ul'),
@@ -246,7 +248,7 @@ define([
       }
     },
    
-    imageMe: function (evt) {
+    onImagingMe: function (evt) {
       var self = this;
       var chart_el = self.$el.find('.chart');
       getFile.convertSVGToCanvas(chart_el);
@@ -262,7 +264,7 @@ define([
     },
     
     //Delete chart on window screen
-    deleteMe: function (ev) {
+    onDeleteMe: function (ev) {
       //tigger delete board event
       var del = confirm("Are you sure for deleting this chart?");
       if (del === true) {
@@ -393,6 +395,16 @@ define([
         framework.mediator.trigger('board:datamapping', this);
       }
       this.activeMe(evt); //update datamapping panel
+    },
+
+    //clear filter conditions for this chart
+    clearFilter: function (evt) {
+      if (evt instanceof $.Event) { 
+        evt.stopPropagation();
+        this.activeMe(evt); //update datamapping panel 
+      }
+      this.chartctrl.dataManager().clearFilter();
+      
     },
 
     // add this to control panel

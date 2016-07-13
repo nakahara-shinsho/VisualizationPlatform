@@ -37,9 +37,7 @@ define(['ctrl/COMMON'], function (COMMON) {
            local_vtName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.pop(),
            local_wkName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.join('.');
        this._ctrl.trigger("change:_data_link_", changedAttrs, local_vtName, local_wkName);
-       /*this.updateChart('REFINER', myRowRefiner); //experimental to use all conditions in the chart
-       this._ctrl.trigger("change:_data_link_", myRowRefiner, this._model.get('vtname'),
-         this._getInferData('_default_table_key_'));*/
+       
      }
  };
  
@@ -362,7 +360,26 @@ DataManager.prototype.isCachedColumn = function(column) {
   var row0 = this.getData()[0];
   return row0.hasOwnProperty(column);
 };
- 
+
+DataManager.prototype.clearFilter = function() { 
+     this._model.set({'dataRefiner': {},
+                      'dataSelector': [],
+                      'dataExtraRefiner': {},
+                      'dataExtraSelector': {}
+                      });//, { slient:true });
+     this.updateChart('REFINER', {});
+};
+
+//i do not know which filter condition of the linked charts shoud be cleared
+DataManager.prototype.clearFilterWithLink = function() { 
+     var local_wkvtArr = this._model.get('vtname').split('.'),
+         local_vtName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.pop(),
+         local_wkName  = (local_wkvtArr.length <=1)? local_wkvtArr[0] : local_wkvtArr.join('.');
+
+     this.clearFilter();
+     this._ctrl.trigger("change:_data_link_", {}, local_vtName, local_wkName);
+};
+
 DataManager.prototype.clearAll = function(key, value) { 
      this.clearData();
      this._model.set({'dataRefiner': {},
@@ -370,9 +387,9 @@ DataManager.prototype.clearAll = function(key, value) {
                       'dataExtraRefiner': {},
                       'dataExtraSelector': {},
                       'dataMapper': {}
-                      },
-                      { slient:true }); //dataMapper
-     this._ctrl.trigger("change:_save_model_");
+                      });
+                      //{ slient:true }); //dataMapper
+     //this._ctrl.trigger("change:_save_model_");
  };
  
  DataManager.prototype._setInferData = function(key, value) {

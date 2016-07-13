@@ -33,6 +33,7 @@ define(["js/app",
         "click button.event-next-screen" : 'onNextScreen',
         "click button.event-caption" : 'onToggleCaption',
         "click button.event-fit2window" : 'onFitToWindow',
+        "click button.event-clear-filter" : 'onClearFilter',
       },
             
       // Render SideBarView
@@ -90,8 +91,11 @@ define(["js/app",
       
       onFitToWindow: function(){
         framework.mediator.trigger('boardmanager:fit2window', index=0);
-      }
-      
+      },
+
+      onClearFilter: function(){
+        framework.mediator.trigger('board:clear-filter');
+      },
       
     });
     return SidebarView;

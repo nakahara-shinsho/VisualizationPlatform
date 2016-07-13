@@ -266,9 +266,11 @@ define(['ctrl/COMMON'], function (COMMON) {
   
   ColorManager.prototype.isColumnDomain = function(domainName) {
      var column = (domainName) ? domainName: this.getDomainName(),
-         mapper = this._ctrl.dataManager().getMapper();
+         dataManager = this._ctrl.dataManager(),
+         mapper = dataManager.getMapper();
      if(!_.isEmpty(column)) {
-        return mapper && !_.has(mapper, column);
+        var labels = _.values(dataManager.getMapperProps()).map(function(prop){ return prop.label;});
+        return mapper && labels.indexOf(column)<0;
      }
      return false;
   };
