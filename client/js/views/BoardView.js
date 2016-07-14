@@ -338,7 +338,11 @@ define([
     
     getCaption: function() {
       var self = this,
-          caption_text = self.model.get('caption').trim(); //the ' ' char will be cleared out
+          caption_text = self.model.get('caption');
+      if(caption_text !== undefined) {
+        caption_text= caption_text.trim(); //the ' ' char will be cleared out
+      }
+      
       if(_.isEmpty(caption_text)) {
         if(self.chartctrl.caption) {
           caption_text = self.chartctrl.caption;
