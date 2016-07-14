@@ -12,15 +12,15 @@ define(['text!vis/config.json'], function(cts){
     $.ajax({type: 'get', cache: false, url: this.url, timeout:10000, data: data}).then(function (wks) {
         var items = {};
         _.each(wks, function(vts, wkname){
-          if(vts.length <= 1 ) {
-            items[wkname] = {name: wkname};
-          } else {
+          if(vts.length > 1 ) {
             var obj= {};
             vts.forEach(function(vtname) {
               obj[wkname+'.'+vtname] = {name: vtname};
             });
             items[wkname] = {name: wkname, items: obj };
-         }
+          } else if(vts.length >0) {
+            items[wkname+'.'+vts[0] ] = {name: wkname};
+          } 
         });
         console.log(items);
         return deferred.resolve({items: items});
@@ -76,17 +76,15 @@ define(['text!vis/config.json'], function(cts){
           case 'STREAM':
             //wkname
             _.each(wks, function(vts, wkname) {
-              tableItems[wkname]= {name: wkname};
-              if(vts.length <= 1 ) {
-                tableItems[wkname].items = self.addChartLibs(ctg, wkname);
-              }
-              else {
+              if(vts.length > 1 ) {
                 var obj= {},wkvtName;
                 vts.forEach(function(vtname) {
                   wkvtName = wkname+'.'+vtname; 
                   obj[wkvtName] = {name: vtname, items: self.addChartLibs(ctg, wkvtName)};
                 });
-                tableItems[ wkname].items = obj;
+                tableItems[wkname] = {name: wkname, items: obj};
+              } else if(vts.length > 0) {
+                tableItems[wkname+'.'+ vts[0]] = {name: wkname, items: self.addChartLibs(ctg, wkname)};
               }
             });
             break;

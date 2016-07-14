@@ -84,7 +84,8 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype._readColumnRefiner = function() {
-    return this._model.get('dataSelector').slice(0); //clone
+   var selector = this._model.get('dataSelector');
+   return (!selector)? selector: selector.slice(0); //clone
  };
  
  DataManager.prototype._writeMapper =  function(mappings, options) {

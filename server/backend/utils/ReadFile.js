@@ -13,7 +13,7 @@ function ReadFile () {
   
   //public member for asyn call
   this.vts = function(wk_name) {
-      return ['ORG'];
+      return ['original'];
   };
 
   this.asyn = function(options, entrance, filename) { 

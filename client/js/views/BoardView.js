@@ -111,10 +111,12 @@ define([
          
           self.contextMenuModel.getDatalistOfChart(this.model.get('vttype')).done(function(menu){
             var $me = self.$el.find('.chart');
-            $me.data('local_context', menu);
-            $me.trigger(
-               $.Event('contextmenu', {pageX: e.pageX, pageY: e.pageY})
-            );
+            if(!_.isEmpty(menu.items)) {
+              $me.data('local_context', menu);
+              $me.trigger(
+                $.Event('contextmenu', {pageX: e.pageX, pageY: e.pageY})
+              );
+            }
           });
         }
     },

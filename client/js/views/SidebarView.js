@@ -9,7 +9,6 @@ define(["js/app",
         "text!templates/sidebar.html",
         'model/SidebarModel',
        ], function (app, sidebarTpl, SidebarModel) {
-
   /**
    * Constructor create SidebarView
    * @method SidebarView
@@ -85,7 +84,13 @@ define(["js/app",
         }
       },
     
-      onToggleCaption: function(){
+      onToggleCaption: function(evt){
+
+        /*if(!this.caption_invisible) { //undefined or false
+          $(evt.currentTarget).prop("disabled", true);
+        } else { //true
+          $(evt.currentTarget).removeAttr('disabled');
+        }*/
         framework.mediator.trigger('board:toggle-caption');
       },
       
