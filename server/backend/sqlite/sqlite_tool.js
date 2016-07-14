@@ -7,7 +7,7 @@ function sqlite_tool() {
     const CRETATE_TABLE = /\s*CREATE\s+TABLE\s+/g;
     const COL_KEYWORD = /\s*\w+\s*/g;
     const COL_KEYWORDS = /\s*\w+\s*[\s*\w+*\s*]*[\,|\)]/g;    
-
+    var exec = require('child_process').execSync;    
     /**
      * get sqlite tables from file name
      * @param {string} file path
@@ -16,7 +16,6 @@ function sqlite_tool() {
      */
     this.getTables = function(path, filename) {
 	var sqliteCommand = "sqlite3 -header --csv  "+ path + filename + " .table";
-	var exec = require("execsyncs");
 	var StringDecoder = require('string_decoder').StringDecoder;
 	var decoder = new StringDecoder('UTF-8');
 	var result = exec(sqliteCommand);
@@ -54,7 +53,6 @@ function sqlite_tool() {
     this.select = function(path, filename, tableName) {
 	var selectCommand = "\"select * from " + tableName + ";\"";
 	var sqliteCommand = "sqlite3 -header --csv  "+ path + filename + " " + selectCommand;
-	var exec = require("execsyncs");
 	var StringDecoder = require('string_decoder').StringDecoder;
 	var decoder = new StringDecoder('UTF-8');
 	var result = exec(sqliteCommand);
@@ -71,7 +69,6 @@ function sqlite_tool() {
      */
     this.execute = function(path, filename, command) {
 	var sqliteCommand = "sqlite3 -header --csv  "+ path + filename + " \"" + command +"\"";
-	var exec = require("execsyncs");
 	var StringDecoder = require('string_decoder').StringDecoder;
 	var decoder = new StringDecoder('UTF-8');
 	var result = exec(sqliteCommand);
@@ -87,7 +84,6 @@ function sqlite_tool() {
      */
     this.getSchemas = function(path, filename) {
 	var sqliteCommand = "sqlite3 -header --csv  "+ path + filename + " .schema";
-	var exec = require("execsyncs");
 	var StringDecoder = require('string_decoder').StringDecoder;
 	var decoder = new StringDecoder('UTF-8');
 	var result = exec(sqliteCommand);	
