@@ -7,16 +7,22 @@ define( function() {
           value = $ctrl.data('value');
       
       var $text = $('<input>',{'class': 'form-control input-sm',type: 'text', value: value });
-      $text.keyup(function(e){
-        manager.setValue($ctrl.attr('id'), $(this).val());
-        // skip arrow key
-        if(e.keyCode == 13 && parent) {
-                parent.close();
-        }
-      });
+      
+      if(parent) { //unit control
+        $text.keyup(function(e) {
+          //manager.setValue($ctrl.attr('id'), $(this).val());
+          // skip arrow key
+          if(e.keyCode == 13 /*&& parent*/) {
+              parent.close();
+          }
+        });
+      }
+      
       $text.change(function(){
          manager.setValue($ctrl.attr('id'), $(this).val());
       });
+      
+
       return $text;
   };
   

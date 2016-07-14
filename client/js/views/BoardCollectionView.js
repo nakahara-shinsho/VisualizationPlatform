@@ -26,8 +26,10 @@ define(['model/BoardCollection','view/BoardViewExt'], function (BoardCollection,
 
       //delete all linking message in the other view
       for(var otherview in self._Views) {
-        if(id in otherview.linkViews) {
-          delete otherview.linkViews[id];
+        if(typeof otherview.linkViews == 'object' ) {
+          if(id in otherview.linkViews) {
+            delete otherview.linkViews[id];
+          }
         }
       }
 
