@@ -87,17 +87,17 @@ define([
     },
     
     events: {
-      'click button.event-vt': 'showVirtualTables',
+      'click button.event-vt': 'showVirtualTables', //not implemented
       'click button.event-delete': 'onDeleteMe',
-      'click button.event-design-panel': 'toggleDesignPanel',
-      'click button.event-link-panel': 'toggleControlPanel',
-      'click button.event-toggle-mode': 'toggleMode',
       'click button.event-zoom': 'onZoomMe',
       'click button.event-image': 'onImagingMe',
       'click button.event-data-mapping-panel': 'toggleDataMappingPanel',
+      'click button.event-design-panel': 'toggleDesignPanel',
+      'click button.event-link-panel': 'toggleControlPanel',
+      'click button.event-toggle-mode': 'toggleMode',
       'click button.event-clear-filter': 'clearFilter',
       'dblclick .caption > p' : 'showCaptionControl',
-      'click .chart, .caption': 'activeMe',
+      'click .chart, .caption >P': 'activeMe',
       'click select': 'updateLinkMenu',
       "contextmenu": 'onRightClick',
     },
@@ -244,7 +244,7 @@ define([
     
     // Active chart when click mouse on chart or click tab of this chart in control panel
     activeMe: function (evt) {
-      if(evt && (evt instanceof $.Event)){
+      if(evt && (evt instanceof $.Event)) {
         evt.stopPropagation(); //stop propagation to parent element 
         framework.mediator.trigger('board:active', this);//to udate control panel
       }
