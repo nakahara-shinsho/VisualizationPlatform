@@ -55,11 +55,9 @@ define(["util/CustomTooltip",
         self.redraw();
       }
     }else if(changed.hasOwnProperty("DATA_MANAGER")){
-      if(changed.DATA_MANAGER.REFINER == null){
-        self.resetRowRefiner();
-      }
       if(!self.selfClick){
         self.redraw();
+        self.resetRowRefiner();
       }
       self.selfClick = false;
     }
@@ -589,6 +587,8 @@ define(["util/CustomTooltip",
       newFilter[k] = null;
     }
     self.io.dataManager().setRowRefiner(newFilter);
+    console.log("== RESET ==");
+    console.log(self.io.dataManager().getRowRefiner());
   };
  /**
    * Init Select
