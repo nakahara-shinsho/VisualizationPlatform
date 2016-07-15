@@ -4,9 +4,10 @@
  */
 function queryTool() {
     const QUERY_TABLE_KEYWORD = /\s*from\s*\w+/g;
-    const QUERY_COL_KEYWORD = /select\s+((\w+\,*\s*)+|\*)\s+from/g;
+    const QUERY_COL_KEYWORD = /select\s+((\w+\s*(\w*\s*\'(\w|[^\x01-\x7E])*\')*\,*\s*)+|\*)\s+from/g;
     const SELECT_STATEMENT = /select\s+/g;
     const FROM_STATEMENT = /\s*from\s*/g;
+    const OTHERS = /\s*(\w*\s*\'(\w|[^\x01-\x7E])*\')/g;
     var path = __dirname+'/VirtualTable/';
     var fs = require('fs');
     var $  = require('jquery-deferred');
@@ -69,9 +70,9 @@ function queryTool() {
 	var keywords = query.match(QUERY_COL_KEYWORD);
 	keywords = keywords[0].replace(SELECT_STATEMENT, "");
 	keywords = keywords.replace(FROM_STATEMENT, "");
-	keywords = keywords.replace(/\s*/g, "");
+	keywords = keywords.replace(OTHERS, "");
+	keywords = keywords.replace(/\s/g, "");
 	cols = keywords.split(",");
-
 	return cols;
     };
 
