@@ -26,37 +26,43 @@ function PDB (family, core, mode) {
   };
 
   this.asyn = function(options, entrance, filename) { //filename is worker_name
+    var dataPath = entrance ;
+    var realFile;
     if(filename.indexOf("::") !== -1){
       var fileinfo = filename.split("::"); // [PDBName, vtName]
       if(fileinfo.length == 2){
         this.name      = filename;
         this.queryFile = __dirname + "/VirtualTable/" + fileinfo[1]+".json.template";
-        this.realFile  = fileinfo[0]+".db";
+        if(mode == "last" || mode == "all"){
+          dataPath       = entrance +"/" + options._context_._database_;
+          realFile  =  fileinfo[0]+".db";
+        }else{
+          realFile  = fileinfo[0]+".db";
+        }
       }
     }
     console.log("[INFO] : Receive Request @ WorkerName :: " +  this.name);
     console.log('[INFO] : Request options:  ' + JSON.stringify(options)  );
     var deferred = $.Deferred();
     var response = {};
-    var dataPath = entrance;
     if(this.queryFile !== undefined){
       // create query
       var query = JSON.parse(fs.readFileSync(this.queryFile, 'utf8'));
 
       // Calc Range
       var ranges = {};
-      calcRange(query, options, this.realFile);
-      console.log("== RANGES ==");
+      calcRange();
+      console.log("== RANGE ==");
       console.log(ranges);
 
       // Calc Slice InverVal
-      updateSliceInterval(query,options, this.realFile);
+      updateSliceInterval();
       // Update Filter
-      updateFilter(query, options);
+      updateFilter();
 
       var tmpobj = tmp.fileSync({postfix:".json"});
       var command = "echo '" + JSON.stringify(query) + "' > " + tmpobj.name+  ";cd " + dataPath + ";";
-      command += "pdb2csv -p "+ core +" -conf " + tmpobj.name  +"  -pdb " + this.realFile;
+      command += "pdb2csv -p "+ core +" -conf " + tmpobj.name  +"  -pdb " + dataPath +"/"+ realFile;
       command += "; rm -f " + tmpobj.name;
       console.log(command);
       var result = exec(command);
@@ -76,20 +82,22 @@ function PDB (family, core, mode) {
      * Range *
      *********/
     // Calc Range for SetInterval
-    function calcRange(query,options, pdbFile){
-      var rangeQuery = { "query":{"select":[],"approx_aggregate": true},"option":{"csv_comma": ","}};
-      if(options._select_ !== undefined){
-        options._select_.forEach(function(col){
-          if(col.indexOf(")") == -1){
-            rangeQuery.query.select.push({"column":col,"aggregate":"min"});
-            rangeQuery.query.select.push({"column":col,"aggregate":"max"});
-            rangeQuery.query.select.push({"column":col,"aggregate":"count"});
+    function calcRange(){
+      var rangeQuery = { "query":{"select":[],"approx_aggregate": false},"option":{"csv_comma": ","}};
+      if(query.query.select !== undefined){
+        var pushedCols = [];
+        query.query.select.forEach(function(col){
+          if(pushedCols.indexOf(col.column) == -1){
+            rangeQuery.query.select.push({"column":col.column,"aggregate":"min"});
+            rangeQuery.query.select.push({"column":col.column,"aggregate":"max"});
+            rangeQuery.query.select.push({"column":col.column,"aggregate":"count"});
           }
         });
         var tmpobj = tmp.fileSync({postfix:".json"});
         var command = "echo '" + JSON.stringify(rangeQuery) + "' > " + tmpobj.name+  ";cd " + dataPath + ";";
-        command += "pdb2csv -conf " + tmpobj.name  +"  -pdb " + pdbFile + ";";
+        command += "pdb2csv -conf " + tmpobj.name  +"  -pdb " + dataPath +"/" + realFile + ";";
         command += " rm -f " + tmpobj.name;
+        console.log(command);
         var result = exec(command);
         var index2name = {};
         var colName;
@@ -120,7 +128,7 @@ function PDB (family, core, mode) {
     /**********
      * Filter *
      **********/
-    function updateFilter(query, options){
+    function updateFilter(){
       if(options._where_ !== undefined &&
          query.query.where !== undefined){
         for(var col in options._where_){
@@ -140,7 +148,9 @@ function PDB (family, core, mode) {
         }
       }
     }
-    function updateSliceInterval(query,options, file){
+    function updateSliceInterval(){
+      console.log(">> Update Slice Interval");
+      console.log(options);
       if(query.query !== undefined &&
          query.query.group_by !== undefined &&
          options._spk_ !== undefined){
@@ -152,6 +162,8 @@ function PDB (family, core, mode) {
           }
           query.query.group_by.forEach(function(q){
             if(realColName == q.column){
+              console.log(q.sliceInterval);
+              console.log("==================");
               console.log(" >>" + realColName);
               console.log(ranges[realColName]);
               /***********************
@@ -159,41 +171,23 @@ function PDB (family, core, mode) {
                ***********************/
               var pixel = 8;
               /***********************/
-              var info = [];
               // get max/min
-              if(realColName === "Offset"){
-                var min = 28672;
-                var max = 72829469184;
-                if(options._where_ !== undefined){
-                  for(var key in options._where_){
-                    if(key == "Offset"){
-                      min = parseInt(options._where_[key][0]);
-                      max = parseInt(options._where_[key][1]);
-                    }
-                  }
-                }
-                q.sliceInterval = parseInt(pixel*(max - min) /parseInt(options._spk_[col]));
-                if(q.sliceInterval == 0){
-                  q.sliceInterval = 1;
-                }
-              }else if(realColName === "Timestamp"){
+              var info = [];
+              if(ranges[q.column] !== undefined){
                 if(options._where_ !== undefined && options._where_[q.column] !== undefined){
                   info.push(parseInt(options._where_[q.column][0]));
                   info.push(parseInt(options._where_[q.column][1]));
                 }else{
-                  var command = "cd " + dataPath + "; pdb2csv -e .time_range -pdb " + file;
-                  var result = exec(command);
-                  info   = decoder.write(result).split("\n")[1].split(",");
+                  info.push(parseInt(ranges[q.column][0]));
+                  info.push(parseInt(ranges[q.column][1]));
                 }
-                var range  =  parseInt(info[1]) - parseInt(info[0]);
+                var range  = info[1] - info[0];
+                console.log("range ::" + range); 
                 q.sliceInterval = parseInt((pixel*range) / parseInt(options._spk_[col]));
                 if(q.sliceInterval == 0){
                   q.sliceInterval = 1;
                 }
               }
-              /***********************
-               * HARD CODED FOR TEST *
-               ***********************/
             }
           });
         }
