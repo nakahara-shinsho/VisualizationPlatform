@@ -940,7 +940,7 @@ DataManager.prototype.clearAll = function(key, value) {
            if(chartInst.update) {
              chartInst.update({DATA_MANAGER: {SELECTOR: linkedSelector}});
            }
-           this.bDeepLinking=false;
+           self.bDeepLinking=false;
        });
      }
   };
