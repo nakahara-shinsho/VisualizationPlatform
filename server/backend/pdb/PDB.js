@@ -104,7 +104,7 @@ function PDB (family, core, mode) {
         decoder.write(result).split("\n").forEach(function(row,i){
           if(i == 0){
             row.split(",").forEach(function(col,j){
-              if(col.indexOf("count") == -1){
+              if(col.indexOf("(") !== -1){
                 colName = col.split("(")[1].split(")")[0];
                 if(ranges[colName] == undefined){
                   ranges[colName] = [];
