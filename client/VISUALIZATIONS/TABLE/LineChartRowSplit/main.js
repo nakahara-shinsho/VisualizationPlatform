@@ -28,11 +28,6 @@ define(["util/CustomTooltip",
   var LineChart = function (io) {
     this.io = io;
 
-    //set default to highligh mode
-    if(!this.io.isHighlightMode() && !this.io.isDrilldownMode()) {
-      this.io.setHighlightMode();
-    }
-
     // Data Mapper
     this.io.dataManager().setMapperProps({
       xaxis: {type: 'number', label: 'X axis', map2: ''},
@@ -138,6 +133,11 @@ define(["util/CustomTooltip",
       yaxis: {width: 80},
       main:  {margin:{right: 50}}
     };
+
+    //set default to highligh mode
+    if(!this.io.isHighlightMode() && !this.io.isDrilldownMode()) {
+      this.io.setHighlightMode();
+    }
     /*******************************
      ** Chart Customize Parameter **
      *******************************/
@@ -169,8 +169,6 @@ define(["util/CustomTooltip",
       linewidth : 5,
       lineopacity : 0.6
     };
-    /** Mode **/
-    this._mode = "highlight"; // ["highlight","drilldown"]
 
     /** Inner Variable **/
     // VIEW
@@ -221,7 +219,12 @@ define(["util/CustomTooltip",
 
 
     // Reset Row Refiner
-    this.resetRowRefiner();
+    var filter = this.io.dataManager().getRowRefiner();
+    var newFilter = {};
+    for(var k in filter){
+      newFilter[k] = null;
+    }
+    this.io.dataManager().setRowRefiner(newFilter);
   };
 
   LineChart.prototype.resize =  function (containerWidth, containerHeight) {
@@ -342,21 +345,32 @@ define(["util/CustomTooltip",
     }
     // 2. Transform Data
     var labelData = {};
-    var data = self.io.dataManager().getData();
-/*
+//    var data = self.io.dataManager().getData();
     var data = self.io.dataManager().getFilteredRows();
     if(data.length === 0){
       data = self.io.dataManager().getData();
     }
-*/
     var groupKey = self.io.dataManager().getMapper("group");
+
+    var notInfoKeys = [groupKey, 
+		       self.io.dataManager().getMapper("xaxis"),
+		       self.io.dataManager().getMapper("yaxis")]
+    
+    var colNames = self.io.dataManager().getDataType(); 
     data.forEach(function(d){
       if(labelData[d[groupKey]] === undefined){
         labelData[d[groupKey]] = [];
       }else{
+	var infos = {};
+	for(var key in colNames){
+	  if(notInfoKeys.indexOf(key) == -1){
+	    infos[key] = d[key];
+	  }
+	}
         labelData[d[groupKey]].push({
-          x    : +d[self.io.dataManager().getMapper("xaxis")],
-          value: +d[self.io.dataManager().getMapper("yaxis")]
+            x    : +d[self.io.dataManager().getMapper("xaxis")],
+            value: +d[self.io.dataManager().getMapper("yaxis")],
+	    info : infos
         });
       }
     });
@@ -442,7 +456,7 @@ define(["util/CustomTooltip",
       var xcolumn = self.io.dataManager().getMapper("xaxis");
       var filteredRows = self.io.dataManager().getFilteredRows();
       var xRange;
-      if(self._mode === "drilldown"){
+      if(self.io.isDrilldownMode()){
         xRange = self.io.dataManager().getFilteredDataRange(xcolumn, filteredRows);
       }else{
         xRange= self.io.dataManager().getDataRange(xcolumn);
@@ -464,13 +478,20 @@ define(["util/CustomTooltip",
     // Y AXIS
     function drawYAxis(){
       /// 1.Range
-      var yRange = [];
+	var yRange = [];
       if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "OFF" &&
          self.io.designManager().getValue("yaxisRangeMinAuto") == "OFF"){
         yRange.push(self.io.designManager().getValue("yaxisRangeMinManual"));
         yRange.push(self.io.designManager().getValue("yaxisRangeMaxManual"));
       }else{
-        data.forEach(function(d){
+	  var ycolumn = self.io.dataManager().getMapper("yaxis");
+	  var filteredRows = self.io.dataManager().getFilteredRows();
+	  if(self.io.isDrilldownMode()){
+              yRange = self.io.dataManager().getFilteredDataRange(ycolumn, filteredRows);
+	  }else{
+              yRange= self.io.dataManager().getDataRange(ycolumn);
+	  }
+          data.forEach(function(d){
           if(yRange.length == 0){
             yRange[0] = d3.min(d.values, function(e){ return e.value;});
             yRange[1] = d3.max(d.values, function(e){ return e.value;});
@@ -560,9 +581,11 @@ define(["util/CustomTooltip",
       })
       .style("stroke", function(d) {
         if(self.io.colorManager().getDomainName() !== "Y axis" &&
-           self.io.colorManager().getDomainName() !== self.io.dataManager().getMapper("group")){
-          return self.io.colorManager().getColorOfRow(d.name);
-        }
+           self.io.colorManager().getDomainName() !== self.io.dataManager().getMapper("group") &&
+           self.io.colorManager().getDomainName() !== self.io.dataManager().getMapper("xaxis") &&
+	   self.io.colorManager().getDomainName() !== self.io.dataManager().getMapper("yaxis")){
+	    return self.io.colorManager().getColor(d.values[0].info[self.io.colorManager().getDomainName()]);
+	}
         return self.io.colorManager().getColor(d.name);
       })
       .attr("d", function(d) {
@@ -747,6 +770,7 @@ define(["util/CustomTooltip",
    * @method mode
    * @memberOf LineChart
    */
+/*
    LineChart.prototype.mode = function (mode) {
     if(mode){
       this._mode = mode;
@@ -754,20 +778,6 @@ define(["util/CustomTooltip",
     }
     return this._mode;
   };
- /**
-   * Reset RowRefiner
-   * @method resetRowRefiner
-   * @memberOf LineChart
-   */
-  LineChart.prototype.resetRowRefiner = function(){
-    var self = this;
-    var filter = self.io.dataManager().getRowRefiner();
-    var newFilter = {};
-    for(var k in filter){
-      newFilter[k] = null;
-    }
-    self.io.dataManager().setRowRefiner(newFilter);
-  };
-
+*/
   return LineChart;
 });
