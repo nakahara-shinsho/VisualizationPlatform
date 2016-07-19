@@ -23,7 +23,7 @@ function collector () {
   var virtualTables = [];
   for(var i=0; i<vts.length; i++){
     if(supportExtensions.indexOf(path.extname(vts[i])) !== -1){
-      virtualTables.push(vts[i]);
+      virtualTables.push(vts[i].replace(path.extname(vts[i])));
     }
   }
   return virtualTables;
