@@ -40,8 +40,12 @@
         },
 	{
             type: 'LineChartRowSplit',
-            path: 'Authenticated/LineChartRowSplit'
-	}
+            path: 'TABLE/LineChartRowSplit'
+	},
+        {
+            type: 'GanttChart',
+            path: 'Authenticated/GanttChart'
+        }
     ],
     STREAM: [],
     SourceCodeView: {
@@ -51,9 +55,5 @@
     ConfusionMatrix: {
         type: 'ConfusionMatrix',
         path: 'Authenticated/ConfusionMatrix'
-    },
-    GanttChart: {
-        type: 'GanttChart',
-        path: 'Authenticated/GanttChart'
     }
 }
