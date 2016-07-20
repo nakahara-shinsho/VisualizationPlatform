@@ -73,19 +73,19 @@ define(["css!./CustomTooltip"],function(){
       tbody += "</tbody></table>";
       return thead + tbody;
     };
-    
+
     this.show = function(contents, mouseEvent) {
       var offset = {x: 20, y: -20};
       var tooltip = d3.select("div.tooltip")
 	    .style("display", "block")
-	    .style("left",mouseEvent.pageX + offset.x+ "px")
-      .style("top",mouseEvent.pageY + offset.y+ "px");
+	    .style("left",mouseEvent[0] + offset.x+ "px")
+            .style("top",mouseEvent[1]+ offset.y+ "px");
       
       if(tooltip.select("div.content")){
-	       tooltip.select("div.content").remove();
+	tooltip.select("div.content").remove();
       }
       tooltip.append("div").attr("class","content")
-	     .html(contents);
+	.html(contents);
     };
     
     this.hide = function() {
