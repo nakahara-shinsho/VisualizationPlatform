@@ -547,6 +547,7 @@ define(["util/CustomTooltip",
       })
       .style("stroke", function(d) {
         if(self.io.colorManager().getDomainName() !== undefined &&
+           self.io.colorManager().getDomainName().length !== 0 &&
            self.io.colorManager().getDomainName().toLowerCase() !== "y axis"){
           return self.io.colorManager().getColorOfRow(d.color);
         }
