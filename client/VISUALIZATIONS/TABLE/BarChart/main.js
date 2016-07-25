@@ -452,13 +452,13 @@ define(["util/CustomTooltip",
     var axisWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
     var labels = data.map(function(d){return d.key;});
     labels = labels.filter(function(d,i,self){ return self.indexOf(d) === i & i !==self.lastIndexOf(d);});
-    if(labels.length > self.xConfig.label.upper){
-      axisWidth = self.xConfig.label.minimumWidth * labels.length;
+    if(data.length > self.xConfig.label.upper){
+      axisWidth = self.xConfig.label.minimumWidth * data.length;
       self.container.select("svg.barchart").style("width", axisWidth +"px");
     }
     self.xLabel = d3.scale.ordinal().rangeBands([0,axisWidth], 0.1);
     // Setup Axis
-    self.xLabel.domain(labels);
+    self.xLabel.domain(data.map(function(d){return d.key;}));
     var ymax,ymin;
     if(graphType == "normalized"){
       ymax = 1;
