@@ -62,7 +62,7 @@ define(["util/CustomTooltip",
     this.io.designManager().setControl("yaxisRangeMinManual", {type:"regx", name:"Y AXIS Min (Manual)", value: 0});
 
     /// Action
-    this.io.designManager().setControl("mouseActionMode"  , {type:"radio", name:"Mouse Action Mode",range:["CLICK", "BRUSH"], value:"CLICK"});
+    this.io.designManager().setControl("mouseActionMode"  , {type:"radio", name:"Mouse Action Mode",range:["CLICK", "BRUSH"], value:"BRUSH"});
   };
   /**
     * update chart according with changed of interface variables
