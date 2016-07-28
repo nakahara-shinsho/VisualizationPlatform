@@ -48,7 +48,9 @@ define(["util/CustomTooltip",
     this.io.designManager()
       .setControl("yaxisticknum", {type:"regx", name:"Y AXIS TICKS NUM", value: 3});
     this.io.designManager()
-      .setControl("sortmode", {type:"radio", name:"SORT MODE"      , range:["VALUE", "NONE"], value:"VALUE"});
+      .setControl("yaxismargin", {type:"regx", name:"Y AXIS MARGIN [%]", value: 10});
+    this.io.designManager()
+      .setControl("sortmode", {type:"radio", name:"SORT MODE"      , range:["Y-VALUE", "NONE"], value:"Y-VALUE"});
     this.io.designManager()
       .setControl("xaxisLabelHeight", {type:"regx", name:"X AXIS Label Height", value: 100});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
@@ -425,7 +427,8 @@ define(["util/CustomTooltip",
     // 3. Draw   Chart
     self.drawChart(data);
     function sortData(){
-      if(self.io.designManager().getValue("sortmode") == "VALUE"){
+	if(self.io.designManager().getValue("sortmode") == "VALUE" || 
+	   self.io.designManager().getValue("sortmode") == "Y-VALUE"){
         data = data.sort(function(a,b){
           if(self.xConfig.sort.order === "descending"){
             return d3.descending(a[self.xConfig.sort.key], b[self.xConfig.sort.key]);
@@ -486,6 +489,10 @@ define(["util/CustomTooltip",
         }else{
           ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
         }
+	  var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	  if(ymaxMargin != undefined && ymaxMargin != 0 ){
+	      ymax = ymax + ymax*ymaxMargin*0.01;
+	  }
       }else if(graphType == "grouped"){
         var selectedLegends = [];
         if(self.io.isHighlightMode()) {
@@ -509,6 +516,10 @@ define(["util/CustomTooltip",
             if(ymaxTmp > ymax){
               ymax = ymaxTmp;
             }
+	    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	    if(ymaxMargin != undefined && ymaxMargin != 0 ){
+		ymax = ymax + ymax*ymaxMargin*0.01;
+	    }
           }else{
             ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
           }
