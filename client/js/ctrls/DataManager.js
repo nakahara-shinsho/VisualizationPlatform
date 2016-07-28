@@ -96,7 +96,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  DataManager.prototype._writeMapper =  function(mappings, options) {
     var mappedColumns = this._readMapper(); //convert to object
     
-    this._model.set('dataMapper', $.extend(/*true,*/ {}, mappedColumns, mappings), options); //rewrite only address so that the old setting can be deleted 
+    this._model.set('dataMapper', _.extend(mappedColumns, mappings), options); //extend to rewrite to delete the old settings 
     if(options && !options.silent) {
          this.updateChart('MAPPER', mappings);
     }
