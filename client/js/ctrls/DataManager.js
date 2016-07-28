@@ -25,7 +25,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
 
  DataManager.prototype._writeRowRefiner =  function(changedAttrs, options) {
-     var myRowRefiner = $.extend(true, this._readRowRefiner(), changedAttrs),
+     var myRowRefiner = _.extend(/*true,*/ this._readRowRefiner(), changedAttrs), //overwrite each filter
         dataRanges = this.getDataRange();
      myRowRefiner = _.pick(myRowRefiner, function(range, column) { //delete null range before save 
         return !_.isEmpty(range) && !_.isEqual(range, dataRanges[column]);
@@ -45,7 +45,12 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype._writeExtraRowRefiner =  function(changedExtraRefinerObj) { 
-     var myExtraRowRefinerObj = $.extend(true, {}, this._readExtraRowRefiner(), changedExtraRefinerObj);
+     var extraRefiner = this._readExtraRowRefiner();
+     _.each(changedExtraRefinerObj, function(object_filters_in_table, table){
+        _.extend(extraRefiner[table], object_filters_in_table); 
+        //dont use deep clone in order to overwrite values 
+     });
+     
      this._model.set({'dataExtraRefiner': myExtraRowRefinerObj}, {silent: true});
  };
  
@@ -54,7 +59,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  };
  
  DataManager.prototype._writeExtraColumnRefiner =  function(changedExtraRefinerObj) { 
-     var myExtraColumnRefinerObj = $.extend(true, {}, this._readExtraRowRefiner(), changedExtraRefinerObj);
+     var myExtraColumnRefinerObj = _.extend(this._readExtraRowRefiner(), changedExtraRefinerObj);//overwrite each filter
      this._model.set({'dataExtraSelector': myExtraColumnRefinerObj }, {silent: true});
  };
  
@@ -292,22 +297,30 @@ define(['ctrl/COMMON'], function (COMMON) {
    Object.keys(mapperProps).forEach(function(key) {
      var nameOfSize = mapperProps[key].spk;
      if( nameOfSize ) {
-       var columns = self.getMapper(key);
+       var columns = self.getMapper(key),
+           scale = +self._ctrl.designManager().getValue('scale');
+
         if(Array.isArray(columns)) {
-         //var dataTypes = self.getDataType();
-         columns.forEach(function(column) {
-           //if(dataTypes[column]=='number') { //only add number columns as sampling SPKs-- i don't know datatypes at the beginning
+         columns.forEach(function(column) {  
            if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) {
              pksObj[column] = +nameOfSize;
+             if(scale && scale > 0.0001) {
+               pksObj[column] = Math.round(pksObj[column]/scale);
+             }
            } else if(sizeObj[nameOfSize]) {
              pksObj[column] = sizeObj[nameOfSize]; 
            }
-           //}
+           
          });
        }
        else { //single column mapping
-         if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) {
+         if((!isNaN(+nameOfSize) && isFinite(nameOfSize) )) { //
            pksObj[columns] = +nameOfSize;
+          
+           if(scale && scale > 0.0001) {
+             pksObj[columns] = Math.round(pksObj[columns]/scale);
+           }
+           
          } else if(sizeObj[nameOfSize]) {
            pksObj[columns] = sizeObj[nameOfSize];
          }
@@ -752,7 +765,7 @@ DataManager.prototype.clearAll = function(key, value) {
     }; 
   
   //deep update data if necessary
-  DataManager.prototype.switchMode = function() {
+  DataManager.prototype.checkDeepUpdate = function() {
     var self=this, chartInst = this._ctrl.chartInstance();
     if(this._isDeepUpdate()) {
      //TBD: will the existed data need to be cleared? -- same Virtual Table
@@ -768,7 +781,7 @@ DataManager.prototype.clearAll = function(key, value) {
         }
     }
   };
-  
+ 
   //update chart with changing refining parameters
   DataManager.prototype.updateChart = function(key, options) {
     var vobj = {}, chartInst = this._ctrl.chartInstance();
@@ -1055,14 +1068,20 @@ DataManager.prototype.clearAll = function(key, value) {
         mappedColumns = this.getMappedColumns(),
         mappedNumberColumns = mappedColumns.filter(function(column){ return dataTypes[column]==='number';});
     
-    if(key && key==="$$$") { //one column refiner control component
-       $ctrl = $('<div>');
-       $ctrl.data( { type: 'selection',
+    if(key) {
+      if(typeof(key) == 'object'){ //for self-defined control //not used
+        $ctrl = $('<div>');
+        $ctrl.data(key);
+        return $ctrl;
+      }
+      else if(key==="$$$") { //one column refiner control component 
+        $ctrl = $('<div>');
+        $ctrl.data( { type: 'selection',
                      range: mappedNumberColumns,
                      value:  this.getColumnRefiner()
                    });
-       return $ctrl;
-    } else if(key) {  //one row refiner control component
+        return $ctrl;
+      } else {  //one row refiner control component
         value = this.getRowRefiner(key);
         if(_.isEmpty(value)) {
           value = dataRanges[key];
@@ -1074,7 +1093,8 @@ DataManager.prototype.clearAll = function(key, value) {
           $ctrl.data({type: 'selection', range: dataRanges[key], value:  value}); 
         }
         return $ctrl;
-    }
+      }
+    } //key is not null
     else  {
       
       var $control_array = $('<div>');
