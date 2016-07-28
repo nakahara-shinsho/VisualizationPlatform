@@ -745,7 +745,7 @@ define(["css!./Legend"], function () {
       
       function calcSvgSize(data, size) {
 	  size[0] = self.width / 2;
-	  size[1] = data.length * 40;
+	  size[1] = data.length * 80;
       }
       function searchIndexOfKey(key)
       {
@@ -782,13 +782,14 @@ define(["css!./Legend"], function () {
 	  var key;
 	  var cols;
 	  var index;
+	  var newName = self.getName4D3(d3.select(rect).attr("class"));
 	  d3.select(rect).select("g").attr("class", "unselected-legend");
 	  d3.select(rect).style("fill-opacity", OPACITYOFF);
 	  svg_g.select(".svg-selector").select(".all").style("fill-opacity", OPACITYOFF);
 	  svg_g.select(".svg-selector").select(".all").select('g').attr("class", "unselected-legend");
 	  
 	  svg_g.select(".svg-selector").selectAll(".checkAll").text("");
-	  svg_g.select(".svg-selector").selectAll(".check" + d3.select(rect).attr("class").replace(/\s+/g, "")).text("");			 
+	  svg_g.select(".svg-selector").selectAll(".check" + newName).text("");			 
 	  key = d3.select(rect).attr("class"); 
 	  cols = self.io.dataManager().getColumnRefiner();
 	  index  = cols.indexOf(key);
@@ -804,9 +805,11 @@ define(["css!./Legend"], function () {
 	  }
       }
       function switchOnOneColumn(svg_g, rect) {
+	  var newName = self.getName4D3(d3.select(rect).attr("class"));
 	  d3.select(rect).select("g").attr("class", "selected-legend");
 	  d3.select(rect).style("fill-opacity", OPACITYON);
-	  svg_g.select(".svg-selector").selectAll(".check" + d3.select(rect).attr("class").replace(/\s+/g, "")).text("✓");
+
+	  svg_g.select(".svg-selector").selectAll(".check" + newName).text("✓");
 	  var key = d3.select(rect).attr("class"); 
 	  var cols = self.io.dataManager().getColumnRefiner();
 	  var index  = cols.indexOf(key);	 
@@ -918,9 +921,11 @@ define(["css!./Legend"], function () {
 			  text = "✓";
 		      }
 		  });
+	      var newName = self.getName4D3(data[i].name);
 	      svg_g.select(".svg-selector")
 	      .append("text")	      
-	      .attr("class", "check" + data[i].name.replace(/\s+/g, ""))
+
+	      .attr("class", "check" + newName)
 	      .text(text)
 	      .attr("x", 15 + self.width / 8)
 	      .attr("y", 10 + 30 * (i+2))
@@ -928,16 +933,6 @@ define(["css!./Legend"], function () {
 	      .attr("fill", "white")
 	      .on("click",      function(d,i){
 		      name = "rect." + data[i].name;
-/*
-		      if (d3.select(name).select("g")[0][0] == null) {
-			  d3.select(name).append('g').attr("class", "unselected-legend");
-		      }
-		      var legendClass = d3.select(name).select("g").attr("class");
-		      if (legendClass === "selected-legend") {
-			  switchOffOneColumn(svg_g, name);
-		      } else {
-			  switchOnOneColumn(svg_g, name);
-			  }*/
 		      });
 	  }
       }
@@ -1287,6 +1282,57 @@ define(["css!./Legend"], function () {
     self.groupSelectorHeight = self.height;
     var data = self.transformData();
     self.redraw();
+  };
+
+  Legend.prototype.getName4D3 = function(name)
+  {
+    var space,
+        lp,
+        rp,
+        newName = name.concat();
+    space = searchIndexs(name, " ");
+    lp = searchIndexs(name, "(");
+    rp = searchIndexs(name, ")");
+    newName = generateNewWord(newName, space, " ", "spcae");
+    newName = generateNewWord(newName, lp, "(", "LeftParenthesis");
+    newName = generateNewWord(newName, rp, ")", "RightParenthesis");
+    return newName;
+    /**
+    * Search target indexs
+    * @param  word
+    * @param  key
+    * @return {array index}
+    */
+    function searchIndexs(word, key) {
+      var aindex = [];
+      var pos = word.indexOf(key);
+      while (pos != -1) {
+        aindex.push(pos);
+        pos = word.indexOf(key, pos + 1);	
+      }
+      return aindex;
+    }
+    /**
+    * Convert word
+    * @param  word
+    * @param  index
+    * @param  before key
+    * @param  after key
+    * @return converted word
+    */
+    function generateNewWord(word, index, before, after) {
+      var pos = word.indexOf(before);
+      var ele;
+      while (pos != -1) {
+	ele = index.shift();
+        if (ele == undefined) {
+          console.error("Illegal index");
+        }
+        word = word.replace(before, after + String(ele));
+        pos = word.indexOf(before, pos + 1);	
+      }
+      return word;
+    }
   };
 
   return Legend;

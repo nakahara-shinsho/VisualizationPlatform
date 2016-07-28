@@ -73,21 +73,26 @@ define(["css!./CustomTooltip"],function(){
       tbody += "</tbody></table>";
       return thead + tbody;
     };
-    
-    this.show = function(contents, mouseEvent) {
+
+    this.show = function(contents, event) {
       var offset = {x: 20, y: -20};
       var tooltip = d3.select("div.tooltip")
-	    .style("display", "block")
-	    .style("left",mouseEvent.pageX + offset.x+ "px")
-      .style("top",mouseEvent.pageY + offset.y+ "px");
-      
+	    .style("display", "block");
+      if(event[0] === undefined){
+        // event IS NOT  MOUSE EVENT
+        tooltip.style("left",event.pageX + offset.x+ "px")
+          .style("top",event.pageY + offset.y+ "px");
+      }else{
+        // event IS MOUSE EVENT
+	tooltip.style("left",event[0] + offset.x+ "px")
+          .style("top",event[1]+ offset.y+ "px");
+      }
       if(tooltip.select("div.content")){
-	       tooltip.select("div.content").remove();
+	tooltip.select("div.content").remove();
       }
       tooltip.append("div").attr("class","content")
-	     .html(contents);
+	.html(contents);
     };
-    
     this.hide = function() {
       d3.select("div.tooltip").style("display", "none");
     };

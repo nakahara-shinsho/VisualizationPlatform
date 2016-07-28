@@ -48,7 +48,7 @@ define(["util/CustomTooltip",
     this.io.designManager()
       .setControl("yaxisticknum", {type:"regx", name:"Y AXIS TICKS NUM", value: 3});
     this.io.designManager()
-      .setControl("sortmode", {type:"radio", name:"SORT MODE"      , range:["VALUE", "NONE"], value:"VALUE"});
+      .setControl("sortmode", {type:"radio", name:"SORT MODE"      , range:["VALUE", "NONE"], value:"NONE"});
     this.io.designManager()
       .setControl("xaxisLabelHeight", {type:"regx", name:"X AXIS Label Height", value: 100});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
@@ -196,7 +196,7 @@ define(["util/CustomTooltip",
     // X AXIS [width - YAxis_width]
     this.xConfig = {
       sort    : {key: "total", order: "descending"},
-      label   : {upper:100},
+      label   : {upper:100, minimumWidth: 16},
       caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25}
     };
@@ -450,8 +450,10 @@ define(["util/CustomTooltip",
     var graphType = self.io.designManager().getValue("graphType");
     // Setup xLabel range
     var axisWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
-    if(data.length > self.xConfig.label.upper){
-      axisWidth = axisWidth/self.xConfig.label.upper * data.length;
+    var labels = data.map(function(d){return d.key;});
+    labels = labels.filter(function(d,i,self){ return self.indexOf(d) === i & i !==self.lastIndexOf(d);});
+    if(labels.length > self.xConfig.label.upper){
+      axisWidth = self.xConfig.label.minimumWidth * labels.length;
       self.container.select("svg.barchart").style("width", axisWidth +"px");
     }
     self.xLabel = d3.scale.ordinal().rangeBands([0,axisWidth], 0.1);

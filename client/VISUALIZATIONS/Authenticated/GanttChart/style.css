@@ -1,0 +1,118 @@
+
+/* table layout*/
+.gantt{
+    table-layout: fixed;
+}
+
+td.gantt-label{
+    text-align:right;
+}
+
+thead{
+    display :block;
+}
+
+tbody{
+    display : block;
+    overflow-y : auto;
+}
+
+
+a.btn-gantt{
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* base */
+/* layout */
+#chart-mini {
+    margin: 0 auto 0px auto;
+    box-shadow: 3px 2px 7px rgba(0, 0, 0, 0.6);
+    padding: 0px 0px;
+}
+#chart-headertop {
+    height: 45px;
+    margin: 0 auto 0px auto;
+    padding: 0px 0px;
+    background-color: #333;
+}
+#chart-container {
+    height: 450px;
+    width: 1101px;
+    margin: 0 auto 0px auto;
+    box-shadow: 3px 2px 7px rgba(0, 0, 0, 0.6);
+    padding: 0px 0px;
+    overflow-y: visible;
+    overflow-x: hidden;
+    background-color: #ddd;
+}
+
+#gantt {
+    padding: 2em 0 2em 0;
+}
+
+rect.activitybar{
+    fill: #7a8288
+}
+
+rect.activitybar:hover{
+    fill: #f89406
+}
+
+div#gantt_chart{
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 450px;
+}
+
+/* module */
+
+.header rect {
+    cursor: pointer;
+    fill-opacity: 1.0;
+    stroke: #888888;
+    stroke-width: 1px;
+    shape-rendering: crispEdges;
+}
+.node rect {
+    cursor: pointer;
+    fill-opacity: 1.0;
+    stroke: #888888;
+    stroke-width: 1px;
+}
+
+.axis path, .axis line {
+    fill: none;
+    stroke: #888888;
+    stroke-width: 1px;
+    shape-rendering: crispEdges;
+}
+
+line.lane {
+    stroke: #000;
+    stroke-width: 1.5px;
+}
+
+path.link {
+    fill: none;
+/*    stroke: #000;*/
+    stroke: #222;
+    stroke-width: 1px;
+    stroke-dasharray: 5,3
+}
+
+.brush .extent {
+    stroke: gray;
+    fill: dodgerblue;
+    fill-opacity: .365;
+}
+
+/* state */
+.toggle_tree{
+    right: -110px;
+    left: 10px;
+}
+
+/* theme */
