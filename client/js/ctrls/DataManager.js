@@ -44,14 +44,22 @@ define(['ctrl/COMMON'], function (COMMON) {
     return COMMON.makeObject(this._model.get('dataRefiner'), {});//convert to object
  };
  
- DataManager.prototype._writeExtraRowRefiner =  function(changedExtraRefinerObj) { 
+ DataManager.prototype._writeExtraRowRefiner =  function(changedExtraRefinerObj, options) { 
      var extraRefiner = this._readExtraRowRefiner();
      _.each(changedExtraRefinerObj, function(object_filters_in_table, table){
-        _.extend(extraRefiner[table], object_filters_in_table); 
+       if(_.has(extraRefiner, table)){
+         if(_.isEmpty(object_filters_in_table)) {
+           delete extraRefiner[table]; //delete the table refiner
+         } else {
+            _.extend(extraRefiner[table], object_filters_in_table); //overwrite
+         }
+       } else {
+         extraRefiner[table] =  object_filters_in_table; //add new table refiner
+       } 
         //dont use deep clone in order to overwrite values 
      });
      
-     this._model.set({'dataExtraRefiner': myExtraRowRefinerObj}, {silent: true});
+     this._model.set({'dataExtraRefiner': extraRefiner}, options);
  };
  
  DataManager.prototype._readExtraRowRefiner= function() {
@@ -894,12 +902,10 @@ DataManager.prototype.clearAll = function(key, value) {
             this._writeRowRefiner(linkedRefiner, {silent: true});
           } else if(statusOfLink == DEEPLINK.WORKER){
             obj[linked_vtName] = linkedRefiner;
-            this._writeExtraRowRefiner(obj);
-            //add extra refiner
+            this._writeExtraRowRefiner(obj, {silent: true});//add extra refiner
           } else if(statusOfLink == DEEPLINK.GLOBAL){
             obj[linked_wkName+'.'+linked_vtName] = linkedRefiner;
-            this._writeExtraRowRefiner(obj);
-            //add extra refiner
+            this._writeExtraRowRefiner(obj,{silent: true});//add extra refiner
           }
           
           this.getDataFromServer(this._model.get('vtname')).done(
