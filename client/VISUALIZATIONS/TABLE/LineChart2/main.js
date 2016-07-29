@@ -47,6 +47,8 @@ define(["util/CustomTooltip",
       .setControl("xaxisticktype", {type: "radio", name: " X AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
     this.io.designManager()
       .setControl("xaxisdigitnum", {type: "regx", name: " X AXIS Digit Number", value:""});
+    this.io.designManager()
+      .setControl("xaxismargin", {type:"regx", name:"X AXIS MARGIN [%]", value: 10});
     /// Y Axis
     this.io.designManager()
       .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y AXIS"});
@@ -56,6 +58,8 @@ define(["util/CustomTooltip",
       .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
     this.io.designManager()
       .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
+    this.io.designManager()
+      .setControl("yaxismargin", {type:"regx", name:"Y AXIS MARGIN [%]", value: 10});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
     this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
@@ -420,7 +424,12 @@ define(["util/CustomTooltip",
       }else{
         xRange= self.io.dataManager().getDataRange(xcolumn);
       }
-      self.x = d3.scale.linear().range([0,self.axisWidth]).domain([xRange[0],xRange[1]]);
+      var max =  xRange[1];
+      var xmaxMargin = self.io.designManager().getValue("xaxismargin");
+      if(xmaxMargin != undefined && xmaxMargin != 0){
+	  max = max + max*xmaxMargin*0.01;
+      }
+      self.x = d3.scale.linear().range([0,self.axisWidth]).domain([xRange[0],max]);
       /// 2.Tick
       var format = getFormat("x");
       var xAxis = d3.svg.axis().scale(self.x).orient("bottom")
@@ -465,8 +474,15 @@ define(["util/CustomTooltip",
           yRange[0] = +self.io.designManager().getValue("yaxisRangeMinManual");
         }
       }
-      self.y = d3.scale.linear().range([self.axisHeight,0])
-        .domain([yRange[0],yRange[1]]);
+	var max =  yRange[1];
+	if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "ON"){
+	    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	    if(ymaxMargin != undefined && ymaxMargin != 0){
+		max = max + max*ymaxMargin*0.01;
+	    }
+	}
+	self.y = d3.scale.linear().range([self.axisHeight,0])
+        .domain([yRange[0],max]);
       /// 2.Tick
       var format = getFormat("y");
       var yAxis = d3.svg.axis().scale(self.y).orient("left")
