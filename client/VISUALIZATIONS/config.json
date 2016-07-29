@@ -51,9 +51,5 @@
     ConfusionMatrix: {
         type: 'ConfusionMatrix',
         path: 'Authenticated/ConfusionMatrix'
-    },
-    GanttChart: {
-        type: 'GanttChart',
-        path: 'Authenticated/GanttChart'
     }
 }

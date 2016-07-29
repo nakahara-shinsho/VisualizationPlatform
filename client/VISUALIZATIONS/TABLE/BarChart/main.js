@@ -48,7 +48,9 @@ define(["util/CustomTooltip",
     this.io.designManager()
       .setControl("yaxisticknum", {type:"regx", name:"Y AXIS TICKS NUM", value: 3});
     this.io.designManager()
-      .setControl("sortmode", {type:"radio", name:"SORT MODE"      , range:["VALUE", "NONE"], value:"VALUE"});
+      .setControl("yaxismargin", {type:"regx", name:"Y AXIS MARGIN [%]", value: 10});
+    this.io.designManager()
+      .setControl("sortmode", {type:"radio", name:"SORT MODE"      , range:["Y-VALUE", "NONE"], value:"Y-VALUE"});
     this.io.designManager()
       .setControl("xaxisLabelHeight", {type:"regx", name:"X AXIS Label Height", value: 100});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
@@ -196,7 +198,7 @@ define(["util/CustomTooltip",
     // X AXIS [width - YAxis_width]
     this.xConfig = {
       sort    : {key: "total", order: "descending"},
-      label   : {upper:100},
+      label   : {upper:100, minimumWidth: 16},
       caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25}
     };
@@ -425,7 +427,8 @@ define(["util/CustomTooltip",
     // 3. Draw   Chart
     self.drawChart(data);
     function sortData(){
-      if(self.io.designManager().getValue("sortmode") == "VALUE"){
+	if(self.io.designManager().getValue("sortmode") == "VALUE" || 
+	   self.io.designManager().getValue("sortmode") == "Y-VALUE"){
         data = data.sort(function(a,b){
           if(self.xConfig.sort.order === "descending"){
             return d3.descending(a[self.xConfig.sort.key], b[self.xConfig.sort.key]);
@@ -450,8 +453,10 @@ define(["util/CustomTooltip",
     var graphType = self.io.designManager().getValue("graphType");
     // Setup xLabel range
     var axisWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
-    if(data.length > self.xConfig.label.upper){
-      axisWidth = axisWidth/self.xConfig.label.upper * data.length;
+    var labels = data.map(function(d){return d.key;});
+    labels = labels.filter(function(d,i,self){ return self.indexOf(d) === i & i !==self.lastIndexOf(d);});
+    if(labels.length > self.xConfig.label.upper){
+      axisWidth = self.xConfig.label.minimumWidth * labels.length;
       self.container.select("svg.barchart").style("width", axisWidth +"px");
     }
     self.xLabel = d3.scale.ordinal().rangeBands([0,axisWidth], 0.1);
@@ -486,6 +491,10 @@ define(["util/CustomTooltip",
         }else{
           ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
         }
+	  var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	  if(ymaxMargin != undefined && ymaxMargin != 0 ){
+	      ymax = ymax + ymax*ymaxMargin*0.01;
+	  }
       }else if(graphType == "grouped"){
         var selectedLegends = [];
         if(self.io.isHighlightMode()) {
@@ -509,6 +518,10 @@ define(["util/CustomTooltip",
             if(ymaxTmp > ymax){
               ymax = ymaxTmp;
             }
+	    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	    if(ymaxMargin != undefined && ymaxMargin != 0 ){
+		ymax = ymax + ymax*ymaxMargin*0.01;
+	    }
           }else{
             ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
           }

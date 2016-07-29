@@ -24,7 +24,7 @@ define(["css!./main"], function () {
 
     this.io.dataManager().setMapperProps({
       xaxis: { label: 'X Axis', type: 'number', map2: '', spk: 'width'},
-      yaxis: { label: 'Y Axis', type: 'number', map2: '', spk: 'height'}
+      yaxis: { label: 'Y Axis', type: 'number', map2: [], spk: 'height'}
     });
     /// X Axis
     this.io.designManager()
@@ -37,6 +37,8 @@ define(["css!./main"], function () {
       .setControl("xaxisticktype", {type: "radio", name: " X AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
     this.io.designManager()
       .setControl("xaxisdigitnum", {type: "regx", name: " X AXIS Digit Number", value:""});
+    this.io.designManager()
+      .setControl("xaxismargin", {type:"regx", name:"X AXIS MARGIN [%]", value: 10});
     /// Y Axis
     this.io.designManager()
       .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:""});
@@ -46,6 +48,8 @@ define(["css!./main"], function () {
       .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
     this.io.designManager()
       .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
+    this.io.designManager()
+      .setControl("yaxismargin", {type:"regx", name:"Y AXIS MARGIN [%]", value: 10});
     this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
     this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
     this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"ON"});
@@ -301,8 +305,18 @@ define(["css!./main"], function () {
     }else if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "OFF"){
       yrange[1] = +self.io.designManager().getValue("yaxisRangeMaxManual");
     }
-    self.x = d3.scale.linear().range([0,self.axisWidth]).domain(xrange);
-    self.y = d3.scale.linear().range([self.axisHeight,0]).domain(yrange);
+    var xmax =  xrange[1];
+    var xmaxMargin = self.io.designManager().getValue("xaxismargin");
+    if(xmaxMargin != undefined && xmaxMargin != 0){
+	xmax = xmax + xmax*xmaxMargin*0.01;
+    }
+    var ymax =  yrange[1];
+    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+    if(ymaxMargin != undefined && ymaxMargin != 0){
+	ymax = ymax + ymax*ymaxMargin*0.01;
+    }
+      self.x = d3.scale.linear().range([0,self.axisWidth]).domain([xrange[0],xmax]);
+    self.y = d3.scale.linear().range([self.axisHeight,0]).domain([yrange[0],ymax]);
     // drawX
     self.drawAxis(xcolumn,ycolumn);
     // draw brush

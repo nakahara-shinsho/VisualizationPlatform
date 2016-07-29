@@ -322,6 +322,10 @@ define([
       },
     
       showBreadcrumb: function($target) {
+        if(!this.status) { //not a screen of the current tool
+          return this;
+        }
+
          var self = this;
          var toolid  = this.status.get('tool').id;
          if(this.graph && toolid) {
