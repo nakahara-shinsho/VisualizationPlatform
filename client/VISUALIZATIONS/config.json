@@ -40,7 +40,7 @@
         },
 	{
             type: 'LineChartRowSplit',
-            path: 'Authenticated/LineChartRowSplit'
+            path: 'TABLE/LineChartRowSplit'
 	}
     ],
     STREAM: [],
