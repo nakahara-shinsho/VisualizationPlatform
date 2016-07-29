@@ -29,7 +29,7 @@ define(["util/CustomTooltip",
     this.io = io;
     // Data Mapper
     this.io.dataManager().setMapperProps({
-      xaxis: {type: 'number', label: 'X axis', map2: ''},
+      xaxis: {type: 'number', label: 'X axis', map2: '', spk: 'width'},
       yaxis: {type: 'number', label: 'Y axis' , map2:[] }
     });
 
@@ -66,7 +66,7 @@ define(["util/CustomTooltip",
     this.io.designManager().setControl("yaxisRangeMinManual", {type:"regx", name:"Y AXIS Min (Manual)", value: 0});
 
     /// Action
-    this.io.designManager().setControl("mouseActionMode"  , {type:"radio", name:"Mouse Action Mode",range:["CLICK", "BRUSH"], value:"CLICK"});
+    this.io.designManager().setControl("mouseActionMode"  , {type:"radio", name:"Mouse Action Mode",range:["CLICK", "BRUSH"], value:"BRUSH"});
   };
   /**
     * update chart according with changed of interface variables
@@ -563,6 +563,7 @@ define(["util/CustomTooltip",
       })
       .style("stroke", function(d) {
         if(self.io.colorManager().getDomainName() !== undefined &&
+           self.io.colorManager().getDomainName().length !== 0 &&
            self.io.colorManager().getDomainName().toLowerCase() !== "y axis"){
           return self.io.colorManager().getColorOfRow(d.color);
         }

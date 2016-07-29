@@ -3,6 +3,7 @@ module.exports.authentication = function (router,db){
     _ = require("underscore");
   var super_user_id  = GLOBAL.config.get('FrontEnd.superuser.userId'),
       super_user_pwd = GLOBAL.config.get('FrontEnd.superuser.password');
+ 
   // Create our users table if it doesn't exist
   db.run("CREATE TABLE IF NOT EXISTS users ( " +
          " userId TEXT UNIQUE PRIMARY KEY, actor TEXT NOT NULL, password TEXT, auth_token TEXT UNIQUE)");

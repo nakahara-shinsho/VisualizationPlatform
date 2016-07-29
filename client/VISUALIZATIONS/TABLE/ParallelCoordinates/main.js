@@ -31,10 +31,11 @@ define(["util/CustomTooltip",
     // Data Mapper
     this.io.dataManager().setMapperProps({
       //columnsString: {type: 'string', label: 'Columns(String)', map2:[]},
-      axiscolumns: {type: '', label: 'Axises columns', map2:[], spk: '20'}
+      axiscolumns: {type: '', label: 'Axises columns', map2:[], spk: '100'}
     });
 
     // Design Mapper
+    this.io.designManager().setControl('scale', {type: 'combox', range:[1,2,3,4,5], value:1});
 
     this.tooltip      = new CustomTooltip();
     this.tooltip.initialize();
@@ -212,13 +213,7 @@ define(["util/CustomTooltip",
       .attr("height", self.containerHeight)
       .append("g")
       .attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
-    /*var refreshButton = self.container
-          .append("div").attr("class", "parallelCoordinatesButton")
-          .append("a").attr("class","btn btn-default")
-          .text("REFRESH")
-          .on("click", function(){
-            self.refresh();
-          });*/
+    
     return;
   };
 
@@ -240,6 +235,7 @@ define(["util/CustomTooltip",
                                .range([self.containerHeight - self.margin.axisBottom, 0]));
     });
     self.x.domain(self.dimensions);
+    
     // Draw Line
     drawLines();
 
@@ -347,6 +343,7 @@ define(["util/CustomTooltip",
         .attr("class", "axis")
         .each(function(d) {
           d3.select(this).call(self.axis.scale(self.y[d])); });
+      
       // Set Axis Name
       labels.forEach(function(key){
         var textData = [];
@@ -358,7 +355,7 @@ define(["util/CustomTooltip",
           subText = key.substr(index*self.labelLength, self.labelLength);
         }
         var topHeight = -10 * textData.length;
-        textData.forEach(function(d){
+        textData.forEach(function(d) {
           self.svg.selectAll("g.dimension#"+key)
             .selectAll("g.axis")
             .append("text").style("text-anchor", "middle")

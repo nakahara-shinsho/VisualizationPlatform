@@ -94,7 +94,10 @@ define([
       'click button.event-data-mapping-panel': 'toggleDataMappingPanel',
       'click button.event-design-panel': 'toggleDesignPanel',
       'click button.event-link-panel': 'toggleControlPanel',
-      'click button.event-toggle-mode': 'toggleMode',
+      'click button.event-toggle-mode': 'toggleMode', //hightlight > drilldown > hybrid > hightlight
+      'dblclick button.event-toggle-mode': 'fastToggleMode', //drilldown  >> hightlight
+                                                             //hightlight >> hybrid 
+                                                             //hybrid >> drilldown
       'click button.event-clear-filter': 'clearFilter',
       'dblclick .caption > p' : 'showCaptionControl',
       'click .chart, .caption >P': 'activeMe',
@@ -480,7 +483,7 @@ define([
       }
       this.updateModeIcon();
       
-      this.chartctrl.dataManager().switchMode();
+      this.chartctrl.dataManager().checkDeepUpdate();
     }
   });
   return BoardView;

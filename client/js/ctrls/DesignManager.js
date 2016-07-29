@@ -87,6 +87,7 @@ define(['ctrl/COMMON'], function (COMMON) {
       }
       else if(arguments[0].constructor == String) {
          if( !arguments[1] ) {
+           //
          }
          else if(arguments[1].constructor== MouseEvent) {
            this._ctrl.trigger("change:_show_ctrl_", arguments[0], arguments[1], this);

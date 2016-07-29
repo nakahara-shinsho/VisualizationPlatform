@@ -23,8 +23,8 @@ define(["css!./main"], function () {
     }
 
     this.io.dataManager().setMapperProps({
-      xaxis: { label: 'X Axis', type: 'number', map2: '', size: 'width'},
-      yaxis: { label: 'Y Axis', type: 'number', map2: '', size: 'height'}
+      xaxis: { label: 'X Axis', type: 'number', map2: '', spk: 'width'},
+      yaxis: { label: 'Y Axis', type: 'number', map2: [], spk: 'height'}
     });
     /// X Axis
     this.io.designManager()

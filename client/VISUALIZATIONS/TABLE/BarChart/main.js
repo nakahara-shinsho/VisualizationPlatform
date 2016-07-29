@@ -198,7 +198,7 @@ define(["util/CustomTooltip",
     // X AXIS [width - YAxis_width]
     this.xConfig = {
       sort    : {key: "total", order: "descending"},
-      label   : {upper:100},
+      label   : {upper:100, minimumWidth: 16},
       caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25}
     };
@@ -453,8 +453,10 @@ define(["util/CustomTooltip",
     var graphType = self.io.designManager().getValue("graphType");
     // Setup xLabel range
     var axisWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
-    if(data.length > self.xConfig.label.upper){
-      axisWidth = axisWidth/self.xConfig.label.upper * data.length;
+    var labels = data.map(function(d){return d.key;});
+    labels = labels.filter(function(d,i,self){ return self.indexOf(d) === i & i !==self.lastIndexOf(d);});
+    if(labels.length > self.xConfig.label.upper){
+      axisWidth = self.xConfig.label.minimumWidth * labels.length;
       self.container.select("svg.barchart").style("width", axisWidth +"px");
     }
     self.xLabel = d3.scale.ordinal().rangeBands([0,axisWidth], 0.1);
