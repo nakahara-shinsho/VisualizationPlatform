@@ -1,4 +1,4 @@
-/**
+9/**
  * @fileOverview implement for Legend
  */
 
@@ -108,28 +108,31 @@ define(["css!./Legend"], function () {
       var groupData = {};
       var data = self.io.dataManager().getData();
 
-      keys = self.io.dataManager().getMapper("parameters");
-      if(_.isEmpty(keys)) return null;
-      keys.forEach(function (key) {    
+      if (data.length == undefined) {
+	  groupData = makeGroupFromObject(data);
+      } else {
+	  keys = self.io.dataManager().getMapper("parameters");
+	  if(_.isEmpty(keys)) return null;
+	  keys.forEach(function (key) {    
 	      var id = parseInt(self.io.designManager().getValue(key + "ID"), 10);
 	      var set={name: key, groupID : id};
 	      var groups = self.searchGroupFromKey(key);
 	      var group;
 	      if (groups != null) {
 		  groups.forEach(function (group) {
-			  if (groupData[group.label] == undefined) {
-			      groupData[group.label] = [];		     
-			  } 
-		      });
+		      if (groupData[group.label] == undefined) {
+			  groupData[group.label] = [];		     
+		      } 
+		  });
 	      }
 	      set.values = data.filter(function(row){
-		      return row[key] !== undefined || !isNaN(row[key]);
-		  });
+		  return row[key] !== undefined || !isNaN(row[key]);
+	      });
 	      if (groups != null) {
 		  /*groupDataに登録*/
 		  groups.forEach(function (group) {
-			  groupData[group.label].push({kind: "data", data: set});
-		      });
+		      groupData[group.label].push({kind: "data", data: set});
+		  });
 	      } 
 	      if (id) {
 		  /*exclusiveDataに登録*/
@@ -143,12 +146,35 @@ define(["css!./Legend"], function () {
 	      /*全データをsingleDataに登録*/
 	      singleData.push(set);
 	  });               
-      /*groupDataを階層的な構造に変換*/
-      createGroupStructure(groupData);
+	  /*groupDataを階層的な構造に変換*/
+	  createGroupStructure(groupData);
+      }
       /*最上位のgroupDataをselfに保持*/
       self.groupHead = groupData;
       return [singleData, exclusiveData, groupData];
 
+      function makeGroupFromObject(data) {
+	  var GroupData = {},
+	      obj,
+	      subGroupData;
+	  Object.keys(data).forEach(function (groupName) {
+	      GroupData[groupName] = [];
+	      data[groupName].forEach(function (d) {
+		  if (typeof d != "object") {
+		      obj = {};
+		      obj.kind = "data";
+		      obj.data = {name: d, groupID: 0, values: []};
+		      GroupData[groupName].push($.extend(true, {}, obj));
+		  } else {
+		      obj = {};
+		      obj.kind = "group";
+		      obj.data = makeGroupFromObject(d);		  
+		      GroupData[groupName].push($.extend(true, {}, obj));
+		  }
+	      });
+	  });
+	  return GroupData;
+      }
       function createGroupStructure(groupData) {
 	  var groupName;
 	  var mapperProps;
@@ -229,7 +255,7 @@ define(["css!./Legend"], function () {
       this.containerWidth  = containerWidth;
       this.containerHeight = containerHeight;
 
-      this.width = this.containerWidth / 3 - 10;
+      this.width = this.containerWidth - 10;
       this.height = this.containerHeight ;
       this.selectorHeight = this.height;
       this.exclusiveSelectorHeight = this.height;
@@ -499,10 +525,11 @@ define(["css!./Legend"], function () {
       calcSvgSize(groups, sum);
       size[0] = sum[0] * 100;
       size[1] = sum[1] * 30;
-      self.updateSvgSize(svg.select(".svg-groupSelector"), size);
+      self.updateSvgSize(svg.select(".svg-groupSelector-cols"), size);
+      var svg_g = svg.select(".svg-groupSelector").append("g");//.attr("class", name);
       Object.keys(groups).forEach(function (name) {
 	      if (groups[name]){
-		  var svg_g = svg.select(".svg-groupSelector").append("g").attr("class", name);
+//		  var svg_g = svg.select(".svg-groupSelector").append("g").attr("class", name);
 		  offset = drawSelectiveCircle(svg_g, groups, name, offset);
 	      }
       });
@@ -520,10 +547,22 @@ define(["css!./Legend"], function () {
 	      });
 	  return sum;
       }
+      function drawGroupRect(svg, groups, name) {
+	  var svg_g = svg.select(".svg-groupRect")
+	      .append("svg");
+	  svg_g.append("rect")
+	      .attr("x", 20)
+	      .attr("y", 30)
+	      .attr("width", 15)
+	      .attr("height",15)
+	      .style("fill", "white");
+      }
       function drawSelectiveCircle(svg_g, groups, name, offset) {
 	  var selectedOrUnselected;
+          var d3Name = self.getName4D3(name);
+	  offset[1] += 30; 
 	  svg_g.append("circle")
-	  .attr("class", name)
+	  .attr("class", d3Name)
 	  .attr("cx", offset[0])
 	  .attr("cy", offset[1])
 	  .attr("r",8)
@@ -532,7 +571,17 @@ define(["css!./Legend"], function () {
 	      })
 	  .style("fill", "white")
 	  .on("click", function(){
-		  clickSelectiveCircle(groups, name);
+	      showGroupCol(groups[name]);
+	      clickSelectiveCircle(svg_g, groups, name);
+//	  offset[1] += 30; 
+
+	  vals[0] = offset[0];
+	  vals[1] = offset[1] + 30;
+	  
+	  drawNamesFromGroup(svg_g, groups[name], [offset[0], offset[1]]);
+//	  offset[1] = vals[1];
+//	  vals[1] = offset[1];
+	    
 	      })	  
 	  ;	  
 	  svg_g.append("text")
@@ -543,12 +592,39 @@ define(["css!./Legend"], function () {
 	  .attr("font-family", "sans-serif")
 	  .style("fill", "white")
 	  ;
+/*
 	  offset[1] += 30; 
 	  vals[0] = offset[0];
 	  vals[1] = offset[1];
 	  drawNamesFromGroup(svg_g, groups[name], vals);
 	  offset[1] = vals[1];
+*/
 	  return offset;
+      }
+      function showGroupCol(group) {
+	  var svgT =  self.svg_g.select(".svg-groupSelector-cols");
+	  var position = [30, 40];
+	  self.svg_g.select(".svg-groupSelector-cols")
+	      .selectAll("text")
+	      .remove();
+	  drawColName(svgT, group, position);
+	  function drawColName(svg, group ,position) {
+	      group.forEach(function (g) {
+		  if (g.kind == "data") {
+		      svg.append("text")
+			  .text(g.data.name)
+			  .attr("x", position[0])
+			  .attr("y", position[1])
+			  .attr("font-family", "sans-serif")
+			  .style("fill", "white");
+		      position[1] += 30;
+		  } else if (g.kind == "group") {
+		      Object.keys(g.data).forEach (function (key) {
+			  drawColName(svg, g.data[key], position);
+		      });		      
+		  }
+	      });
+	  }
       }
       function setOpacity(groups, name) {
 	  var selectiveGroups;
@@ -584,6 +660,7 @@ define(["css!./Legend"], function () {
 	  offset[0] += 10;
 	  group.forEach( function (g) {
 		  if (g.kind == "data") {
+/*
 		      svg_g.append("text")
 			  .text(g.data.name)
 			  .attr("x", offset[0])
@@ -594,6 +671,7 @@ define(["css!./Legend"], function () {
 			      })
 			  ;
 		      offset[1] += 30;
+*/
 		  } else if (g.kind == "group"){
 		      Object.keys(g.data).forEach (function (key) {
 			      tmp = offset[0];
@@ -608,29 +686,56 @@ define(["css!./Legend"], function () {
 		  }		  
 	      });
       } 
-      function clickSelectiveCircle(groups, name) {
+      function clickSelectiveCircle(svg_g, groups, name) {
 	  var groupHead = self.groupHead;
 	  var selectiveGroups;
 	  selectiveGroups = getSelectiveGroupNames(groups, name);
-	  switchOpacities(selectiveGroups);
-	  updateSelectiveGroup(selectiveGroups);
+	  switchOpacities(svg_g, selectiveGroups);
+//	  updateSelectiveGroup(selectiveGroups);
+	  updateSelectiveGroup(groups[name]);
       }
-      function updateSelectiveGroup(selectiveGroups) {
+      function updateSelectiveGroup(group) {
+//      function updateSelectiveGroup(selectiveGroups) {
 	  var keys = [];
 	  var columns = [];
 	  var allKeys = [];
-	  keys = getKeysFromGroupName(selectiveGroups);	 
+//	  keys = getKeysFromGroupName(selectiveGroups);	 
+	  getNamesFromGroup(group, keys);
 	  columns = self.io.dataManager().getColumnRefiner();
 	  allKeys = getAllKeys()
 	  columns = self.removeElements(columns, allKeys);
 	  columns = self.addElements(columns, keys);
 	  self.sendDatas(columns);
       }
-      function switchOpacities(selectiveGroups) {
-	  var svg_g = self.svg_g;
+      function getNamesFromGroup(group, names) {
+	  group.forEach( function (g) {
+		  if (g.kind == "data") {
+		      names.push(g.data.name);
+		  } else if (g.kind == "group"){
+		      Object.keys(g.data).forEach (function (key) {
+			  getNamesFromGroup(g.data[key], names);
+		      });
+		  } else if (g.kind == "parent"){
+		      /*do nothing*/
+		  } else {
+		      console.error("irregal group kind");
+		  }		  
+	      });	  
+      }
+      function switchOpacities(svg_g, selectiveGroups) {
+//	  var svg_g = self.svg_g;
+	  var d3Name;
+//	  svg_g.selectAll("circle").style("fill-opacity", OPACITYOFF);
+
 	  svg_g.selectAll("circle").style("fill-opacity", OPACITYOFF);
+	  svg_g.select("g").selectAll("circle").remove();
+	  svg_g.select("g").selectAll("text").remove();
+	  svg_g.select("g").remove();
+
 	  selectiveGroups.forEach(function (gName) {
-	  svg_g.selectAll("."+gName).style("fill-opacity", OPACITYON);		  
+	      d3Name = self.getName4D3(gName);
+	      self.svg_g.selectAll("."+d3Name).style("fill-opacity", OPACITYON);		  	     
+//	  svg_g.selectAll("."+gName).style("fill-opacity", OPACITYON);		  
 	      });
       }
       function getSelectiveGroupNames(groups, name) {
@@ -1107,6 +1212,29 @@ define(["css!./Legend"], function () {
 	   })
        .style("overflow-x","auto");
   };
+ 
+  Legend.prototype.setRegion = function(svg_g, name, width, height) {
+      var self = this;
+       svg_g.append("div")
+           .attr("class","div-" + name)
+           .style("width", function(){
+               return width   +"px";
+           })
+	   .style("height",   function(){
+		   return height + "px";
+	   })
+           .style("overflow-y","auto");
+       svg_g.select(".div-" + name).append("svg")
+           .attr("class", "svg-" + name)
+           .style("width", function(){
+               return width   +"px";
+           })
+	   .style("height", function(){
+		   return (height - 10) + "px";
+	   })
+       .style("overflow-x","auto");
+  };
+
   Legend.prototype.setRegionForTextOfExclusiveSelectors = function (svg_g) {
        var self = this;
        svg_g.append("div")
@@ -1242,15 +1370,19 @@ define(["css!./Legend"], function () {
        self.drawOptions(svg_g);
        if (designManager.getValue(textSelector) == "show") {
 	   /*draw selectors from singleData*/
-	   self.setRegionForSelectors(svg_g);
+//	   self.setRegionForSelectors(svg_g);
+	   self.setRegion(svg_g, "selector", self.width / 2, self.height);	   
 	   self.drawSelectors(svg_g, singleData);
 	   /*write text for selectors*/
-	   self.setRegionForTextOfSelectors(svg_g);
+//	   self.setRegionForTextOfSelectors(svg_g);
+	   self.setRegion(svg_g, "selector-cols", self.width / 2, self.height);
 	   self.writeTextForSelectors(svg_g, singleData);
        }
        if (designManager.getValue(textExclusiveSelector) == "show") {
 	   /*draw exclusive selectors*/
-	   self.setRegionForExclusiveSelectors(svg_g);
+//	   self.setRegionForExclusiveSelectors(svg_g);
+	   self.setRegion(svg_g, "exclusiveSelector", self.width / 2, self.height);	   
+	   self.setRegion(svg_g, "exclusiveSelector-cols", self.width / 2, self.height);
 	   self.drawExclusiveSelectors(svg_g, exclusiveData);
 	   /*write text for exclusive selectors*/
 	   self.setRegionForTextOfExclusiveSelectors(svg_g);
@@ -1258,7 +1390,9 @@ define(["css!./Legend"], function () {
        }
        if (designManager.getValue(textGroupSelector) == "show") {     
 	   /*draw group selectors*/
-	   self.setRegionForGroupSelectors(svg_g);
+//	   self.setRegionForGroupSelectors(svg_g);
+	   self.setRegion(svg_g, "groupSelector", self.width / 2, self.height);
+	   self.setRegion(svg_g, "groupSelector-cols", self.width / 2, self.height);
 	   self.drawGroupSelectors(svg_g, groupData);
        }
   };
@@ -1275,7 +1409,7 @@ define(["css!./Legend"], function () {
     self.containerWidth  = containerWidth;
     self.containerHeight = containerHeight;
 
-    self.width = self.containerWidth / 3 - 10;
+    self.width = self.containerWidth / 2 - 10;
     self.height = self.containerHeight ;
     self.selectorHeight = self.height;
     self.exclusiveSelectorHeight = self.height;
@@ -1289,14 +1423,32 @@ define(["css!./Legend"], function () {
     var space,
         lp,
         rp,
+        slash,
+        and,
         newName = name.concat();
     space = searchIndexs(name, " ");
     lp = searchIndexs(name, "(");
     rp = searchIndexs(name, ")");
+    slash = searchIndexs(name, "/");
+    and = searchIndexs(name, "&");
     newName = generateNewWord(newName, space, " ", "spcae");
     newName = generateNewWord(newName, lp, "(", "LeftParenthesis");
     newName = generateNewWord(newName, rp, ")", "RightParenthesis");
+    newName = generateNewWord(newName, slash, "/", "slash");
+    newName = generateNewWord(newName, and, "&", "and");
+    newName = replaceHeadNum(newName);
     return newName;
+    /**
+     * Replace head num 
+     * @param word
+     */
+    function replaceHeadNum(word) {
+      var num = word.match(/^\d/);
+      if (num != null) {
+	return word.replace(/^\d/, "_" + num);
+      }
+	return word;
+    }
     /**
     * Search target indexs
     * @param  word
