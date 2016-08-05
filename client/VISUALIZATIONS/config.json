@@ -41,6 +41,10 @@
 	{
             type: 'LineChartRowSplit',
             path: 'TABLE/LineChartRowSplit'
+	},
+	{
+            type: 'GanttChart',
+            path: 'Authenticated/GanttChart'
 	}
     ],
     STREAM: [],
