@@ -31,7 +31,7 @@ define(["util/CustomTooltip",
     // Data Mapper
     this.io.dataManager().setMapperProps({
       //columnsString: {type: 'string', label: 'Columns(String)', map2:[]},
-      axiscolumns: {type: '', label: 'Axises columns', map2:[], spk: '100'}
+      axiscolumns: { label: 'Axises columns', map2:'', spk: '100'}
     });
 
     // Design Mapper

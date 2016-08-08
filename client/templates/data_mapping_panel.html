@@ -15,11 +15,13 @@
     <div class='dimension' name=<%= onedim %> >
       <center>
         <span class="dim-name"><%= _chart_[onedim].label %></span>
+        
         <%  if($.isArray(_chart_[onedim].map2)) { %>
-        <span class="dim-type"><%= _chart_[onedim].type + 'Array' %></span>
+        <span class="dim-type"><%= (_chart_[onedim].type)?_chart_[onedim].type:'' + 'Array' %></span>
         <% } else { %>
-        <span class="dim-type"><%= _chart_[onedim].type %></span>
+        <span class="dim-type"><%= (_chart_[onedim].type)?_chart_[onedim].type:'' %></span>
         <% } //if-else-end %>
+
       </center>
       <div class="container"> <!-- inital mapped values for Array   --> 
         <% if($.isArray(_chart_[onedim].map2)) { %>

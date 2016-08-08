@@ -20,7 +20,6 @@ define([
         },
 
         show: function(options){
-
             // Every page view in the router should need a header.
             // Instead of creating a base parent view, just assign the view to this
             // so we can create it if it doesn't yet exist

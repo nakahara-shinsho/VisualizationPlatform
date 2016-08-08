@@ -6,19 +6,20 @@ module.exports.authentication = function (router,db){
  
   // Create our users table if it doesn't exist
   db.run("CREATE TABLE IF NOT EXISTS users ( " +
-         " userId TEXT UNIQUE PRIMARY KEY, actor TEXT NOT NULL, password TEXT, auth_token TEXT UNIQUE)");
+         " userId TEXT UNIQUE PRIMARY KEY, password TEXT, auth_token TEXT UNIQUE)");
  
+  //create manager (in order to manage users)
   db.get("SELECT * FROM users WHERE userId = ? ",  [ super_user_id ],  function(err, user){
-      var salt = bcrypt.genSaltSync(8);
-      if( ! user){
-         db.run("INSERT INTO users(userId, actor, password, auth_token) VALUES ('"+
-            super_user_id + "','Manager','" +
-            bcrypt.hashSync(super_user_pwd, salt) + "','" +
-            salt + "')" );
+      var saltseed = bcrypt.genSaltSync(8);
+      if(!user) {
+         db.run("INSERT INTO users(userId, password, auth_token) VALUES ('"+
+            super_user_id + "','" +
+            bcrypt.hashSync(super_user_pwd, saltseed) + "','" +
+            saltseed + "')" );
       } else {
-        if( !bcrypt.compareSync( super_user_pwd, user.password)){ //update password
+        if( !bcrypt.compareSync(super_user_pwd, user.password)){ //update password
             db.run("UPDATE users SET password= ? WHERE userId= ?",
-              [bcrypt.hashSync(super_user_pwd, salt), super_user_id],  function(err){
+              [bcrypt.hashSync(super_user_pwd, saltseed), super_user_id],  function(err){
               if(err) {
                console.log(err);
               }
@@ -26,7 +27,8 @@ module.exports.authentication = function (router,db){
         }
       }
   });
-  
+
+  /*
   db.serialize(function () {
     db.run("CREATE TABLE IF NOT EXISTS actors ( " +
            "actor TEXT UNIQUE PRIMARY KEY, layout INTEGER not null default 0," +
@@ -48,7 +50,8 @@ module.exports.authentication = function (router,db){
         }
     });
   });
-  
+  */
+
   router.get('/', function(req, res) {
     var auth = req.session.auth;
     var mode = GLOBAL.config.get('Http.client.mode') ;
@@ -64,11 +67,10 @@ module.exports.authentication = function (router,db){
     }
   });
 
-  
   // GET /api/auth
   // @desc: checks a user's auth status based on cookie
   router.get('/api/auth', function(req, res){
-    db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?",
+    db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
            [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, user){
       if(user){
         res.json({ user: _.omit(user, ['password', 'auth_token']) });
@@ -77,102 +79,131 @@ module.exports.authentication = function (router,db){
       }
     });
   });
+
   // POST /api/auth/login
   // @desc: login a user
   router.post('/api/auth/login', function(req, res){
     db.get("SELECT * FROM users WHERE userId = ?", [ req.body.userId ], function(err, user){
-      if(user){
+      if(user) {
         // Compare the POSTed password with the encrypted db password
-        if( bcrypt.compareSync( req.body.password, user.password)){
-            res.cookie('user_id',
-                       user.userId,
-                       { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  });
-            res.cookie('auth_token',
-                       user.auth_token,
-                       { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  });
-
+        if( bcrypt.compareSync( req.body.password, user.password)) { //send back authenticated cookie values
+            res.cookie( 'user_id',
+                        user.userId,
+                        { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge') } //options
+                      );
+            res.cookie( 'auth_token',
+                        user.auth_token,
+                        { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
+                      );
             // Correct credentials, return the user object
             res.json({ user: _.omit(user, ['password', 'auth_token']) });
         } else {
             // Username did not match password given
-            res.json({ error: "Invalid username or password."  });
+            //res.json({ error: "Invalid username or password."  });
+            res.status(500).send( {error: "Invalid username or password."});
         }
       } else {
         // Could not find the username
-        res.json({ error: "Username does not exist."  });
+        //res.json({ error: "Username does not exist."  });
+        res.status(500).send( {error: "Username does not exist."});
       }
     });
   });
 
   // POST /api/auth/signup
-  // @desc: creates a user
+  // @desc: add/create a new user
   router.post('/api/auth/signup', function(req, res){
-    db.serialize(function(){
-      var salt = bcrypt.genSaltSync(8);
-      db.run("INSERT INTO users(userId, actor, password, auth_token) VALUES (?, ?, ?, ?)", 
-      [ req.body.userId, req.body.actor, bcrypt.hashSync(req.body.password, salt),
-       salt ],function(err, rows){
-        if(err){
-          res.json({ error: "User ID has been taken.", field: "userId" });
-        } else {
-          // Retrieve the inserted user data
-          db.get("SELECT * FROM users WHERE userId = ?", [ req.body.userId ], 
-            function(err, user){
-              if(!user) {
-                console.log(err, rows);
-                res.json({ error: "Error while trying to register user." }); 
-              } else {
-                db.get("SELECT * FROM authorization WHERE actor = ?", [ req.body.actor ], 
-                  function(err, actors){
-                    if(err){
-                       console.log(err);
-                       res.json({ error: "Error while trying to find actor's authorization." }); 
-                    } else {
-                      var authorization = { layout: 0x00, chart_operation: 0x00,
-                                            bookmark: 0x00, virtual_table: 0x00,
-                                            backend_access: 0x00, chart_library: 0x00};
-                      if(actors.length>0){
-                        authorization.layout = actors[0].layout;
-                        authorization.chart_operation = actors[0].layout;
-                        authorization.bookmark = actors[0].bookmark;
-                        authorization.virtual_table = actors[0].virtual_table;
-                        authorization.backend_access = actors[0].backend_access;
-                        authorization.chart_library = actors[0].chart_library;
-                      }
-                      // Set the user cookies and return the cleansed user data
-                      res.json({ user: _.omit(user, ['password', 'auth_token']),
-                                 authorization: authorization });
-                    }
+    db.serialize(function() {
+      
+      db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, user) {
+        if(user && user.userId=='admin') {     
+          var saltseed = bcrypt.genSaltSync(8);
+          db.run("INSERT INTO users(userId, password, auth_token) VALUES (?, ?, ?)", //auth_token is saltseed for the user
+          [ req.body.userId, bcrypt.hashSync(req.body.password, saltseed), saltseed ], function(err, rows){
+            if(err) {
+            res.status(500).send({ error: "User ID has been taken:"+ req.body.userId });
+            } else {
+              // Retrieve the inserted user data
+              db.get("SELECT * FROM users WHERE userId = ?", [ req.body.userId ], 
+                function(err, user){
+                  if(!user) {
+                    console.log(err, rows);
+                    res.status(500).send({ error: "Error while trying to add user:" + req.body.userId }); 
+                  } else {
+                    res.json({ success: "User is successfully added." });
+                  }
                 });
-              }
-            });
+            }
+          });
+        } else {
+          res.status(500).send({ error: "Havn't enough access authoritation to add user:" + req.body.userId }); 
         }
-      });
+     }); //db.get end
+    });
+  });
+
+
+  // POST /api/auth/signup
+  // @desc: add/create a new user
+  router.post('/api/auth/update', function(req, res){
+    db.serialize(function() {
+    
+      db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, user) {
+        if(user) {
+          db.run("UPDATE users SET password=? WHERE userId=?", //auth_token is saltseed for the user
+          [ bcrypt.hashSync(req.body.password, req.signedCookies.auth_token), req.signedCookies.user_id ], function(err, rows){
+            if(err) {
+              res.status(500).send({ error: "update password  failed for user:"+ req.signedCookies.user_id });
+            } else {
+              res.json({ success: "Password is successfully updated." }); 
+            }
+          });
+        } else {
+          res.status(500).send({ error: "Havn't found the current signed user:" + req.signedCookies.user_id }); 
+        }
+     }); //db.get end
     });
   });
 
 
   // POST /api/auth/logout
   // @desc: logs out a user, clearing the signed cookies
-  router.post("/api/auth/logout", function(req, res){
-   res.clearCookie('user_id');
-   res.clearCookie('auth_token');
-   res.json({ success: "User successfully logged out." });
+  router.post("/api/auth/logout", function(req, res) {
+   
+   db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, user) {
+        if(user) {     
+          res.clearCookie('user_id');
+          res.clearCookie('auth_token');
+          res.json({ success: "User successfully logged out." });
+        } else {
+          res.json({ success: "No need to logout again." });
+        }
+    });
   });
 
   // POST /api/auth/remove_account
   // @desc: deletes a user
-  router.post("/api/auth/remove_account", function(req, res){
-    db.run("DELETE FROM users WHERE userId = ? AND auth_token = ?", 
-      [ req.signedCookies.user_id, req.signedCookies.auth_token ], 
-      function(err, rows){
-        if(err){ 
-          res.json({ error: "Error while trying to delete user." }); 
+  router.post("/api/auth/remove", function(req, res) {
+    db.serialize(function() {
+     db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, user) {
+        if(user && user.userId=='admin') {
+          db.run("DELETE FROM users WHERE userId = ?", [ req.body.userId ],
+            function(err, rows){
+              if(err){ 
+                res.status(500).json({ error: "Error while trying to delete user." }); 
+              } else {
+                res.json({ success: "User is successfully deleted." });
+              }
+            });
         } else {
-          res.clearCookie('user_id');
-          res.clearCookie('auth_token');
-          res.json({ success: "User successfully deleted." });
+           res.status(500).send({ error: "Havn't enough access authoritation to delete user:" + req.body.userId }); 
         }
       });
-  });
- };
+    });
+  });//serialize end
+
+};

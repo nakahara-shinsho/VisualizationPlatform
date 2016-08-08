@@ -24,11 +24,11 @@ function HttpServer(base_path, http_port, mq) {
       var stat = fs.lstatSync(fullName);
       
       if (stat.isDirectory()) {
-        if(fullName.indexOf('/.svn') <= -1){
+        if(file.startsWith('.') <= -1){
+           console.log("skip folder ('" + fullName + "')");
+        } else {
           recursiveRoutes(fullName);
           console.log("enter folder ('" + fullName + "')");
-        }else{
-          console.log("skip folder ('" + fullName + "')");
         }
       } else{
           var index = fullName.toLowerCase().indexOf('.js');
