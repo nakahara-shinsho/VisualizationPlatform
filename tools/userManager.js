@@ -89,9 +89,9 @@ var change_parameters = [
     { 
       type: 'password',
       name: 'password',
-      message: 'Enter a new password:',
+      message: 'Enter a new password (>=5 characters):',
       validate: function (str) {
-        return !_.isEmpty(str);
+        return !_.isEmpty(str) && str.length>=5;
       }
     },
     {
@@ -237,7 +237,7 @@ function deleteUser(parameters, token) {
     json: true,
     jar: cookieJar,
     body: {
-      userId: parameters.user
+      user: parameters.user
     },
     url: program.url+'api/auth/remove',
     headers: {'X-CSRF-Token': token }

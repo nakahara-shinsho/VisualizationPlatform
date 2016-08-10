@@ -1,5 +1,6 @@
 module.exports.tools =function(app, db) {
-  
+  var  _ = require("underscore"),
+      $  = require('jquery-deferred');
   db.run("CREATE TABLE IF NOT EXISTS tool (" +
          "id TEXT(50) not null, "+ //tool id is editable be an operator
          "user TEXT(20) not null, "+
@@ -16,24 +17,75 @@ module.exports.tools =function(app, db) {
       errHandle=commonModule.errHandle,
       logHandle=commonModule.logHandle;
   
-  var getTools = function(req, res) {
-    if(req.query.user && req.query.format ) {
-      db.all("SELECT * FROM tool WHERE user= $user AND format= $format ", 
-             {$user: req.query.user, $format: req.query.format }, function(err, rows) {
+  var getToolNames = function(req, res) {
+    if(req.body.user ) {
+      db.all("SELECT id FROM tool WHERE user= $user", 
+             {$user: req.body.user}, function(err, rows) {
           if (err) {
-            errHandle(err);
+            //errHandle(err);
+            console.error(err);
             res.status(500).send({error: err.message});
           } else {
-            res.send(rows);
+            var tools = _.map(rows, function(row) {return row.id;});
+            res.send({tools:tools});
           }
         });
     } else {
-      var emsg = "incorrect query params: user="+req.query.user +' ,format=' + req.query.format;
-      errHandle(emsg);
+      var emsg = "incorrect query params( user="+req.body.user +')';
+      
+      console.error(emsg);
       res.status(500).send({error: emsg});
     }
   };
   
+  var getSharedTools = function(req, res) {
+    var deferred = $.Deferred();
+    if(req.query.user && req.query.format ) {
+      var sql_string = "SELECT id, imgurl, MAX(authority) as authority, format, description FROM access "+
+          "JOIN tool ON access.toolId=tool.id  "+
+          "WHERE (access.userId=$user OR access.userId='*') and tool.format=$format GROUP BY toolId";
+      db.all(sql_string, { $user: req.query.user, $format: req.query.format}, function(err, rows) {
+          if (err) {
+            //errHandle(err);
+            //res.status(500).send({error: err.message});
+            deferred.reject(err);
+          } else {
+            //res.send(rows);
+            deferred.resolve(rows);
+          }
+        });
+    } else {
+      var emsg = "incorrect query params: user=" + req.query.user +' ,format=' + req.query.format;
+      //errHandle(emsg);
+      //res.status(500).send({error: emsg});
+       deferred.reject({error:emsg});
+    }
+    return deferred.promise();
+  };
+
+  var getTools = function(req, res) {
+    var deferred = $.Deferred();
+
+    if(req.query.user && req.query.format ) {
+      db.all("SELECT id, imgurl, format, description FROM tool WHERE user= $user AND format= $format ", 
+         { $user: req.query.user, $format: req.query.format }, function(err, rows) {
+          if (err) {
+            //errHandle(err);
+            //res.status(500).send({error: err.message});
+            deferred.reject(err);
+          } else {
+            //res.send(rows);
+            deferred.resolve(rows);
+          }
+        });
+    } else {
+      var emsg = "incorrect query params: user=" + req.query.user +' ,format=' + req.query.format;
+      //errHandle(emsg);
+      //res.status(500).send({error: emsg});
+      deferred.reject({error:emsg});
+    }
+    return deferred.promise();
+  };
   
   var getTool = function(req, res) {
     var stmt_options = {$user: req.query.user, $id: req.params.id},
@@ -42,6 +94,7 @@ module.exports.tools =function(app, db) {
       stmt_options.$format = req.query.format;
       stmt_select += "AND format= $format ";
     }
+
     db.all(stmt_select, stmt_options, function(err, rows) {
       if (err) {
         errHandle(err);
@@ -138,7 +191,20 @@ module.exports.tools =function(app, db) {
   
   app.get(url, function (req, res) {
     logHandle(modelName + 'GET(list): '+ JSON.stringify(req.query));
-    getTools(req, res);
+    getTools(req, res)
+    .done(function(selfTools) {
+       getSharedTools(req, res)
+       .done(function(sharedTools){
+         res.send(_.union(selfTools, sharedTools));
+       })
+       .fail(function(err){
+         console.error(err);
+         res.send(selfTools);
+       });
+    })
+    .fail(function(err){
+      res.status(500).send(err);
+    });
   });
 
   app.get(url+'/:id', function (req, res) {
@@ -146,6 +212,12 @@ module.exports.tools =function(app, db) {
     getTool(req, res);
   });
   
+  //get tool name list 
+  app.post(url+'/list', function (req, res) {
+    logHandle(modelName + 'POST: ' + JSON.stringify(req.body));
+    getToolNames(req, res);
+  });
+
   //save tool with id and description
   app.post(url+'/:id', function (req, res) {
     logHandle(modelName + 'POST: ' + JSON.stringify(req.body));

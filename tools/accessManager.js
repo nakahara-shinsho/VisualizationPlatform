@@ -5,6 +5,8 @@ var request = require("request"),
     _ = require('underscore'),
     inquirer = require('inquirer'),
     cheerio = require('cheerio');
+
+var $  = require('jquery-deferred');
 //3 Value Checkbox
 //http://extremefe.github.io/bootstrap-checkbox/
 //http://vanderlee.github.io/tristate/
@@ -58,7 +60,7 @@ var login_parameters = [
 ];
 
 //add user<>tool access to table
-var add_parameters = [
+var set_parameters = [
     {
       type: 'input',
       name: 'user',
@@ -172,25 +174,52 @@ function loginUser(parameters, token) {
     if(e || body.error) {
       console.error(e || body.error);
       process.exit(1);
-    } else {
-      
+    } else {    
       inquirer.prompt(function_parameters).then(function(fparameters) {
           switch (fparameters.func) {
             case 'add':
-              inquirer.prompt(signup_parameters).then(function(parameters) {
-                addAccess(parameters, token);
+              setUser(token, parameters.user).done(function(user) {
+                setTool(token, parameters.user).done(function(tool) {
+                  setAuthority().done(function(authority){
+                    addAccess(user, tool, authority, token);
+                  });
+                })
+                .fail(function(err){
+                  console.error(err);
+                });
+              })
+              .fail(function(err){
+                console.error(err);
               });
               break;
 
             case 'delete':
-              inquirer.prompt(delete_parameters).then(function(parameters) {
-                deleteAccess(parameters, token);
+              setUser(token, parameters.user).done(function(user) {
+                setAssignedTool(token, user).done(function(tool) {
+                  deleteAccess(user, tool, token);
+                })
+                .fail(function(err){
+                  console.error(err);
+                });
+              })
+              .fail(function(err){
+                console.error(err);
               });
               break;
             
             case 'change':
-              inquirer.prompt(change_parameters).then(function(parameters) {
-                changeAccess(parameters, token);
+              setUser(token, parameters.user).done(function(user){
+                setAssignedTool(token, user).done(function(tool){
+                  setAuthority().done(function(authority){
+                    changeAccess(user, tool, authority, token);
+                  });
+                })
+                .fail(function(err){
+                  console.error(err);
+                });
+              })
+              .fail(function(err){
+                  console.error(err);
               });
               break;
             
@@ -204,31 +233,137 @@ function loginUser(parameters, token) {
               break;
           }
         });
-      }
-    
+    }
   });
 }
 
-function getUserList(parameters, token) {
+function setUser(token, logined_user) {
+  var deferred = $.Deferred(),
+      url = program.url+'api/auth/users';
+  var options = {
+    method: 'GET',
+    json: true,
+    jar: cookieJar,
+    url: url,
+    headers: {'X-CSRF-Token': token }
+  };
+  request(options, function(e, r, body) {
+    if(e || r.statusCode !== 200) {
+      console.error(e || body.error);
+      deferred.reject({error: e || body.error});
+    } else {
+      var users = _.without(body.users, logined_user); 
+      users.push('ALL(*)');
+      var user_parameters = {
+          type: 'list',
+          name: 'user',
+          message: 'select one user :',
+          choices: users,
+          validate: function (str) {
+            return !_.isEmpty(str);
+          },
+          filter: function (str){
+            return (str=='ALL(*)')?'*': str;
+          }
+      };
+      inquirer.prompt(user_parameters )
+        .then(function(parameters) {
+          deferred.resolve(parameters.user);
+      });
+    } //if-else end
+  });
+  return deferred.promise();
+}
+
+function setTool(token, user) {
+  var deferred = $.Deferred();
   var options = {
     method: 'POST',
     json: true,
     jar: cookieJar,
-    body: {
-      userId: parameters.user,
-      password: parameters.password,
-    },
-    url: program.url+'api/access/users',
+    body: { user: user},
+    url: program.url+'api/tool/list',
     headers: {'X-CSRF-Token': token }
   };
-  request(options, function(e, r, body){
+  
+  request(options, function(e, r, body) {
     if(e || r.statusCode !== 200) {
       console.error(e || body.error);
-      //process.exit(1);
+      deferred.reject({error: e || body.error});
     } else {
-      console.log('successful in getting user list');
+      if(body.tools.length >0) {
+        var tool_parameters = {
+          type: 'list',
+          name: 'tool',
+          message: 'select one tool :',
+          choices: body.tools,
+          validate: function (str) {
+            return !_.isEmpty(str);
+          }
+        };
+        inquirer.prompt(tool_parameters).then(function(parameters) {
+          deferred.resolve(parameters.tool);
+        });
+      } else {
+        deferred.reject('no assigned tool list avaliable for user: '+ user);
+      }
     }
   });
+  return deferred.promise();
+}
+
+function setAssignedTool(token, user) {
+  var deferred = $.Deferred();
+  var options = {
+    method: 'POST',
+    json: true,
+    jar: cookieJar,
+    body: { userId: user },
+    url: program.url+'api/access/tools',
+    headers: {'X-CSRF-Token': token }
+  };
+  
+  request(options, function(e, r, body) {
+    if(e || r.statusCode !== 200) {
+      console.error(e || body.error);
+      deferred.reject({error: e || body.error});
+    } else {
+      if(body.tools.length >0) {
+        var tool_parameters = {
+          type: 'list',
+          name: 'tool',
+          message: 'select one tool :',
+          choices: body.tools,
+          validate: function (str) {
+            return !_.isEmpty(str);
+          }
+        };
+        inquirer.prompt(tool_parameters).then(function(parameters) {
+          deferred.resolve(parameters.tool);
+        });
+      } else {
+        deferred.reject('no tool list avaliable for user: '+ user);
+      }
+    }
+  });
+  return deferred.promise();
+}
+
+function setAuthority() {
+  var deferred = $.Deferred();
+  var authority_parameters = {
+          type: 'list',
+          name: 'authority',
+          message: 'select one authority (Read-Only or Read-Write ) :',
+          choices: ['Read only authority', 'Write and read authority'],
+          filter: function (str){
+            return str.split(' ')[0].toLowerCase();
+          }
+        };
+  inquirer.prompt(authority_parameters).then(function(parameters) {
+    deferred.resolve((parameters.authority=='read')? 0: 1);
+  });
+  return deferred.promise();
 }
 
 function getToolList(parameters, token) {
@@ -253,14 +388,16 @@ function getToolList(parameters, token) {
   });
 }
 
-function addAccess(parameters, token) {
+//add access authority
+function addAccess(user, tool, authority,token) {
   var options = {
     method: 'POST',
     json: true,
     jar: cookieJar,
     body: {
-      userId: parameters.user,
-      password: parameters.password,
+      userId: user,
+      toolId: tool,
+      authority: authority
     },
     url: program.url+'api/access/add',
     headers: {'X-CSRF-Token': token }
@@ -268,20 +405,21 @@ function addAccess(parameters, token) {
   request(options, function(e, r, body){
     if(e || r.statusCode !== 200) {
       console.error(e || body.error);
-      //process.exit(1);
     } else {
-      console.log('successful in adding new user :'  + parameters.user);
+      console.log('successful in adding access authority.');
     }
   });
 }
 
-function deleteAccess(parameters, token) {
+function deleteAccess(user, tool, token) {
+  
   var options = {
     method: 'POST',
     json: true,
     jar: cookieJar,
     body: {
-      userId: parameters.user
+      userId: user,
+      toolId: tool
     },
     url: program.url+'api/access/remove',
     headers: {'X-CSRF-Token': token }
@@ -289,21 +427,23 @@ function deleteAccess(parameters, token) {
 
   request(options, function(e, r, body){
     if(e || r.statusCode !== 200) {
+      console.log('user='+user+' tool='+tool);
       console.error(e || body.error);
-      //process.exit(1);
     } else {
-      console.log('successful in deleting user :'  + parameters.user);
+      console.log('successful in deleting access authority');
     }
   });
 }
 
-function changeAccess(parameters, token) {
+function changeAccess(user, tool, authority, token) {
   var options = {
     method: 'POST',
     json: true,
     jar: cookieJar,
     body: {
-      password: parameters.password
+      userId: user,
+      toolId: tool,
+      authority: authority
     },
     url: program.url+'api/access/update',
     headers: {'X-CSRF-Token': token }
@@ -312,9 +452,8 @@ function changeAccess(parameters, token) {
   request(options, function(e, r, body){
     if(e || r.statusCode !== 200) {
       console.error(e || body.error);
-      //process.exit(1);
     } else {
-      console.log('successful in updating password');
+      console.log('successful in updating access authority');
     }
   });
 }
@@ -330,7 +469,6 @@ function logoutUser(token) {
   request(options, function(e, r, body){
     if(e || r.statusCode !== 200) {
       console.error(e || body.error);
-      //process.exit(1);
     } else {
       console.log('successful in Logout !' );
     }

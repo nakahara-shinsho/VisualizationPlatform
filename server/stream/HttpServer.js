@@ -90,7 +90,8 @@ function HttpServer(base_path, http_port, mq) {
   try{
     recursiveRoutes(base_path+'/router');
   }catch(err){
-    errorHandler(err);
+    //errorHandler(err);
+    console.err(err);
   }
   
   //print all router list
