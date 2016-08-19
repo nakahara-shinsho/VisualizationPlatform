@@ -33,6 +33,7 @@ module.exports.charts = function (router, db) {
     router.delete(url, function(req, res) {
       logHandle(modelName +'DELETE(error): ' + JSON.stringify(req.params));
     });
+
     //this function should not be called!
     router.put(url, function(req, res) {
       logHandle(modelName+'PUT(error): ' + JSON.stringify(req.params));
@@ -43,13 +44,13 @@ module.exports.charts = function (router, db) {
       var model = req.body;
       logHandle(modelName+'POST: ' + JSON.stringify(req.body));
       //insert to db
-      db.all("SELECT MAX(id) as maxid FROM chart", function(err, rows){
+      db.get("SELECT MAX(id) as maxid FROM chart", function(err, row){
           if (err) {
             errHandle(err);
             res.status(500).send({error: err.message});
           }else{
               var nextid = 0;
-              if(rows.length) nextid = rows[0].maxid +1;
+              if(row) nextid = row.maxid +1;
               var stmt_insert = "INSERT OR IGNORE INTO chart " +
                   "(id, vtname, vttype) VALUES ($id, $vtname, $vttype)" ;
               db.run(stmt_insert, {
@@ -74,31 +75,45 @@ module.exports.charts = function (router, db) {
     
    //get one model
     router.get(url + '/:id', function (req, res) {
+      var emsg;
       logHandle(modelName +'GET(id): ' + JSON.stringify(req.params));
-      var stmt_select = db.prepare("SELECT * FROM chart WHERE id= ?");
-      stmt_select.all(+req.params.id, function(err, rows){
-        if(!err && rows.length>0) {
-          res.send(rows[0]);
-        } else {
-          var emsg = "Haven't found chart with id= " +req.params.id;
-          errHandle(emsg);
-          res.status(500).send({ error: emsg });
-        }
-      });
+      if(typeof(req.signedCookies.authority) !== "undefined") {
+        
+        db.get("SELECT * FROM chart WHERE id= ?", [req.params.id], function(err, row){
+          if(!err && row) {
+            res.send(row);
+          } else {
+            emsg = "Haven't found chart with id= " +req.params.id;
+            errHandle(emsg);
+            res.status(500).send({ error: emsg });
+          }
+        });
+      } else {
+        emsg = "Haven't access authority for chart with id= " +req.params.id;
+        errHandle(emsg);
+        res.status(500).send({ error: emsg });
+      }
     });
   
+    
     router.delete(url + '/:id', function(req, res) {
       logHandle(modelName+'DELETE(id): ' + JSON.stringify(req.params.id));
-      var stmt_delete = "DELETE FROM chart WHERE id=?";
-      db.run(stmt_delete, [ +req.params.id],
-             function(error) {
-                if(error){
-                  errHandle(error);
-                  res.status(500).send({error: error.message});
-                }else{
-                  res.json({message: 'Successful!' });
-                }
-             });
+      if(req.signedCookies.authority=='write') {
+        var stmt_delete = "DELETE FROM chart WHERE id=?";
+        db.run(stmt_delete, [ +req.params.id],
+              function(error) {
+                  if(error){
+                    errHandle(error);
+                    res.status(500).send({error: error.message});
+                  }else{
+                    res.json({message: 'Successful!' });
+                  }
+              });
+      } else {
+        var emsg = "Haven't enought access authority to delete chart with id= " +req.params.id;
+        errHandle(emsg);
+        res.status(500).send({ error: emsg });
+      }
     });
   
     router.post(url + '/:id', function(req, res){
@@ -114,45 +129,56 @@ module.exports.charts = function (router, db) {
       write_callback(req, res);
     });//put end
   
-    function write_callback(req, res) {
-      var model = req.body;
-      db.serialize(function () {
-        db.all("SELECT * FROM chart WHERE id= $id", {$id: +req.params.id},
-        function(err, rows){
-          if (err) {
-            errHandle(err);
-            res.status(500).send({error: err.message});
-          }else{
-            if(rows.length) {
-              var andpart = "",
-                  valarrs =[];
-              for(var key in model){
-                 if (model.hasOwnProperty(key) && key!== 'id') {
-                    var value = model[key];
-                    if(typeof value == 'object') value = JSON.stringify(value);
-                    valarrs.push(value);
-                    andpart += (andpart.length>0)? ' , '+key+ '=?' : key+'=?';
-                 }
-              }
-              var stmt_update = "UPDATE chart SET "+ andpart+ " where id=?";
-              valarrs.push( +req.params.id );
-              db.run(stmt_update, valarrs,
-                  function(err){
-                     if (err) {
-                        errHandle(err);
-                        res.status(500).send({error: err.message});
-                     }else{
-                        res.send({});
-                     }
-                  }
-                );
-            } else {
-              var emsg = "Havn't find Model data with id= "+ req.params.id;
-              errHandle(emsg);
-              res.status(500).send({error: emsg});
-            }
+    function execUpate(req, res) {
+       var andpart = "", valarrs =[],
+           model = req.body;
+       for(var key in model){
+          if (model.hasOwnProperty(key) && key!== 'id') {
+             var value = model[key];
+             if(typeof value == 'object') value = JSON.stringify(value);
+             valarrs.push(value);
+             andpart += (andpart.length>0)? ' , '+key+ '=?' : key+'=?';
           }
+        }
+        var stmt_update = "UPDATE chart SET "+ andpart+ " where id=?";
+        valarrs.push( +req.params.id );
+        db.run(stmt_update, valarrs,
+           function(err) {
+             if(err) {
+               errHandle(err);
+                 res.status(500).send({error: err.message});
+              } else {
+                res.send({});
+              }
+            }
+        );
+    }
+
+    function write_callback(req, res) {
+      var emsg;
+      if(req.signedCookies.authority=="write") {
+        db.serialize(function () {
+          db.get("SELECT * FROM chart WHERE id= $id", {$id: +req.params.id},
+          function(err, row){
+            if (err) {
+              errHandle(err);
+              res.status(500).send({error: err.message});
+            }else{
+              if(row) {
+              execUpate(req, res);
+              } else {
+                emsg = "Havn't find chart with id= "+ req.params.id;
+                errHandle(emsg);
+                res.status(500).send({error: emsg});
+              }
+            }
+          });
         });
-      });
+      } else {
+        emsg = "Havn't enough access authority to update chart with id= "+ req.params.id;
+        errHandle(emsg);
+        res.status(500).send({error: emsg});
+      }
     }//callback end
+
 };

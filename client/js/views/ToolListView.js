@@ -51,6 +51,7 @@ define(["js/app",
               src: 'api/snapshot/'+tool.imgurl+'.jpg?'+ Math.random()* 1000000,
               title: 'description: '+ tool.description,
               alt: tool.imgurl,
+              authority: tool.authority
             });
             $list.append(img);
           });
@@ -86,7 +87,7 @@ define(["js/app",
 
           //delete data in database
           $.ajax({ //query databases worker
-           url: app.API + '/tool?' +params,
+           url: app.API + '/tool?' + params,
            //data: data, //delete can not use the params
            type: 'DELETE', //or GET if no options' data
            timeout: 10000, //ms

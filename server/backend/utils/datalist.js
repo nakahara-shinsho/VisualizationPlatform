@@ -22,7 +22,7 @@ function MyClass () {
       for(var i=0; i<list.length; i++){
         var fullPath = dataPath + list[i];
           var st = fs.statSync(fullPath);
-          if(st.isDirectory(fullPath)){
+          if(st.isDirectory(fullPath)) {
             var tmp = {
               name          : list[i],
               modified_time : fs.statSync(fullPath).mtime

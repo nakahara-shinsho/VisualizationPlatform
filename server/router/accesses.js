@@ -2,7 +2,7 @@ module.exports.accesses = function (router,db) {
   var  _ = require("underscore");
   // Create our users table if it doesn't exist
   db.run("CREATE TABLE IF NOT EXISTS access ( " +
-         "toolId TEXT NOT NULL, userId TEXT NOT NULL DEFAULT '*', authority INTEGER NOT NULL DEFAULT 0)");
+         "toolId TEXT NOT NULL, userId TEXT NOT NULL DEFAULT '*', authority TEXT(5) NOT NULL DEFAULT 'read')");
  
   // if the tool is created by req.signedCookies.userId, it will have highest authority
   // else check the access table to setup the access authority  
@@ -18,7 +18,7 @@ module.exports.accesses = function (router,db) {
                      { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge') } //options
                   );
           res.cookie( 'authority',
-                    1, // read&write access
+                    'write', // read&write access
                     { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
                    );
           res.json({});

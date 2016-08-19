@@ -361,7 +361,7 @@ function setAuthority() {
           }
         };
   inquirer.prompt(authority_parameters).then(function(parameters) {
-    deferred.resolve((parameters.authority=='read')? 0: 1);
+    deferred.resolve(parameters.authority);
   });
   return deferred.promise();
 }
