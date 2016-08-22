@@ -39,7 +39,7 @@ define(["js/app",
         var self = this;
         this.model.fetch(
         {
-          data: {user: app.session.user.get('userId')},
+          data: {user: app.session.user.get('id')},
           success: function (model, response, options){
             self.drawMe(response.data);
           },
@@ -103,7 +103,7 @@ define(["js/app",
 
           var params  = "id="+$img.attr('id');
           //params += "&format="+ $img.attr('data-format');
-          params += "&user="+ app.session.user.get('userId');
+          params += "&user="+ app.session.user.get('id');
 
           //delete data in database
           $.ajax({ //query databases worker

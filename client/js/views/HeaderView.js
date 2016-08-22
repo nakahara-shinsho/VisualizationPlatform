@@ -49,7 +49,7 @@ define([
       /* onLoginStatusChange: function(evt){
             this.render();
             if(app.session.get("logged_in")) {
-              app.showAlert("Success!", "Logged in as " + app.session.user.get("userId"), "alert-success");
+              app.showAlert("Success!", "Logged in as " + app.session.user.get("id"), "alert-success");
             }
             else {
               app.showAlert("See ya!", "Logged out successfully", "alert-success");

@@ -1,5 +1,5 @@
 //save board/board collection properties
-module.exports.charts = function (router, db) {
+module.exports.chart = function (router, db) {
     var modelName = '###chart ';
     var url = '/api/chart';
     var commonModule = require('../util/common.js'),

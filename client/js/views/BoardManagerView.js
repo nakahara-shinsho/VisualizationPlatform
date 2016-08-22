@@ -68,7 +68,7 @@ define(['js/app',
         });
         
         this.model = new BoardManagerModel(
-          {user: app.session.user.get('userId')},
+          {user: app.session.user.get('id')},
           {screenid: this.parent.screenid });
           
         this.model.on('change', function(){

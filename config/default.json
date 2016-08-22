@@ -25,7 +25,7 @@
      "name": "polyspector"
    },
    "superuser": {
-      "userId": "admin",
+      "id": "admin",
       "password": "1234567"
    }
   }

@@ -8,7 +8,7 @@ define([
     var UserModel = Backbone.Model.extend({
 
         defaults: {
-            userId: '',
+            id: '',
             description: '',
             email: ''
         },

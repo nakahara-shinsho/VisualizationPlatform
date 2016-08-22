@@ -196,7 +196,7 @@ define([
      //open dialog for inputing screeId and description
      //set screeId as current data and description is null
      var self = this;
-     var user = app.session.user.get('userId');
+     var user = app.session.user.get('id');
      var deferred = $.Deferred();
     
      this.bookmarkDialog = BootstrapDialog.show({

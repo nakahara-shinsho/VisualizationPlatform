@@ -61,7 +61,7 @@ define([
          type: 'GET',
          dataType: "json",
          timeout: 10000, //ms
-         data: {user: app.session.user.get('userId') },
+         data: {user: app.session.user.get('id') },
        };
        return $.ajax(ajaxOptions);
      },

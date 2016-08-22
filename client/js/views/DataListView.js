@@ -6,8 +6,8 @@ define([ "js/app",
     initialize: function (options) {
       _.bindAll(this, 'render');
       var self = this;
-      this.user = app.session.user.get('userId');
-      var data = { user: app.session.user.get('userId') };
+      this.user = app.session.user.get('id');
+      var data = { user: this.user };
       if(this.model.get('tool')) {
         $.extend(data, {format: this.model.get('tool').format });
       }

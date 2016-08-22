@@ -82,7 +82,6 @@ define([
 
                     if( !res.error ){
                         if(_.indexOf(['login'/*, 'signup'*/], opts.method) !== -1){
-
                             self.updateSessionUser( res.user || {} );
                             self.set({ logged_in: true });
                         } else {

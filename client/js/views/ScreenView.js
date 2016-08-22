@@ -40,7 +40,7 @@ define([
         };
         
         this.context = {};
-        this.screenCtrl = new ScreenCtrl(app.session.user.get('userId'));
+        this.screenCtrl = new ScreenCtrl(app.session.user.get('id'));
         this.listenTo(framework.mediator, 'screenview:breadcrumb', this.showBreadcrumb);
         this.listenTo(framework.mediator, 'screenview:screenid', this.shiftToScreen);
       },
@@ -75,7 +75,7 @@ define([
         var toolModel = new ToolModel({id: toolid});
         toolModel.fetch({
             data: { 
-                user: app.session.user.get('userId'),
+                user: app.session.user.get('id'),
                 format: this.status.get('data').format
             },
             success: function(model, response, options) {
@@ -236,7 +236,7 @@ define([
         var self = this;
         if(this.mainView){
           var chart_el  = this.mainView.$el.find('charts');
-          var imagename = app.session.user.get('userId')+'.' + this.mainView.model.get('id');
+          var imagename = app.session.user.get('id')+'.' + this.mainView.model.get('id');
           this.mainView.model.set('imgurl', imagename);//upate db
           this.screenCtrl.captureElement(chart_el, 300, 200)
             .done(function (img){                                                        
