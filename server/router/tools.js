@@ -59,11 +59,11 @@ module.exports.tools =function(app, db) {
     return deferred.promise();
   };
 
-  var getTools = function(req, res) {
+  var getOwnedTools = function(req, res) {
     var deferred = $.Deferred();
 
     if(req.query.user && req.query.format ) {
-      db.all("SELECT id, imgurl, format, description, 'write' as authority FROM tool WHERE user= $user AND format= $format ", 
+      db.all("SELECT id, imgurl, format, description FROM tool WHERE user= $user AND format= $format ", 
          { $user: req.query.user, $format: req.query.format }, function(err, rows) {
           if (err) {
             deferred.reject(err);
@@ -79,11 +79,9 @@ module.exports.tools =function(app, db) {
   };
   
   var sendToolWithAccessAuthority= function(req, res, tool) {
-    if(tool.user== req.query.user) {
+    if(tool.user== req.signedCookies.user_id) {
       //set highest authority
-      res.cookie('authority', 'write', 
-                  { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
-                );
+      res.clearCookie('authority');
       res.send(tool);
     } else {
       var stmt_select ="SELECT max(authority) as authority FROM access WHERE toolId=$id"; //outer join with access
@@ -92,10 +90,9 @@ module.exports.tools =function(app, db) {
           res.status(500).send({error: err.message});
         } else {
           if (row) {
-            //set access authority
             res.cookie('authority', row.authority,
-                          { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
-                      );
+              { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
+            );
             res.send(tool);
           }else {
             res.clearCookie('authority');
@@ -157,9 +154,8 @@ module.exports.tools =function(app, db) {
   };
   
   //besides the tool creater, WRITE access user can also update it
-  //only update 'graph'?
   var updateTool = function (req, res) {
-    if(req.signedCookies.authority=="write") {
+    if(req.body.user== req.signedCookies.user_id || req.signedCookies.authority=="write") {
       db.run(
         "UPDATE tool SET graph= ? WHERE user= ? AND id= ?",
         [JSON.stringify(req.body.graph), req.body.user, req.body.id],
@@ -173,12 +169,14 @@ module.exports.tools =function(app, db) {
       });
     } else {
       var emsg = 'have not enough authority to update existed tool';
-      res.status(500).send({error: emsg});
+      errHandle(emsg);
+      //res.status(500).send({error: emsg});
+      res.send();
     }
   };
   
   var writeTool = function(req, res) {
-    db.get("SELECT * FROM tool WHERE AND id =?", /*req.body.user,*/ req.body.id,
+    db.get("SELECT * FROM tool WHERE id =?", /*req.body.user,*/ req.body.id,
       function(err, row) {
         if (err) {
           errHandle(err);
@@ -193,21 +191,29 @@ module.exports.tools =function(app, db) {
     });
   };
   
+  var deleteSharedAccessOfTool = function(tool) {
+    db.run("DELETE FROM access WHERE toolId = ?", [ tool ], function(err){
+      if(err) {
+        errHandle(err); 
+      } 
+   });
+ };
+
   //only the tool creater can delete it
   var deleteTool = function(req, res) {
     var stmt_delete = "DELETE FROM tool WHERE id=$id AND format=$format AND user=$user";
     db.run(stmt_delete, { $id: req.query.id, $format: req.query.format, $user: req.query.user},
-           function(error) {
-                if(error){
-                  errHandle(error);
-                  res.status(500).send({error: error.message});
-                }else{
-                  res.json({message: 'Successful!' });
-                }
-             });
-    
+      function(error) {
+        if(error){
+          errHandle(error);
+          res.status(500).send({error: error.message});
+        } else {
+          res.json({message: 'Successful!' });
+          deleteSharedAccessOfTool (req.query.id);
+        }
+    });
   };
-  
+ 
   app.delete(url, function (req, res) {
     logHandle(modelName + 'DELETE(query): '+ JSON.stringify(req.query));
     deleteTool(req, res);
@@ -215,7 +221,7 @@ module.exports.tools =function(app, db) {
   
   app.get(url, function (req, res) {
     logHandle(modelName + 'GET(list): '+ JSON.stringify(req.query));
-    getTools(req, res)
+    getOwnedTools(req, res)
     .done(function(selfTools) {
        getSharedTools(req, res)
        .done(function(sharedTools) {

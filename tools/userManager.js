@@ -6,6 +6,7 @@ var request = require("request"),
     _ = require('underscore'),
     inquirer = require('inquirer'),
     cheerio = require('cheerio');
+var $  = require('jquery-deferred');
 
 function parseURL(host) {
   
@@ -104,15 +105,7 @@ var change_parameters = [
     }
 ];
 
-var delete_parameters = [
-    {
-      type: 'input',
-      name: 'user',
-      message: 'Enter user name to be deleted:',
-      validate: function (str) {
-        return !_.isEmpty(str);
-      }
-    },
+var confirm_parameters = [
     { 
       type: 'confirm',
       name: 'confirm',
@@ -123,12 +116,13 @@ var delete_parameters = [
     }
 ];
 
+
 var function_parameters = [
     {
       type: 'list',
       name: 'func',
-      message: 'select one action (Add user, Delete user, Change Password, Logout, Exit)?',
-      choices: ['Add an new user','Delete an existed user', new inquirer.Separator(), 'Change password of current user'/*, 'Logout', 'Exit'*/],
+      message: 'Select one action (Show user list, Add user, Delete user, Change Password, Logout, Exit)?',
+      choices: ['Show user list','Add an new user','Delete an existed user', new inquirer.Separator(), 'Change password of current user'/*, 'Logout', 'Exit'*/],
       validate: function (str) {
         return !_.isEmpty(str);
       },
@@ -165,16 +159,17 @@ function loginUser(parameters, token) {
     url: program.url+'api/auth/login',
     headers: {'X-CSRF-Token': token }
   };
-
   request(options, function(e, r, body){
     if(e || body.error) {
       console.error(e || body.error);
       process.exit(1);
     } else {
       var bexit = false;
-      //while(!bexit) {
       inquirer.prompt(function_parameters).then(function(fparameters) {
           switch (fparameters.func) {
+            case 'show':
+              showUserList(signup_parameters);
+              break;
             case 'add':
               inquirer.prompt(signup_parameters).then(function(parameters) {
                 signupNewUser(parameters, token);
@@ -182,8 +177,13 @@ function loginUser(parameters, token) {
               break;
 
             case 'delete':
-              inquirer.prompt(delete_parameters).then(function(parameters) {
-                deleteUser(parameters, token);
+              setUser(signup_parameters.user, token).done(function(userToBeDeleted) {
+                inquirer.prompt(confirm_parameters).then(function() {
+                   deleteUser(userToBeDeleted, token);
+                });
+              })
+              .fail(function(err){
+                  console.error(err);
               });
               break;
             
@@ -205,7 +205,26 @@ function loginUser(parameters, token) {
           }
         });
       }
-    //}
+    
+  });
+}
+
+function showUserList(token) {
+  var options = {
+    method: 'GET',
+    json: true,
+    jar: cookieJar,
+    url: program.url+'api/auth/users',
+    headers: {'X-CSRF-Token': token }
+  };
+  request(options, function(e, r, body) {
+    if(e || r.statusCode !== 200) {
+      console.error(e || body.error);
+    } else {
+      body.users.forEach(function(user, index){
+        console.log('('+(index+1)+') '+ user);
+      });
+    }
   });
 }
 
@@ -231,24 +250,60 @@ function signupNewUser(parameters, token) {
   });
 }
 
-function deleteUser(parameters, token) {
+function setUser(logined_user, token) {
+  var deferred = $.Deferred(),
+      url = program.url+'api/auth/users';
+  var options = {
+    method: 'GET',
+    json: true,
+    jar: cookieJar,
+    url: url,
+    headers: {'X-CSRF-Token': token }
+  };
+  request(options, function(e, r, body) {
+    if(e || r.statusCode !== 200) {
+      console.error(e || body.error);
+      deferred.reject({error: e || body.error});
+    } else {
+      var users = _.without(body.users, logined_user); 
+      users.push('ALL(*)');
+      var user_parameters = {
+          type: 'list',
+          name: 'user',
+          message: 'select one user :',
+          choices: users,
+          validate: function (str) {
+            return !_.isEmpty(str);
+          },
+          filter: function (str){
+            return (str=='ALL(*)')?'*': str;
+          }
+      };
+      inquirer.prompt(user_parameters )
+        .then(function(parameters) {
+          deferred.resolve(parameters.user);
+      });
+    } //if-else end
+  });
+  return deferred.promise();
+}
+
+function deleteUser(userToBeDeleted, token) {
   var options = {
     method: 'POST',
     json: true,
     jar: cookieJar,
     body: {
-      user: parameters.user
+      user: userToBeDeleted
     },
     url: program.url+'api/auth/remove',
     headers: {'X-CSRF-Token': token }
   };
-
-  request(options, function(e, r, body){
+  request(options, function(e, r, body) {
     if(e || r.statusCode !== 200) {
       console.error(e || body.error);
-      //process.exit(1);
     } else {
-      console.log('successful in deleting user :'  + parameters.user);
+      console.log('successful in deleting user :'  + userToBeDeleted);
     }
   });
 }

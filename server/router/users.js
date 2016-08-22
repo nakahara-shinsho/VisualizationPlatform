@@ -27,8 +27,7 @@ module.exports.users = function (router,db){
         }
       }
   });
-
-   
+ 
   router.get('/', function(req, res) {
     var auth = req.session.auth;
     var mode = GLOBAL.config.get('Http.client.mode') ;
@@ -107,8 +106,8 @@ module.exports.users = function (router,db){
     db.serialize(function() {
       
       db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
-           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_users) {
-        if(logined_users && user.userId==logined_users[0].userId) {
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user) {
+        if(logined_user && logined_user.userId=='admin') {
           // Retrieve the inserted user data
           db.get("SELECT * FROM users WHERE userId = ?", [ req.body.userId ], 
             function(err, users){
@@ -173,18 +172,19 @@ module.exports.users = function (router,db){
   });
 
   // POST /api/auth/remove_account
-  // @desc: deletes a user
+  // @desc: deletes a user (only administrator can delete a user)
   router.post("/api/auth/remove", function(req, res) {
     db.serialize(function() {
      db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
-           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_users) {
-        if(logined_users && logined_users[0].userId=='admin') {
-          db.run("DELETE FROM users WHERE userId = ?", [ req.body.userId ],
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user) {
+        if(logined_user && logined_user.userId =='admin') { 
+          db.run("DELETE FROM users WHERE userId = ?", [ req.body.user ],
             function(err){
-              if(err){ 
-                res.status(500).json({ error: "Error while trying to delete user." }); 
+              if(err) {
+                res.status(500).json({ error: err.message }); 
               } else {
                 res.json({ success: "User is successfully deleted." });
+                deleteSharedAccessOfUser(req.body.user);
               }
             });
         } else {
@@ -193,5 +193,13 @@ module.exports.users = function (router,db){
       });
     });
   });//serialize end
+
+ function deleteSharedAccessOfUser (user){
+    db.run("DELETE FROM access WHERE userId = ?", [ user ], function(err){
+      if(err) {
+        console.err(err);
+      }
+   });
+ }
 
 };

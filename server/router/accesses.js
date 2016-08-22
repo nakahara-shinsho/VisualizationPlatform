@@ -3,17 +3,16 @@ module.exports.accesses = function (router,db) {
   // Create our users table if it doesn't exist
   db.run("CREATE TABLE IF NOT EXISTS access ( " +
          "toolId TEXT NOT NULL, userId TEXT NOT NULL DEFAULT '*', authority TEXT(5) NOT NULL DEFAULT 'read')");
- 
+ /*
   // if the tool is created by req.signedCookies.userId, it will have highest authority
   // else check the access table to setup the access authority  
-  function setAccess(req, res) {
-    db.all("SELECT * FROM tool WHERE user = ? AND id =?",
-      req.signedCookies.user_id, req.body.toolId,
+  function setAccessAuthority(req, res) {
+    db.all("SELECT * FROM tool WHERE user = ? AND id =?", req.signedCookies.user_id, req.body.toolId,
       function(err, rows) {
         if (err) {
           setAssignedAccess(req, res);
         } else {
-          res.cookie( 'tool_id',
+          res.cookie('tool_id',
                      access.toolId,
                      { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge') } //options
                   );
@@ -28,16 +27,15 @@ module.exports.accesses = function (router,db) {
 
   function setAssignedAccess(req, res) {
     db.get("SELECT toolId, authority FROM access WHERE (userId=? OR userId='*') AND toolId= ? ORDER BY authority DESC",
-      [ req.signedCookies.user_id, req.body.toolId ], function(err, rows) {
+      [ req.signedCookies.user_id, req.body.toolId ], function(err, row) {
       if(row) {
-        //var access = rows[0];
         res.cookie( 'tool_id',
                      row.toolId,
                      { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge') } //options
                   );
         res.cookie( 'authority',
                     access.authority,
-                    { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
+                    { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } 
                    );
         res.json({});
       } else {
@@ -45,25 +43,27 @@ module.exports.accesses = function (router,db) {
       }
     });
   }
-
+*/
   //firstly, make sure the req.body.toolId is created by req.signedCookies.user_id
   //if yes then insert the access authority for the toolId and specified req.body.userId,
-  function addAccess(req, res) {
-    db.get("SELECT * FROM tool WHERE user = ? AND id =?",
-      req.signedCookies.user_id, req.body.toolId,
+  function insertAccess(req, res) {
+    db.get("SELECT * FROM tool WHERE user = ? AND id =?", req.signedCookies.user_id, req.body.toolId,
       function(err, row) {
         if (err) {
-          res.status(500).send({ error: "Havn't enough authority to add access authority for tool: " + req.body.toolId });
+          res.status(500).send({ error: "Error when adding access authority for tool: " + req.body.toolId });
         } else {
-          
-          db.run("INSERT INTO access(toolId, userId, authority) VALUES (?, ?, ?)",
-          [ req.body.toolId, req.body.userId, req.body.authority ], function(err){
-            if(err) {
-              res.status(500).send({ error: "Faild to add access authority for tool: " + req.body.toolId });
-            } else {
-              res.json({ success: "User is successfully added." });
-            }
-          });
+          if(row){
+            db.run("INSERT INTO access(toolId, userId, authority) VALUES (?, ?, ?)",
+            [ req.body.toolId, req.body.userId, req.body.authority ], function(err){
+              if(err) {
+                res.status(500).send({ error: "Faild to add access authority for tool: " + req.body.toolId });
+              } else {
+                res.json({ success: "User is successfully added." });
+              }
+            });
+          } else {
+             res.status(500).send({ error: "Can't insert access authority for tool created by others."});
+          }
       }
     });
   }
@@ -71,20 +71,24 @@ module.exports.accesses = function (router,db) {
   //firstly, make sure the req.body.toolId is created by req.signedCookies.user_id
   //if yes then insert the access authority for the toolId and specified req.body.userId
   function updateAccess(req, res) {
-     db.get("SELECT * FROM tool WHERE user = ? AND id =?",
-      req.signedCookies.user_id, req.body.toolId,
+
+     db.get("SELECT * FROM tool WHERE user = ? AND id =?", req.signedCookies.user_id, req.body.toolId,
       function(err, row) {
         if (err) {
-          res.status(500).send({ error: "Havn't enough authority to update access authority for tool: " + req.body.toolId });
+          res.status(500).send({ error: "Error when updating access authority for tool: " + req.body.toolId });
         } else {
-          db.run("UPDATE access SET authority=? WHERE userId=? AND toolId=?", //auth_token is saltseed for the user
-            [ req.body.authority, req.body.userId, req.body.toolId ], function(err){
-              if(err) {
-                res.status(500).send({ error: "update access failed for tool:"+ req.body.toolId });
-              } else {
-                res.json({ success: "access authority is successfully updated." }); 
-              }
-          });      
+          if(row) {
+            db.run("UPDATE access SET authority=? WHERE userId=? AND toolId=?", //auth_token is saltseed for the user
+              [ req.body.authority, req.body.userId, req.body.toolId ], function(err){
+                if(err) {
+                  res.status(500).send({ error: "update access failed for tool:"+ req.body.toolId });
+                } else {
+                  res.json({ success: "access authority is successfully updated." }); 
+                }
+            });      
+          } else {
+             res.status(500).send({ error: "Havn't enough authority to update access authority for tool: " + req.body.toolId });
+          }
       }
     });
   }
@@ -92,10 +96,10 @@ module.exports.accesses = function (router,db) {
   //firstly, make sure the req.body.toolId is created by req.signedCookies.user_id
   //if yes then delete the access authority for the toolId and specified req.body.userId
   function deleteAccess(req, res) {
-     db.all("SELECT * FROM tool WHERE user = ? AND id =?",  req.signedCookies.user_id, req.body.toolId,
+     db.get("SELECT * FROM tool WHERE user = ? AND id =?  ",  req.signedCookies.user_id, req.body.toolId,
       function(err, self_created_tool) {
         if (err) {
-          res.status(500).send({ error: "Falied to delete access authority for tool: " + req.body.toolId });
+          res.status(500).send({ error: "Failed to find self-created tool: " + req.body.toolId });
         } else {
           if(self_created_tool) {
             db.run("DELETE FROM access WHERE userId = ? and toolId=?", [ req.body.userId, req.body.toolId ],
@@ -107,7 +111,7 @@ module.exports.accesses = function (router,db) {
               }
           });
         } else {
-          res.status(500).send({ error: "Can't delete access authority for tool: " + req.body.toolId });
+          res.status(500).send({ error: "Can't delete access authority created by others. " });
         }  
       }
     });
@@ -139,8 +143,8 @@ module.exports.accesses = function (router,db) {
   //out: access --> session
   router.get('/api/access/check', function(req, res) {
     db.get("SELECT authority FROM access WHERE (userId=? OR userId='*') AND toolId= ? ORDER BY authority DESC", 
-           [ req.signedCookies.user_id, req.signedCookies.tool_id,  req.signedCookies.authority ], function(err, rows){
-      if(rows ) {
+           [ req.signedCookies.user_id, req.signedCookies.tool_id,  req.signedCookies.authority ], function(err, row){
+      if(row) {
         res.json();
       } else {
         res.status(500).json({ error: "Client has no valid access cookies."  });
@@ -148,11 +152,12 @@ module.exports.accesses = function (router,db) {
     });
   });
 
-  // POST /api/auth/login
+/*  // POST /api/auth/login
   // @desc: set the current tool access authority with its access authority
   router.post('/api/access/set', function(req, res){
-    setAccess(req, res);
+    setAccessAuthority(req, res);
   });
+*/
 
   // POST /api/auth/signup
   // @desc: add/create access authority
@@ -163,7 +168,7 @@ module.exports.accesses = function (router,db) {
               if(row) {
                 updateAccess(req, res);
               } else {
-                addAccess(req,res); 
+                insertAccess(req,res); 
               }
             }); //db.get end
           } else {

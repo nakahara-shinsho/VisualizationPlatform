@@ -1,6 +1,6 @@
 <div class=figure>
   <div class=button-container>
-    <% if (authority=='write') { %>
+    <% if (!authority || authority=='write' ) { %>
     <button class="event-del" title='削除する'>
           <i>削除</i>
       </button>

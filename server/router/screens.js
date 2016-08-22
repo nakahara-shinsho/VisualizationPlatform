@@ -37,16 +37,6 @@ module.exports.screens = function(app, db) {
       });
   };
   
-  var sendScreenWithAccessAuthority= function(req, res, query_screen) {
-    if(query_screen.user == req.query.user) {
-      //set highest authority
-      res.cookie('authority', 'write', 
-                  { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
-                );
-    } 
-    res.send(query_screen);
-  }; 
-
   //the screen id may come from shared tools
   var getScreenWithId = function(req, res) {
     var emsg='', 
@@ -57,10 +47,9 @@ module.exports.screens = function(app, db) {
             res.status(500).send( {error: err.message});
           } else {
             if (row) {
-              if(row.user == req.query.user){
-                res.cookie('authority', 'write',
-                  { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
-                );
+              if(row.user == req.query.user ) {
+                //res.clearCookie('tool_id');
+                res.clearCookie('authority');
                 res.send(row);
               } else if( typeof(req.signedCookies.authority) !='undefined') {
                 res.send(row);
@@ -77,6 +66,30 @@ module.exports.screens = function(app, db) {
       );
   };
   
+  
+  //only the owner can show her/his last screen
+  var getLastScreenWithoutId = function(req, res) {
+    var select_sql= "SELECT user, id, description, imgurl, maxRows, margin, "+
+                  "maxColumns, cells, MAX(time) as time FROM screen WHERE user= $user";
+    db.get(select_sql, { $user: req.query.user},
+      function(err, row) {
+        try{
+          if (err) {
+            throw err;
+          } else {
+            if (row) {
+              res.send(row);
+            }else{
+              res.send();
+            }
+          }
+        } catch(e) {
+          errHandle(e);
+          res.status(500).send( {error: e.message});
+        }
+      });
+  };
+
   //screens from shared tools (different users) can be also copied
   var execCloneScreenWithId = function(req, res) {
     var model = req.body;
@@ -227,79 +240,64 @@ module.exports.screens = function(app, db) {
       });
   };
 
-  var execUpdateScreenWithId = function(req, res) {
+  var execUpdateScreenWithId = function(req, res, screen) {
     var model = req.body, id = req.params.id;
     var andpart = "", valarrs =[];
-    for(var key in model){
-                 if (model.hasOwnProperty(key) ) {
-                   andpart += (andpart.length>0)? ' , '+key+ '=?' : key+'=?';
-                   var value = model[key];
-                   if(typeof value == 'object') value = JSON.stringify(value);
-                   valarrs.push(value);
-                 }
-    }
-    andpart+= ", time=CURRENT_TIMESTAMP";
-    var stmt_update = "UPDATE screen SET "+ andpart+ " where id=? and user=?";
-    valarrs.push(id);
-    valarrs.push(model.user);
-    db.run(stmt_update, valarrs, function(err) {
-      if(err){ //insert error
-        errHandle(err);
-        res.status(500).send( {error: err.message});
-      } else { //successful
-        res.send({id: model.id});
+    if(screen.user== req.signedCookies.user_id || req.signedCookies.authority=='write') {
+
+      for(var key in model) {
+        if (model.hasOwnProperty(key) ) {
+          andpart += (andpart.length>0)? ' , '+key+ '=?' : key+'=?';
+          var value = model[key];
+          if(typeof value == 'object') value = JSON.stringify(value);
+          valarrs.push(value);
+        }
       }
-    });
+      andpart+= ", time=CURRENT_TIMESTAMP";
+      var stmt_update = "UPDATE screen SET "+ andpart+ " where id=? and user=?";
+      valarrs.push(id);
+      valarrs.push(model.user);
+      db.run(stmt_update, valarrs, function(err) {
+        if(err){ //insert error
+          errHandle(err);
+          res.status(500).send( {error: err.message});
+        } else { //successful
+          res.send({id: model.id});
+        }
+      });
+    }  else {
+      emsg = "Havn't enough access authority to update screen :"+ id;
+      errHandle(emsg);
+      //res.status(500).send( {error: emsg});
+      res.send({});
+    }
   };
 
   //for PUT/POST(PATCH) '/api/screen/:id'
   var updateScreenWithId = function (req, res) {
+    var emsg,  model = req.body, id = req.params.id;//keep the old id
     logHandle(req.body);
-    var model = req.body, id = req.params.id;//keep the old id
-    
-    if(req.params.newid) { model.id = req.params.newid; }
-    db.get("SELECT * FROM screen WHERE id = $id", {$id: id},
-          function(err, row) {
-          if (err) {
-            errHandle(err);
-            res.status(500).send( {error: err.message});
-          } else {
-            if (row) {//update
-              execUpdateScreenWithId(req, res);
+    if(req.params.newid) { 
+      model.id = req.params.newid; 
+    }
+
+    db.get("SELECT * FROM screen WHERE id = $id", {$id: id},function(err, row) {
+            if (err) {
+              errHandle(err);
+              res.status(500).send( {error: err.message});
             } else {
-              var emsg = "Havn't found the screen ID :"+ id;
-              errHandle(emsg);
-              res.status(500).send( {error: emsg});
+              if (row) {//update
+                execUpdateScreenWithId(req, res, row);
+              } else {
+                emsg = "Havn't found the screen ID :"+ id;
+                errHandle(emsg);
+                res.status(500).send( {error: emsg});
+              }
             }
-          }
-        });
-    };
-  
-  var getLastScreenWithoutId = function(req, res) {
-    var select_sql= "SELECT user, id, description, imgurl, maxRows, margin, "+
-                  "maxColumns, cells, MAX(time) as time FROM screen WHERE user= $user";
-    db.all(select_sql, { $user: req.query.user},
-      function(err, rows) {
-        try{
-          if (err) {
-            throw err;
-          } else {
-            if (rows.length && (rows[0].id)) {
-              res.send(rows[0]);
-            }else{
-              //var emsg = "Havn't found the existed screen for me";
-              //errHandle(emsg);
-              //res.status(500).send( {error: emsg});
-              res.send({});
-            }
-          }
-        } catch(e) {
-          errHandle(e);
-          res.status(500).send( {error: e.message});
-        }
-      });
+    });
+
   };
-  
+    
   var insertScreenWithoutId = function (req, res) { //for POST '/api/screen'
     logHandle(req.body);
     var id = uuid(), model = req.body;
@@ -344,14 +342,14 @@ module.exports.screens = function(app, db) {
    var deleteScreen = function (req, res) {
      var stmt_delete = "DELETE FROM screen WHERE id=$id AND user=$user";
      db.run(stmt_delete, { $id: req.query.id, /*$format: req.query.format,*/ $user: req.query.user},
-           function(error) {
-                if(error){
-                  errHandle(error);
-                  res.status(500).send({error: error.message});
-                }else{
-                  res.json({message: 'Successful!' });
-                }
-             });
+      function(error) {
+        if(error){
+          errHandle(error);
+          res.status(500).send({error: error.message});
+        }else{
+          res.json({message: 'Successful!' });
+        }
+     });
   };
   
   //get screen with lastest or create new screen

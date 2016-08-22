@@ -29,6 +29,7 @@ module.exports.charts = function (router, db) {
       logHandle(modelName +'GET(error): ' + JSON.stringify(req.query));
       res.send({});
     });
+
     //this function should not be called!
     router.delete(url, function(req, res) {
       logHandle(modelName +'DELETE(error): ' + JSON.stringify(req.params));
@@ -48,7 +49,7 @@ module.exports.charts = function (router, db) {
           if (err) {
             errHandle(err);
             res.status(500).send({error: err.message});
-          }else{
+          } else {
               var nextid = 0;
               if(row) nextid = row.maxid +1;
               var stmt_insert = "INSERT OR IGNORE INTO chart " +
@@ -66,20 +67,17 @@ module.exports.charts = function (router, db) {
                           res.send({id: nextid});
                         }
                       }
-                    );
-              //stmt_insert.finalize();
+              );
           }
       });
-      //res.send({});
+
     });
     
    //get one model
     router.get(url + '/:id', function (req, res) {
       var emsg;
       logHandle(modelName +'GET(id): ' + JSON.stringify(req.params));
-      if(typeof(req.signedCookies.authority) !== "undefined") {
-        
-        db.get("SELECT * FROM chart WHERE id= ?", [req.params.id], function(err, row){
+      db.get("SELECT * FROM chart WHERE id= ?", [req.params.id], function(err, row){
           if(!err && row) {
             res.send(row);
           } else {
@@ -87,18 +85,12 @@ module.exports.charts = function (router, db) {
             errHandle(emsg);
             res.status(500).send({ error: emsg });
           }
-        });
-      } else {
-        emsg = "Haven't access authority for chart with id= " +req.params.id;
-        errHandle(emsg);
-        res.status(500).send({ error: emsg });
-      }
+      });
     });
   
-    
     router.delete(url + '/:id', function(req, res) {
       logHandle(modelName+'DELETE(id): ' + JSON.stringify(req.params.id));
-      if(req.signedCookies.authority=='write') {
+      if(req.signedCookies.authority !== 'read') {
         var stmt_delete = "DELETE FROM chart WHERE id=?";
         db.run(stmt_delete, [ +req.params.id],
               function(error) {
@@ -112,7 +104,8 @@ module.exports.charts = function (router, db) {
       } else {
         var emsg = "Haven't enought access authority to delete chart with id= " +req.params.id;
         errHandle(emsg);
-        res.status(500).send({ error: emsg });
+        //res.status(500).send({ error: emsg });
+        res.send();
       }
     });
   
@@ -120,6 +113,7 @@ module.exports.charts = function (router, db) {
       logHandle(modelName+'POST(id): ' + req.params.id);
       write_callback(req, res);
     });//post end
+
     router.put(url + '/:id', function(req,res){
       logHandle(modelName+'PUT(id): ' + req.params.id);
       write_callback(req, res);
@@ -130,33 +124,33 @@ module.exports.charts = function (router, db) {
     });//put end
   
     function execUpate(req, res) {
-       var andpart = "", valarrs =[],
-           model = req.body;
-       for(var key in model){
+      var emsg;
+      var andpart = "", valarrs =[], model = req.body;
+      for(var key in model) {
           if (model.hasOwnProperty(key) && key!== 'id') {
              var value = model[key];
              if(typeof value == 'object') value = JSON.stringify(value);
              valarrs.push(value);
              andpart += (andpart.length>0)? ' , '+key+ '=?' : key+'=?';
           }
-        }
-        var stmt_update = "UPDATE chart SET "+ andpart+ " where id=?";
-        valarrs.push( +req.params.id );
-        db.run(stmt_update, valarrs,
+      }
+      var stmt_update = "UPDATE chart SET "+ andpart+ " where id=?";
+      valarrs.push( +req.params.id );
+      db.run(stmt_update, valarrs,
            function(err) {
              if(err) {
                errHandle(err);
-                 res.status(500).send({error: err.message});
+               res.status(500).send({error: err.message});
               } else {
                 res.send({});
               }
             }
-        );
+      );
     }
 
     function write_callback(req, res) {
       var emsg;
-      if(req.signedCookies.authority=="write") {
+      if( req.signedCookies.authority !=='read') {
         db.serialize(function () {
           db.get("SELECT * FROM chart WHERE id= $id", {$id: +req.params.id},
           function(err, row){
@@ -165,7 +159,7 @@ module.exports.charts = function (router, db) {
               res.status(500).send({error: err.message});
             }else{
               if(row) {
-              execUpate(req, res);
+                execUpate(req, res);
               } else {
                 emsg = "Havn't find chart with id= "+ req.params.id;
                 errHandle(emsg);
@@ -177,7 +171,7 @@ module.exports.charts = function (router, db) {
       } else {
         emsg = "Havn't enough access authority to update chart with id= "+ req.params.id;
         errHandle(emsg);
-        res.status(500).send({error: emsg});
+        res.send();
       }
     }//callback end
 
