@@ -13,14 +13,14 @@ module.exports.status= function(app, db) {
       logHandle=commonModule.logHandle;
   
   var getStatus = function(req, res) {
-    db.all("SELECT * FROM status WHERE user= $user",
-           {$user: req.query.user}, function(err, rows) {
+    db.get("SELECT * FROM status WHERE user= $user",
+           {$user: req.query.user}, function(err, row) {
         if (err) {
           errHandle(err);
           res.status(500).send( {error: err.message});
         } else {
-          if(rows.length){
-            res.send(rows[0]);
+          if(row){
+            res.send(row);
           } else {
             res.send();
           }
@@ -64,13 +64,13 @@ module.exports.status= function(app, db) {
   
   var writeStatus = function(req, res) {
     var  stmt_options = {$user: req.body.user},
-         stmt_select = db.prepare("SELECT data, tool FROM status WHERE user= $user");
-    stmt_select.all(stmt_options, function(err, rows) {
+         stmt_select = "SELECT data, tool FROM status WHERE user= $user";
+    db.get(stmt_select, stmt_options, function(err, row) {
         if (err) {
           errHandle(err);
           res.status(500).send( {error: err.message});
         } else {
-          if(rows.length){
+          if(row){
             updateStatus(req, res);
           } else {
             insertStatus(req, res);

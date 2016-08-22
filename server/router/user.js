@@ -185,6 +185,7 @@ module.exports.user = function (router,db){
               } else {
                 res.json({ success: "User is successfully deleted." });
                 deleteSharedAccessOfUser(req.body.user);
+                deleteStatusOfUser(req.body.user);
               }
             });
         } else {
@@ -195,7 +196,15 @@ module.exports.user = function (router,db){
   });//serialize end
 
  function deleteSharedAccessOfUser (user){
-    db.run("DELETE FROM access WHERE id = ?", [ user ], function(err){
+   db.run("DELETE FROM access WHERE EXISTS (SELECT * FROM access WHERE userId = ?)", [ user ], function(err){
+      if(err) {
+        console.log(err);
+      }
+   });
+ }
+
+function deleteStatusOfUser (user){
+   db.run("DELETE FROM status WHERE EXISTS( SELECT * FROM status WHERE user = ?)", [ user ], function(err){
       if(err) {
         console.err(err);
       }

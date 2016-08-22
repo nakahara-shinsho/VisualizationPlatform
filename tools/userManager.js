@@ -338,6 +338,7 @@ function logoutUser(token) {
     url: program.url+'api/auth/logout',
     headers: {'X-CSRF-Token': token }
   };
+  
   request(options, function(e, r, body){
     if(e || r.statusCode !== 200) {
       console.error(e || body.error);
