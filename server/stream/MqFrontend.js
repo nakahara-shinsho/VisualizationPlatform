@@ -47,7 +47,7 @@ function MqFrontend(host) {
     
     if (self.channel) {
       return self.channel.then(function (ch) { //socket between frontend <--> MQserver 
-        var ok = ch.assertQueue('__rpc__.'+wvt_name/*, {exclusive: true}*/) //response queue with routing_key
+        var ok = ch.assertQueue('__rpc__.'+ wvt_name/*, {exclusive: true}*/) //response queue with routing_key
           .then(function (qok) { return qok.queue; });
         ok = ok.then(function (queue) { 
          

@@ -83,15 +83,13 @@ define([
         return;
       }
 
-      if (dimType=='Array' || (dimType.endsWith('Array') && dimType.startsWith(colType) )) {
+      if (dimType=='Array' || (dimType.endsWith('Array') && dimType.startsWith(colType)) ) {
         container.append(ev.originalEvent.dataTransfer.getData('html'));
+      } else if (_.isEmpty(dimType) || colType == dimType ) { //one dimension
+        container.html(ev.originalEvent.dataTransfer.getData('html'));
       } else {
-        if (colType !== dimType) {
-          alert('Column type ' + colType + ' is different with dimension type ' + dimType);
-          return;
-        } else {
-          container.html(ev.originalEvent.dataTransfer.getData('html'));
-        }
+        alert('Column type ' + colType + ' is different with dimension type ' + dimType);
+        return;
       }
       //bind events
       this.bindEventsOnRight();
