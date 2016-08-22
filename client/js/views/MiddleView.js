@@ -53,12 +53,12 @@ define([
       this.listenTo(framework.mediator, 'middleview:showToolList', this.showToolList);
       this.listenTo(framework.mediator, 'middleview:showScreenList',this.showToolEditor);
 
-      this.model = new StatusModel({user: app.session.user.get('userId')});
+      this.model = new StatusModel({user: app.session.user.get('id')});
 
       var self = this;
       this.model.fetch({
             silent: true,
-            data: { user: app.session.user.get('userId') },
+            data: { user: app.session.user.get('id') },
             success: function(model, response, options) {
               window.framework.context = 
                 {_format_: model.get('data').format, _database_:model.get('data').id};

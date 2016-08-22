@@ -16,7 +16,7 @@ define(["js/app",
         _.bindAll(this, 'render');
         this.$el.html(_.template(toolsTpl)({ user: app.session.user.toJSON()}));
         
-        var data = { user: app.session.user.get('userId') };
+        var data = { user: app.session.user.get('id') };
         if(this.model.get('data')) {
           $.extend(data, {format: this.model.get('data').format });
         } 
@@ -76,14 +76,14 @@ define(["js/app",
         var del = confirm("Are you sure for deleting this tool?");
         if (del === true) {
           var $clickedButtonElement = $(ev.currentTarget),
-            userId = app.session.user.get('userId'),
+            userId = app.session.user.get('id'),
             $img = $clickedButtonElement.parent().siblings('img'),
             toolId = $img.attr('data-id'),
             toolFormat = $img.attr('data-format'),
             params  = "id=" + toolId;
           
           params += "&format="+ toolFormat;
-          params += "&user="+ userId;
+          params += "&user="+ id;
 
           //delete data in database
           $.ajax({ //query databases worker

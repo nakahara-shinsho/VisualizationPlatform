@@ -1,5 +1,5 @@
 //save/get screen data-- the screen could be current screen, or a bookmarked screen
-module.exports.screens = function(app, db) {
+module.exports.screen = function(app, db) {
   var modelName = '###SCREEN ';
   var url = '/api/screen';
   var uuid = require('node-uuid');

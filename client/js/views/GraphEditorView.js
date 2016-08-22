@@ -22,7 +22,7 @@ define(["js/app",
         
         if(!this.toolid) {
           this.model = new ToolModel({ 
-            user: app.session.user.get('userId'),
+            user: app.session.user.get('id'),
             format: this.format
           });
           this.render();
@@ -34,7 +34,7 @@ define(["js/app",
             data: {
               id: this.toolid,
               format: this.format,
-              user: app.session.user.get('userId')
+              user: app.session.user.get('id')
             },
             success: function(model, response, options) {
               self.render();

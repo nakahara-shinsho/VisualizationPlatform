@@ -1,4 +1,4 @@
-module.exports.tools =function(app, db) {
+module.exports.tool =function(app, db) {
   var  _ = require("underscore"),
       $  = require('jquery-deferred');
   db.run("CREATE TABLE IF NOT EXISTS tool (" +

@@ -41,7 +41,7 @@ define([
       }
     },
 
-    // Check login with userId and password
+    // Check login with user id and password
     onLoginAttempt: function(evt){
       if(evt) evt.preventDefault();
       if(this.$("#login-form").parsley('validate')){

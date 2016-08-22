@@ -1,24 +1,24 @@
-module.exports.users = function (router,db){
+module.exports.user = function (router,db){
   var bcrypt        = require("bcrypt-nodejs"),
     _ = require("underscore");
-  var super_user_id  = GLOBAL.config.get('FrontEnd.superuser.userId'),
+  var super_user_id  = GLOBAL.config.get('FrontEnd.superuser.id'),
       super_user_pwd = GLOBAL.config.get('FrontEnd.superuser.password');
  
   // Create our users table if it doesn't exist
-  db.run("CREATE TABLE IF NOT EXISTS users ( " +
-         " userId TEXT UNIQUE PRIMARY KEY, password TEXT, auth_token TEXT UNIQUE)");
+  db.run("CREATE TABLE IF NOT EXISTS user ( " +
+         " id TEXT UNIQUE PRIMARY KEY, password TEXT, token TEXT UNIQUE)");
  
   //create manager (in order to manage users)
-  db.get("SELECT * FROM users WHERE userId = ? ",  [ super_user_id ],  function(err, user){
+  db.get("SELECT * FROM user WHERE id = ? ",  [ super_user_id ],  function(err, user){
       var saltseed = bcrypt.genSaltSync(8);
       if(!user) {
-         db.run("INSERT INTO users(userId, password, auth_token) VALUES ('"+
+         db.run("INSERT INTO user(id, password, token) VALUES ('"+
             super_user_id + "','" +
             bcrypt.hashSync(super_user_pwd, saltseed) + "','" +
             saltseed + "')" );
       } else {
         if( !bcrypt.compareSync(super_user_pwd, user.password)){ //update password
-            db.run("UPDATE users SET password= ? WHERE userId= ?",
+            db.run("UPDATE user SET password= ? WHERE id= ?",
               [bcrypt.hashSync(super_user_pwd, saltseed), super_user_id],  function(err){
               if(err) {
                console.log(err);
@@ -46,10 +46,10 @@ module.exports.users = function (router,db){
   // GET /api/auth
   // @desc: checks a user's auth status based on cookie
   router.get('/api/auth', function(req, res){
-    db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
+    db.get("SELECT * FROM user WHERE id = ? AND token = ?", 
            [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user){
       if(logined_user) {
-        res.json({ user: _.omit(logined_user, ['password', 'auth_token']) });
+        res.json({ user: _.omit(logined_user, ['password', 'token']) });
       } else {
         res.json({ error: "Client has no valid login cookies."  });
       }
@@ -59,9 +59,9 @@ module.exports.users = function (router,db){
   // GET /api/auth
   // @desc: checks a user's auth status based on cookie
   router.get('/api/auth/users', function(req, res){
-    db.all("SELECT userId FROM users", function(err, rows){
+    db.all("SELECT id FROM user", function(err, rows){
       if(rows) { 
-        var  users= _.map(rows, function(row) {return row.userId;});
+        var  users= _.map(rows, function(row) {return row.id;});
         res.json({ users: users});
       } else {
         res.json({ error: "Failed to get user list."  });
@@ -73,20 +73,20 @@ module.exports.users = function (router,db){
   // POST /api/auth/login
   // @desc: login a user
   router.post('/api/auth/login', function(req, res){
-    db.get("SELECT * FROM users WHERE userId = ?", [ req.body.userId ], function(err, user){
+    db.get("SELECT * FROM user WHERE id = ?", [ req.body.userId ], function(err, user){
       if(user) {
         // Compare the POSTed password with the encrypted db password
         if( bcrypt.compareSync( req.body.password, user.password)) { //send back authenticated cookie values
             res.cookie( 'user_id',
-                        user.userId,
+                        user.id,
                         { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge') } //options
                       );
             res.cookie( 'auth_token',
-                        user.auth_token,
+                        user.token,
                         { signed: true, maxAge: GLOBAL.config.get('Http.session.cookieMaxAge')  } //options
                       );
             // Correct credentials, return the user object
-            res.json({ user: _.omit(user, ['password', 'auth_token']) });
+            res.json({ user: _.omit(user, ['password', 'token']) });
         } else {
             // Username did not match password given
             //res.json({ error: "Invalid username or password."  });
@@ -105,17 +105,17 @@ module.exports.users = function (router,db){
   router.post('/api/auth/signup', function(req, res){
     db.serialize(function() {
       
-      db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
+      db.get("SELECT * FROM user WHERE id = ? AND token = ?", 
            [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user) {
-        if(logined_user && logined_user.userId=='admin') {
+        if(logined_user && logined_user.id =='admin') {
           // Retrieve the inserted user data
-          db.get("SELECT * FROM users WHERE userId = ?", [ req.body.userId ], 
-            function(err, users){
-              if(users) {
+          db.get("SELECT * FROM user WHERE id = ?", [ req.body.userId ], 
+            function(err, user){
+              if(user) {
                 res.status(500).send({ error: "User ID has been taken:"+ req.body.userId });
               } else {
                 var saltseed = bcrypt.genSaltSync(8);
-                db.run("INSERT INTO users(userId, password, auth_token) VALUES (?, ?, ?)", //auth_token is saltseed for the user
+                db.run("INSERT INTO user(id, password, token) VALUES (?, ?, ?)", //token is saltseed for the user
                 [ req.body.userId, bcrypt.hashSync(req.body.password, saltseed), saltseed ], function(err, rows){
                   if(err) {
                     res.status(500).send({ error: "Failed to add user:"+ req.body.userId });
@@ -137,10 +137,10 @@ module.exports.users = function (router,db){
   // @desc: update password of an user
   router.post('/api/auth/update', function(req, res){
     db.serialize(function() {
-      db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
-           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_users) {
-        if(logined_users) {
-          db.run("UPDATE users SET password=? WHERE userId=?", //auth_token is saltseed for the user
+      db.get("SELECT * FROM user WHERE id = ? AND token = ?", 
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user) {
+        if(logined_user) {
+          db.run("UPDATE user SET password=? WHERE id=?", //token is saltseed for the user
           [ bcrypt.hashSync(req.body.password, req.signedCookies.auth_token), req.signedCookies.user_id ], function(err){
             if(err) {
               res.status(500).send({ error: "update password  failed for user:"+ req.signedCookies.user_id });
@@ -159,9 +159,9 @@ module.exports.users = function (router,db){
   // POST /api/auth/logout
   // @desc: logs out a user, clearing the signed cookies
   router.post("/api/auth/logout", function(req, res) {
-   db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
-           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_users) {
-        if(logined_users) {
+   db.get("SELECT * FROM user WHERE id = ? AND token = ?", 
+           [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user) {
+        if(logined_user) {
           res.clearCookie('user_id');
           res.clearCookie('auth_token');
           res.json({ success: "User successfully logged out." });
@@ -175,10 +175,10 @@ module.exports.users = function (router,db){
   // @desc: deletes a user (only administrator can delete a user)
   router.post("/api/auth/remove", function(req, res) {
     db.serialize(function() {
-     db.get("SELECT * FROM users WHERE userId = ? AND auth_token = ?", 
+     db.get("SELECT * FROM user WHERE id = ? AND token = ?", 
            [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user) {
-        if(logined_user && logined_user.userId =='admin') { 
-          db.run("DELETE FROM users WHERE userId = ?", [ req.body.user ],
+        if(logined_user && logined_user.id =='admin') { 
+          db.run("DELETE FROM user WHERE id = ?", [ req.body.user ],
             function(err){
               if(err) {
                 res.status(500).json({ error: err.message }); 
@@ -195,7 +195,7 @@ module.exports.users = function (router,db){
   });//serialize end
 
  function deleteSharedAccessOfUser (user){
-    db.run("DELETE FROM access WHERE userId = ?", [ user ], function(err){
+    db.run("DELETE FROM access WHERE id = ?", [ user ], function(err){
       if(err) {
         console.err(err);
       }

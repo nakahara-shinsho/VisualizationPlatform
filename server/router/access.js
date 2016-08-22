@@ -1,4 +1,4 @@
-module.exports.accesses = function (router,db) {
+module.exports.access = function (router,db) {
   var  _ = require("underscore");
   // Create our users table if it doesn't exist
   db.run("CREATE TABLE IF NOT EXISTS access ( " +
