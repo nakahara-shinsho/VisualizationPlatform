@@ -652,6 +652,7 @@ define(["util/CustomTooltip",
       }
     }
     function drawUnderLine(svg, data) {
+      var i;
       var type = "",
 	  status,
 	  lineData = [];
