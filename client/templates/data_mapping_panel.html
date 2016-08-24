@@ -17,7 +17,7 @@
         <span class="dim-name"><%= _chart_[onedim].label %></span>
         
         <%  if($.isArray(_chart_[onedim].map2)) { %>
-        <span class="dim-type"><%= (_chart_[onedim].type)?_chart_[onedim].type:'' + 'Array' %></span>
+        <span class="dim-type"><%= (_chart_[onedim].type)?_chart_[onedim].type+'Array' : 'Array' %></span>
         <% } else { %>
         <span class="dim-type"><%= (_chart_[onedim].type)?_chart_[onedim].type:'' %></span>
         <% } //if-else-end %>
