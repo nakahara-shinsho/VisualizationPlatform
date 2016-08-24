@@ -496,7 +496,8 @@ define(["css!./Legend"], function () {
   Legend.prototype.sendDatas = function(datas) {
       var self = this;
       if (datas.length > 0) {
-	  self.io.dataManager().setColumnRefiner(datas);
+	  /*force to send refiner data instead of setColumnRefiner*/
+	  self.io.dataManager()._writeColumnRefiner(datas, {silent: false} ); 
       };
   };
 
@@ -526,10 +527,9 @@ define(["css!./Legend"], function () {
       size[0] = sum[0] * 100;
       size[1] = sum[1] * 30;
       self.updateSvgSize(svg.select(".svg-groupSelector-cols"), size);
-      var svg_g = svg.select(".svg-groupSelector").append("g");//.attr("class", name);
+      var svg_g = svg.select(".svg-groupSelector").append("g");
       Object.keys(groups).forEach(function (name) {
 	      if (groups[name]){
-//		  var svg_g = svg.select(".svg-groupSelector").append("g").attr("class", name);
 		  offset = drawSelectiveCircle(svg_g, groups, name, offset);
 	      }
       });
@@ -573,15 +573,9 @@ define(["css!./Legend"], function () {
 	  .on("click", function(){
 	      showGroupCol(groups[name]);
 	      clickSelectiveCircle(svg_g, groups, name);
-//	  offset[1] += 30; 
-
-	  vals[0] = offset[0];
-	  vals[1] = offset[1] + 30;
-	  
-	  drawNamesFromGroup(svg_g, groups[name], [offset[0], offset[1]]);
-//	  offset[1] = vals[1];
-//	  vals[1] = offset[1];
-	    
+	      vals[0] = offset[0];
+	      vals[1] = offset[1] + 30;	  
+	      drawNamesFromGroup(svg_g, groups[name], [offset[0], offset[1]]);
 	      })	  
 	  ;	  
 	  svg_g.append("text")
@@ -592,18 +586,15 @@ define(["css!./Legend"], function () {
 	  .attr("font-family", "sans-serif")
 	  .style("fill", "white")
 	  ;
-/*
-	  offset[1] += 30; 
-	  vals[0] = offset[0];
-	  vals[1] = offset[1];
-	  drawNamesFromGroup(svg_g, groups[name], vals);
-	  offset[1] = vals[1];
-*/
 	  return offset;
       }
       function showGroupCol(group) {
 	  var svgT =  self.svg_g.select(".svg-groupSelector-cols");
 	  var position = [30, 40];
+	  var colorManager = self.io.colorManager();
+	  var color = d3.scale.category20().range();
+	  var colorCounter = 0;
+
 	  self.svg_g.select(".svg-groupSelector-cols")
 	      .selectAll("text")
 	      .remove();
@@ -616,7 +607,9 @@ define(["css!./Legend"], function () {
 			  .attr("x", position[0])
 			  .attr("y", position[1])
 			  .attr("font-family", "sans-serif")
-			  .style("fill", "white");
+			  .style("fill", function() {
+			    return color[colorCounter++ % 20];
+			  });
 		      position[1] += 30;
 		  } else if (g.kind == "group") {
 		      Object.keys(g.data).forEach (function (key) {
@@ -625,6 +618,23 @@ define(["css!./Legend"], function () {
 		  }
 	      });
 	  }
+	  function getAllColumnInGroup(group, gCol) {
+	      Object.keys(group).forEach(function(key) {
+		  group[key].forEach(function(d) {
+		      if (d.kind == "data") {
+			  gCol[d.data.name] = 0;
+		      } else if (d.kind == "group") {
+			  getAllColumnInGroup(d.data, gCol);
+		      }
+		  });
+	      });
+	  }
+      }
+  
+      function getColColor(index) {
+        var colorManager = self.io.colorManager();
+	var color =colorManager._themeColors["google 20c"];
+	return color[index];
       }
       function setOpacity(groups, name) {
 	  var selectiveGroups;
@@ -660,18 +670,7 @@ define(["css!./Legend"], function () {
 	  offset[0] += 10;
 	  group.forEach( function (g) {
 		  if (g.kind == "data") {
-/*
-		      svg_g.append("text")
-			  .text(g.data.name)
-			  .attr("x", offset[0])
-			  .attr("y", offset[1])
-			  .attr("font-family", "sans-serif")
-			  .style("fill", function (d) {
-				  return self.io.colorManager().getColorOfColumn(g.data.name);
-			      })
-			  ;
-		      offset[1] += 30;
-*/
+		      /*do nothing*/
 		  } else if (g.kind == "group"){
 		      Object.keys(g.data).forEach (function (key) {
 			      tmp = offset[0];
@@ -691,15 +690,12 @@ define(["css!./Legend"], function () {
 	  var selectiveGroups;
 	  selectiveGroups = getSelectiveGroupNames(groups, name);
 	  switchOpacities(svg_g, selectiveGroups);
-//	  updateSelectiveGroup(selectiveGroups);
 	  updateSelectiveGroup(groups[name]);
       }
       function updateSelectiveGroup(group) {
-//      function updateSelectiveGroup(selectiveGroups) {
 	  var keys = [];
 	  var columns = [];
 	  var allKeys = [];
-//	  keys = getKeysFromGroupName(selectiveGroups);	 
 	  getNamesFromGroup(group, keys);
 	  columns = self.io.dataManager().getColumnRefiner();
 	  allKeys = getAllKeys()
@@ -723,9 +719,7 @@ define(["css!./Legend"], function () {
 	      });	  
       }
       function switchOpacities(svg_g, selectiveGroups) {
-//	  var svg_g = self.svg_g;
 	  var d3Name;
-//	  svg_g.selectAll("circle").style("fill-opacity", OPACITYOFF);
 
 	  svg_g.selectAll("circle").style("fill-opacity", OPACITYOFF);
 	  svg_g.select("g").selectAll("circle").remove();
@@ -735,7 +729,6 @@ define(["css!./Legend"], function () {
 	  selectiveGroups.forEach(function (gName) {
 	      d3Name = self.getName4D3(gName);
 	      self.svg_g.selectAll("."+d3Name).style("fill-opacity", OPACITYON);		  	     
-//	  svg_g.selectAll("."+gName).style("fill-opacity", OPACITYON);		  
 	      });
       }
       function getSelectiveGroupNames(groups, name) {
@@ -1366,21 +1359,19 @@ define(["css!./Legend"], function () {
        var exclusiveData = data[1];
        var groupData = data[2];
        var designManager = self.io.designManager();
+       var gCol = self.autoMap(groupData);
        self.setRegionForOption(svg_g);
        self.drawOptions(svg_g);
        if (designManager.getValue(textSelector) == "show") {
 	   /*draw selectors from singleData*/
-//	   self.setRegionForSelectors(svg_g);
 	   self.setRegion(svg_g, "selector", self.width / 2, self.height);	   
 	   self.drawSelectors(svg_g, singleData);
 	   /*write text for selectors*/
-//	   self.setRegionForTextOfSelectors(svg_g);
 	   self.setRegion(svg_g, "selector-cols", self.width / 2, self.height);
 	   self.writeTextForSelectors(svg_g, singleData);
        }
        if (designManager.getValue(textExclusiveSelector) == "show") {
 	   /*draw exclusive selectors*/
-//	   self.setRegionForExclusiveSelectors(svg_g);
 	   self.setRegion(svg_g, "exclusiveSelector", self.width / 2, self.height);	   
 	   self.setRegion(svg_g, "exclusiveSelector-cols", self.width / 2, self.height);
 	   self.drawExclusiveSelectors(svg_g, exclusiveData);
@@ -1388,9 +1379,8 @@ define(["css!./Legend"], function () {
 	   self.setRegionForTextOfExclusiveSelectors(svg_g);
 	   self.writeTextForExclusiveSelectors(svg_g, exclusiveData);
        }
-       if (designManager.getValue(textGroupSelector) == "show") {     
+       if (designManager.getValue(textGroupSelector) == "show") {        
 	   /*draw group selectors*/
-//	   self.setRegionForGroupSelectors(svg_g);
 	   self.setRegion(svg_g, "groupSelector", self.width / 2, self.height);
 	   self.setRegion(svg_g, "groupSelector-cols", self.width / 2, self.height);
 	   self.drawGroupSelectors(svg_g, groupData);
@@ -1485,6 +1475,23 @@ define(["css!./Legend"], function () {
       }
       return word;
     }
+  };
+
+  Legend.prototype.autoMap = function(groupData) {
+    var gCol = {};
+    getAllColumnInGroup(groupData, gCol);
+    function getAllColumnInGroup(group, gCol) {
+      Object.keys(group).forEach(function(key) {
+        group[key].forEach(function(d) {
+          if (d.kind == "data") {
+            gCol[d.data.name] = 0;
+	  } else if (d.kind == "group") {
+	    getAllColumnInGroup(d.data, gCol);
+	  }
+	});
+      });
+    }
+    return gCol;
   };
 
   return Legend;
