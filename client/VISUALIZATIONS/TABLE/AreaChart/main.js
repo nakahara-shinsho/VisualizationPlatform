@@ -86,6 +86,8 @@ define(["util/AxisSelectable",
       this.scaleX = d3.scale.linear().range([0, this.axisWidth]);    
       this.scaleY = d3.scale.linear().range([this.axisHeight, 0]);
 
+    this.autoMapping();
+
        this.createChartHeader();
        this.drawCharts();
   };
@@ -96,7 +98,7 @@ define(["util/AxisSelectable",
    * @memberOf AreaChart
    */
   AreaChart.prototype.render = function (containerWidth, containerHeight) {
-
+    this.autoMapping();
     this.initialize(containerWidth, containerHeight);    
       
     // create chart header
@@ -536,12 +538,14 @@ define(["util/AxisSelectable",
 	   });
        var colorManager = self.io.colorManager();
        var area = this.createAreaData(scaleX, scaleY);
+       var color = d3.scale.category20().range();
+       var colorCounter = 0;
        gArea.append("path")
 	   .attr("d", function (d) {
                return area(d.values);
 	   })
 	   .style("fill", function (d) {
-               return colorManager.getColorOfColumn(d.name);
+                 return color[colorCounter++ % 20];
 	   })
 	   .style("fill-opacity", 0.8);
 
@@ -632,16 +636,18 @@ define(["util/AxisSelectable",
                highlights = self.io.dataManager().getColumnRefiner();
 	   }
 	   self.tooltipConfig.caption = self.io.dataManager().getMapperProps("xaxis").map2 + " : " +  xValue;
-
+	   var colorManager = self.io.colorManager();
+	   var color = d3.scale.category20().range();
+	   var colorCounter = 0;
 	   self.data.forEach(function(d){
                var elem = {};
                if(selectedLegends.indexOf(d.name) !== -1){
 		   elem.key = d.name;
 		   if(highlights.indexOf(d.name) !== -1){
 		       if(self.io.colorManager().getDomainName() !== "Y axis"){
-			   elem.color = self.io.colorManager().getColorOfRow(d.name);
+			   elem.color = color[colorCounter++ % 20];
 		       }else{
-			   elem.color = self.io.colorManager().getColor(d.name);
+			   elem.color = color[colorCounter++ % 20];
 		       }
 		   }
 		   elem.y0 = 0;
@@ -691,6 +697,28 @@ define(["util/AxisSelectable",
     self.containerHeight = containerHeight;
     self.redraw();
   };
+ AreaChart.prototype.autoMapping = function() {
+   var self = this;
+   var dataTypes = self.io.dataManager().getDataType();
+   var mappedData = [];
+   var mapperProps;
+   var removedData = [];
+   var table = self.io.dataManager().getData();
+
+   mapperProps = self.io.dataManager().getMapperProps();
+   Object.keys(table[0]).forEach(function(key) { 
+     if (dataTypes[key] == "number") {
+       if (mapperProps.xaxis.map2 != key) {
+	 mappedData.push(key);
+       }
+     }   
+   });
+   Object.keys(mapperProps).forEach(function(key) {
+     if (typeof mapperProps[key].map2 == "object") {
+         self.io.dataManager().setMapper(key, mappedData);
+     }
+   });
+ };
 
   return AreaChart;
 });
