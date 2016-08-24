@@ -71,10 +71,14 @@ createText = function (caller, text) {
    var obj = {};
     Error.captureStackTrace( obj, caller );
     var args;
+    if (typeof text == "object") {
+       text = JSON.stringify(text);
+    }
     if (obj.stack.functionName == null) {
-	args = text + " ("+ obj.stack.fileName +":" + obj.stack.lineNumber + ")"
+	args = text + " ("+ obj.stack.fileName +":" + obj.stack.lineNumber + ")"	
     } else {
 	args = text + " ("+ obj.stack.fileName + " ("+obj.stack.functionName  + ") :" + obj.stack.lineNumber + ")"
     }
+
    return args;
 };
