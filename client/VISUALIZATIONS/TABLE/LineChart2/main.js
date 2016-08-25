@@ -67,6 +67,7 @@ define(["util/CustomTooltip",
 
     /// Action
     this.io.designManager().setControl("mouseActionMode"  , {type:"radio", name:"Mouse Action Mode",range:["CLICK", "BRUSH"], value:"BRUSH"});
+    this.io.designManager().setControl("autoMappingMode"  , {type:"radio", name:"Auto Mapping Mode",range:["ON", "OFF"], value:"OFF"});
   };
   /**
     * update chart according with changed of interface variables
@@ -103,6 +104,9 @@ define(["util/CustomTooltip",
    */
   LineChart.prototype.render = function (containerWidth, containerHeight) {
     var self = this;
+    if(self.io.designManager().getValue("autoMappingMode") == "ON") {
+      self.autoMapping();
+    }
     self.initialize(containerWidth, containerHeight);
     if(self.io.designManager().getValue("xaxisCaption") == "" ){
       self.io.designManager().setValue("xaxisCaption", self.io.dataManager().getMapper('xaxis'));
@@ -532,6 +536,8 @@ define(["util/CustomTooltip",
   */
   LineChart.prototype.drawChart = function (data) {
     var self = this;
+    var color = d3.scale.category20().range();
+    var colorCounter = 0;
     var highlights = self.io.dataManager().getMapperProps("yaxis").map2;
     if(!self.io.isHighlightMode()){
       highlights = self.io.dataManager().getColumnRefiner();
@@ -562,6 +568,9 @@ define(["util/CustomTooltip",
         return "line_chart hideme";
       })
       .style("stroke", function(d) {
+        if (self.io.designManager().getValue("autoMappingMode") == "ON") {
+          return color[colorCounter++ % 20];
+	}
         if(self.io.colorManager().getDomainName() !== undefined &&
            self.io.colorManager().getDomainName().length !== 0 &&
            self.io.colorManager().getDomainName().toLowerCase() !== "y axis"){
@@ -713,10 +722,36 @@ define(["util/CustomTooltip",
       self.layout.main.margin.right -
       self.xConfig.margin;
 
+    if(self.io.designManager().getValue("autoMappingMode") == "ON") {
+      self.autoMapping();
+    }
     self.createHeader();
     var data = self.transformData();
     self.createChart(data);
     return self.root_dom;
   };
+
+ LineChart.prototype.autoMapping = function() {
+   var self = this;
+   var dataTypes = self.io.dataManager().getDataType();
+   var mappedData = [];
+   var mapperProps;
+   var removedData = [];
+   var table = self.io.dataManager().getData();
+
+   mapperProps = self.io.dataManager().getMapperProps();
+   Object.keys(table[0]).forEach(function(key) { 
+     if (dataTypes[key] == "number") {
+       if (mapperProps.xaxis.map2 != key) {
+	 mappedData.push(key);
+       }
+     }   
+   });
+   Object.keys(mapperProps).forEach(function(key) {
+     if (typeof mapperProps[key].map2 == "object") {
+         self.io.dataManager().setMapper(key, mappedData);
+     }
+   });
+ };
   return LineChart;
 });
