@@ -39,6 +39,7 @@ define(["util/AxisSelectable",
                                 value:"linear"});
     this.io.designManager()
       .setControl("yaxisticknum", {type:"regx", name:"Y AXIS TICKS NUM", value: 3});
+    this.io.designManager().setControl("autoMappingMode"  , {type:"radio", name:"Auto Mapping Mode",range:["ON", "OFF"], value:"OFF"});
   };
   /**
    * update chart according with changed of interface variables
@@ -85,8 +86,9 @@ define(["util/AxisSelectable",
 
       this.scaleX = d3.scale.linear().range([0, this.axisWidth]);    
       this.scaleY = d3.scale.linear().range([this.axisHeight, 0]);
-
-    this.autoMapping();
+       if(this.io.designManager().getValue("autoMappingMode") == "ON") {
+	   this.autoMapping();
+       }
 
        this.createChartHeader();
        this.drawCharts();
@@ -98,7 +100,9 @@ define(["util/AxisSelectable",
    * @memberOf AreaChart
    */
   AreaChart.prototype.render = function (containerWidth, containerHeight) {
-    this.autoMapping();
+    if(this.io.designManager().getValue("autoMappingMode") == "ON") {
+	this.autoMapping();
+    }
     this.initialize(containerWidth, containerHeight);    
       
     // create chart header

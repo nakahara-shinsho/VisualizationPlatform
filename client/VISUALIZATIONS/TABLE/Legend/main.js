@@ -40,6 +40,8 @@ define(["css!./Legend"], function () {
       .setControl(textExclusiveSelector, {type:"radio", name:textExclusiveSelector, range:["show","hide"], value: "hide"});
     this.io.designManager()
       .setControl(textGroupSelector, {type:"radio", name:textGroupSelector, range:["show","hide"], value: "hide"});
+    this.io.designManager()
+      .setControl("ShowSelectorsBox", {type:"radio", name:"ShowSelectorsBox", range:["show","hide"], value: "hide"});
   };
   /**
    * update chart according with changed of interface variables
@@ -598,10 +600,40 @@ define(["css!./Legend"], function () {
 	  self.svg_g.select(".svg-groupSelector-cols")
 	      .selectAll("text")
 	      .remove();
+	  self.svg_g.select(".svg-groupSelector-cols")
+	      .selectAll("rect")
+	      .remove();
 	  drawColName(svgT, group, position);
 	  function drawColName(svg, group ,position) {
 	      group.forEach(function (g) {
 		  if (g.kind == "data") {
+		      var rect = svg.append("rect")
+		      	  .attr("x", position[0] - 15)
+			  .attr("y", position[1] - 15)
+			  .attr("width",15)
+			  .attr("height",15)
+			  .style("fill", function(){
+			      return color[colorCounter % 20];
+			  })
+			  .style("fill-opacity", 1)
+			  .on("click", function(d,i){
+			      var onOff = d3.select(this).select("g");
+			      if (onOff[0][0] != null) {
+				  d3.select(this).style("fill-opacity", 0.1);
+				  d3.select(this).select("g").remove();
+				  var refiner = self.io.dataManager().getColumnRefiner();
+				  refiner = self.removeElements(refiner, ["", g.data.name]);
+				  self.sendDatas(refiner);
+			      } else {
+				  d3.select(this).style("fill-opacity", 1);
+				  d3.select(this).append("g").attr("class", "on");
+				  var refiner = self.io.dataManager().getColumnRefiner();
+				  refiner = self.removeElements(refiner, [""]);
+				  refiner = self.addElement(refiner, g.data.name);
+				  self.sendDatas(refiner);
+			      }
+			  })
+			  .append("g").attr("class", "on");
 		      svg.append("text")
 			  .text(g.data.name)
 			  .attr("x", position[0])
@@ -1360,8 +1392,10 @@ define(["css!./Legend"], function () {
        var groupData = data[2];
        var designManager = self.io.designManager();
        var gCol = self.autoMap(groupData);
-       self.setRegionForOption(svg_g);
-       self.drawOptions(svg_g);
+       if (designManager.getValue("ShowSelectorsBox") == "show") {
+	   self.setRegionForOption(svg_g);
+	   self.drawOptions(svg_g);
+       }
        if (designManager.getValue(textSelector) == "show") {
 	   /*draw selectors from singleData*/
 	   self.setRegion(svg_g, "selector", self.width / 2, self.height);	   
