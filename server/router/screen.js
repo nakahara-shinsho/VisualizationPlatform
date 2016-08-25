@@ -10,7 +10,7 @@ module.exports.screen = function(app, db) {
   
   //screen 
   db.run("CREATE TABLE IF NOT EXISTS screen (" +
-         "id TEXT(50) UNIQUE PRIMARY KEY, "+ 
+         "id TEXT(50) NOT NULL PRIMARY KEY, "+ 
          "user TEXT NOT NULL, "+ 
          "format TEXT(50), " + // is format necessary ? 2016/7/11
          "description TEXT DEFAULT '', "+ //screen description
@@ -65,7 +65,6 @@ module.exports.screen = function(app, db) {
         } 
       );
   };
-  
   
   //only the owner can show her/his last screen
   var getLastScreenWithoutId = function(req, res) {

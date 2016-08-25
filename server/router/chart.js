@@ -7,7 +7,7 @@ module.exports.chart = function (router, db) {
         logHandle=commonModule.logHandle;
     
     db.run("CREATE TABLE IF NOT EXISTS chart ( " +
-           "id INTEGER UNIQUE PRIMARY KEY, " +
+           "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
            "vtname TEXT not null default '', " +
            "vttype TEXT not null default '', " +
            "linkids TEXT default '[]', " +
@@ -39,7 +39,7 @@ module.exports.chart = function (router, db) {
     router.put(url, function(req, res) {
       logHandle(modelName+'PUT(error): ' + JSON.stringify(req.params));
     });
-  
+  /*
    //create a new model
     router.post(url, function (req, res) {
       var model = req.body;
@@ -71,6 +71,29 @@ module.exports.chart = function (router, db) {
           }
       });
 
+    });
+  */
+
+    //create a new model
+    router.post(url, function (req, res) {
+      var model = req.body;
+      logHandle(modelName+'POST: ' + JSON.stringify(req.body));
+      
+      var stmt_insert = "INSERT OR IGNORE INTO chart " +
+                  "(vtname, vttype) VALUES ($vtname, $vttype)" ;
+              db.run(stmt_insert, {
+                       $vtname: model.vtname,
+                       $vttype: model.vttype,
+                      } ,
+                     function(err){
+                        if (err) {
+                          errHandle(err);
+                          res.status(500).send({error: err.message});
+                        }else{
+                          res.send({id: this.lastID});
+                        }
+                      }
+              );  
     });
     
    //get one model
@@ -118,6 +141,7 @@ module.exports.chart = function (router, db) {
       logHandle(modelName+'PUT(id): ' + req.params.id);
       write_callback(req, res);
     });//put end
+
     router.patch(url + '/:id', function(req,res){
       logHandle(modelName+'PATCH(id): ' + req.params.id);
       write_callback(req, res);
