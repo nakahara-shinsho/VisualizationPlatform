@@ -44,6 +44,8 @@ define(["util/CustomTooltip",
     this.io.designManager()
       .setControl("xaxisCaptionFontsize", {type:"regx", name:"X AXIS Caption Font-Size", value:11});
     this.io.designManager()
+      .setControl("barMinWidth", {type:"regx", name:"BAR MIN WIDTH", value:20});
+    this.io.designManager()
       .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y-AXIS"});
     this.io.designManager()
       .setControl("yaxisticknum", {type:"regx", name:"Y AXIS TICKS NUM", value: 3});
@@ -198,7 +200,7 @@ define(["util/CustomTooltip",
     // X AXIS [width - YAxis_width]
     this.xConfig = {
       sort    : {key: "total", order: "descending"},
-      label   : {upper:100, minimumWidth: 16},
+      label   : {upper:100},
       caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25}
     };
@@ -352,10 +354,11 @@ define(["util/CustomTooltip",
     // Draw yAxis
     drawYAxisSVG();
     // Draw Main
+    var svgWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
+    self.io.dataManager()
     self.svg = mainDiv.append("svg")
       .attr("class", "barchart")
-      .style("width", self.containerWidth -
-             self.layout.yaxis.width - self.layout.main.margin.right)
+      .style("width", svgWidth)
       .style("height", mainHeight)
       .append("g")
       .attr("transform", "translate(0," + self.layout.top +")");
@@ -454,9 +457,8 @@ define(["util/CustomTooltip",
     // Setup xLabel range
     var axisWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
     var labels = data.map(function(d){return d.key;});
-    labels = labels.filter(function(d,i,self){ return self.indexOf(d) === i & i !==self.lastIndexOf(d);});
     if(labels.length > self.xConfig.label.upper){
-      axisWidth = self.xConfig.label.minimumWidth * labels.length;
+      axisWidth = self.io.designManager().getValue("barMinWidth") * labels.length;
       self.container.select("svg.barchart").style("width", axisWidth +"px");
     }
     self.xLabel = d3.scale.ordinal().rangeBands([0,axisWidth], 0.1);
