@@ -241,7 +241,7 @@ define(['ctrl/COMMON'], function (COMMON) {
  DataManager.prototype.getColumnRefiner = function() {
       var retColumns = this._readColumnRefiner();
       if(retColumns === undefined || retColumns ==='') { //return all columns
-        retColumns = _.keys(this.getDataType());
+        retColumns = /*_.keys(this.getDataType());*/ this.getMappedArrayColumns();
       } else {
         retColumns= COMMON.makeObject(retColumns, []);
       }
@@ -384,7 +384,7 @@ DataManager.prototype.isCachedColumn = function(column) {
 
 DataManager.prototype.clearFilter = function() { 
      this._model.set({'dataRefiner': {},
-                      'dataSelector': '',
+                      'dataSelector': '', //select all mapped array columns
                       'dataExtraRefiner': {},
                       'dataExtraSelector': {}
                       });//, { slient:true });
@@ -404,7 +404,7 @@ DataManager.prototype.clearFilterWithLink = function() {
 DataManager.prototype.clearAll = function(key, value) { 
      this.clearData();
      this._model.set({'dataRefiner': {},
-                      'dataSelector': [],
+                      'dataSelector': '',  //select all mapped array columns
                       'dataExtraRefiner': {},
                       'dataExtraSelector': {},
                       'dataMapper': {}
@@ -541,6 +541,16 @@ DataManager.prototype.clearAll = function(key, value) {
      return columns;
  };
  
+ DataManager.prototype.getMappedArrayColumns = function(key) {
+     var columns = [], mapper = this._readMapper();
+     for(var prop in mapper) {
+       if(!_.isEmpty(mapper[prop]) && mapper[prop].constructor == Array) {
+         return mapper[prop];
+       }
+     }
+     return [];
+ };
+
  DataManager.prototype._autoCheckDataTypes = function(table, myDataTypes) {
     var self=this,
         types = (myDataTypes)? myDataTypes:{};
@@ -627,13 +637,13 @@ DataManager.prototype.clearAll = function(key, value) {
     //set ranges
     this._autoCheckDataRanges(table, dataTypes, myDataRanges);
     
-    if(_.isEmpty(this.getColumnRefiner()) ) {
+    /*if(_.isEmpty(this.getColumnRefiner()) ) {
         //set selector(columnRefiner)
         var numberColumns = _.keys(dataTypes).filter(function(column, index){
             return dataTypes[column] === 'number';
         });
         this.setColumnRefiner(numberColumns);
-    }
+    }*/
     
   };
  
@@ -1072,7 +1082,8 @@ DataManager.prototype.clearAll = function(key, value) {
     var dataTypes = this.getDataType(),
         dataRanges = this.getDataRange(),
         mappedColumns = this.getMappedColumns(),
-        mappedNumberColumns = mappedColumns.filter(function(column){ return dataTypes[column]==='number';});
+        mappedNumberColumns = mappedColumns.filter(function(column){ return dataTypes[column]==='number';}),
+        mappedArrayColumns = this.getMappedArrayColumns();
     
     if(key) {
       if(typeof(key) == 'object'){ //for self-defined control //not used
@@ -1119,11 +1130,11 @@ DataManager.prototype.clearAll = function(key, value) {
       });
       
       //set columnRefiner control if possible
-      if(mappedNumberColumns.length > 0) {
+      if(mappedArrayColumns.length > 0) {
         $ctrl = $('<div>');
         value = this.getColumnRefiner();
         $ctrl.data({ type: 'selection', 
-                    range: mappedNumberColumns,
+                    range: mappedArrayColumns,
                     value: value});
         $control_array.append($ctrl);
       }
