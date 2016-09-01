@@ -814,7 +814,7 @@ define(["css!./Legend"], function () {
 	  var cols = self.io.dataManager().getColumnRefiner();
 	  var index  = cols.indexOf(key);	 
 	  if (index == -1) {
-	      cols.push(key)
+	      cols.push(key);
 		  self.io.dataManager().setColumnRefiner(cols);
 	  }
       }

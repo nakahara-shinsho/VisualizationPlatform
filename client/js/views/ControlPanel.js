@@ -109,9 +109,10 @@ define([
       this.$el.detach().appendTo(this.$docker);
       //remove old content
       this.$contents.empty();
-      //$(document.body).find('.colorpicker').remove();
+
       // create new content
       var $newcontent = this.createContent(manager);
+
       this.$contents.append($newcontent);
     },
 
@@ -130,12 +131,17 @@ define([
 
         var $cloned_ctrl = $(ctrl).clone(true), //copy data
             label = $cloned_ctrl.data('label');
-        if(!label) { label = $cloned_ctrl.data('name'); }
-        if(!label) { label = $cloned_ctrl.attr('id'); }
+
+        if(!label) {
+          label = $cloned_ctrl.data('name'); 
+        }
+        if(!label) { 
+          label = $cloned_ctrl.attr('id'); 
+        }
 
         var $header = $("<div class='header'>")
-            .append('<h4><span class="label label-primary">' + ((label)?label:'_MEASURES_') + '</span></h4>');
-
+            .append('<h4><span class="label label-primary">' + ( (label)? label : 'Column Selector') + '</span></h4>');
+          
           // add header
           $cloned_ctrl.append($header);
 
