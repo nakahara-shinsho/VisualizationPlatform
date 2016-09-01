@@ -122,7 +122,7 @@ var function_parameters = [
       type: 'list',
       name: 'func',
       message: 'Select one action (Show user list, Add user, Delete user, Change Password, Logout, Exit)?',
-      choices: ['Show user list','Add an new user','Delete an existed user', new inquirer.Separator(), 'Change password of current user'/*, 'Logout', 'Exit'*/],
+      choices: ['Show user list','Add an new user','Delete an existed user', new inquirer.Separator(), 'Change password of current user', /*'Logout',*/ 'Exit'],
       validate: function (str) {
         return !_.isEmpty(str);
       },
@@ -147,6 +147,48 @@ request({url: program.url, method: 'GET', jar: cookieJar}, function(e, r, html){
   }
 });
 
+function execFunctions(token) {
+        inquirer.prompt(function_parameters).then(function(fparameters) {
+          switch (fparameters.func) {
+            case 'show':
+              showUserList(signup_parameters);
+              break;
+            case 'add':
+              inquirer.prompt(signup_parameters).then(function(parameters) {
+                signupNewUser(parameters, token);
+              });
+              break;
+            case 'delete':
+              setUser(signup_parameters.user, token).done(function(userToBeDeleted) {
+                inquirer.prompt(confirm_parameters).then(function(answer) {
+                   if(answer.confirm) {
+                     deleteUser(userToBeDeleted, token);
+                   } else {
+                     console.log("Cancel the action!");
+                   }
+                });
+              })
+              .fail(function(err){
+                  console.error(err);
+              });
+              break;
+            case 'change':
+              inquirer.prompt(change_parameters).then(function(parameters) {
+                changePassword(parameters, token);
+              });
+              break;
+            case 'logout':
+              logoutUser(token);
+              break;
+            case 'exit':
+              logoutUser(token);
+              break;
+            default:
+              break;
+          }
+        });
+}
+
 function loginUser(parameters, token) {
   var options = {
     method: 'POST',
@@ -164,49 +206,12 @@ function loginUser(parameters, token) {
       console.error(e || body.error);
       process.exit(1);
     } else {
-      var bexit = false;
-      inquirer.prompt(function_parameters).then(function(fparameters) {
-          switch (fparameters.func) {
-            case 'show':
-              showUserList(signup_parameters);
-              break;
-            case 'add':
-              inquirer.prompt(signup_parameters).then(function(parameters) {
-                signupNewUser(parameters, token);
-              });
-              break;
-            case 'delete':
-              setUser(signup_parameters.user, token).done(function(userToBeDeleted) {
-                inquirer.prompt(confirm_parameters).then(function(banswer) {
-                   if(banswer) {
-                     deleteUser(userToBeDeleted, token);
-                   }
-                });
-              })
-              .fail(function(err){
-                  console.error(err);
-              });
-              break;
-            
-            case 'change':
-              inquirer.prompt(change_parameters).then(function(parameters) {
-                changePassword(parameters, token);
-              });
-              break;
-            
-            case 'logout':
-              logoutUser(token);
-              break;
-              
-            case 'exit':
-              bexit = true;
-              break;
-            default:
-              break;
-          }
-        });
-      }
-    
+     /* setTimeout(function() {  
+        logoutUser(token); 
+        console.log('TimeOut!');
+      }, 10000);*/
+      execFunctions(token);
+    }
   });
 }
 
@@ -226,6 +231,7 @@ function showUserList(token) {
         console.log('('+(index+1)+') '+ user);
       });
     }
+    //execFunctions(token);
   });
 }
 
@@ -243,11 +249,11 @@ function signupNewUser(parameters, token) {
   };
   request(options, function(e, r, body){
     if(e || r.statusCode !== 200) {
-      console.error(e || body.error);
-      //process.exit(1);
+      console.error(e || body.error || body );
     } else {
       console.log('successful in adding new user :'  + parameters.user);
     }
+    //execFunctions(token);
   });
 }
 
@@ -306,6 +312,7 @@ function deleteUser(userToBeDeleted, token) {
     } else {
       console.log('successful in deleting user :'  + userToBeDeleted);
     }
+    //execFunctions(token);
   });
 }
 
@@ -338,6 +345,7 @@ function logoutUser(token) {
     jar: cookieJar,
     url: program.url+'api/auth/logout',
     headers: {'X-CSRF-Token': token }
+
   };
   
   request(options, function(e, r, body){
