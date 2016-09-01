@@ -384,7 +384,7 @@ DataManager.prototype.isCachedColumn = function(column) {
 
 DataManager.prototype.clearFilter = function() { 
      this._model.set({'dataRefiner': {},
-                      'dataSelector': [],
+                      'dataSelector': '',
                       'dataExtraRefiner': {},
                       'dataExtraSelector': {}
                       });//, { slient:true });
@@ -621,7 +621,7 @@ DataManager.prototype.clearAll = function(key, value) {
     //set types
     var dataTypes = this._autoCheckDataTypes(table, myDataTypes);
     
-    //set mapper
+    //set mapper to accepptable values
     this._autoSetDataMapper(dataTypes);
     
     //set ranges
@@ -1119,7 +1119,7 @@ DataManager.prototype.clearAll = function(key, value) {
       });
       
       //set columnRefiner control if possible
-      if(mappedNumberColumns.length >0) {
+      if(mappedNumberColumns.length > 0) {
         $ctrl = $('<div>');
         value = this.getColumnRefiner();
         $ctrl.data({ type: 'selection', 

@@ -162,7 +162,7 @@ define(["util/CustomTooltip",
   BarChart.prototype.redraw = function () {
     var self = this;
     self.createHeader();
-    var data = self.transformData();
+    var data = self.transformData(true);
     self.createChart(data);
     return self.root_dom;
   };
