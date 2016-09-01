@@ -384,7 +384,7 @@ DataManager.prototype.isCachedColumn = function(column) {
 
 DataManager.prototype.clearFilter = function() { 
      this._model.set({'dataRefiner': {},
-                      'dataSelector': '',
+                      'dataSelector': '', //select all mapped array columns
                       'dataExtraRefiner': {},
                       'dataExtraSelector': {}
                       });//, { slient:true });
@@ -404,7 +404,7 @@ DataManager.prototype.clearFilterWithLink = function() {
 DataManager.prototype.clearAll = function(key, value) { 
      this.clearData();
      this._model.set({'dataRefiner': {},
-                      'dataSelector': [],
+                      'dataSelector': '',  //select all mapped array columns
                       'dataExtraRefiner': {},
                       'dataExtraSelector': {},
                       'dataMapper': {}
