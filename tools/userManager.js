@@ -175,11 +175,12 @@ function loginUser(parameters, token) {
                 signupNewUser(parameters, token);
               });
               break;
-
             case 'delete':
               setUser(signup_parameters.user, token).done(function(userToBeDeleted) {
-                inquirer.prompt(confirm_parameters).then(function() {
-                   deleteUser(userToBeDeleted, token);
+                inquirer.prompt(confirm_parameters).then(function(banswer) {
+                   if(banswer) {
+                     deleteUser(userToBeDeleted, token);
+                   }
                 });
               })
               .fail(function(err){

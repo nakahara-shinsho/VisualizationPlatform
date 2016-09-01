@@ -177,9 +177,9 @@ module.exports.user = function (router,db){
     db.serialize(function() {
      db.get("SELECT * FROM user WHERE id = ? AND token = ?", 
            [ req.signedCookies.user_id, req.signedCookies.auth_token ], function(err, logined_user) {
-        if(logined_user && logined_user.id =='admin') { 
+        if(logined_user && logined_user.id =='admin' && req.body.user !== 'admin') {
           db.run("DELETE FROM user WHERE id = ?", [ req.body.user ],
-            function(err){
+            function(err) {
               if(err) {
                 res.status(500).json({ error: err.message }); 
               } else {
