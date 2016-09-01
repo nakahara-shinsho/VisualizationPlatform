@@ -189,7 +189,7 @@ module.exports.user = function (router,db){
               }
             });
         } else {
-           res.status(500).send({ error: "Havn't enough access authoritation to delete user:" + req.body.userId }); 
+           res.status(500).send({ error: "Havn't enough access authoritation to delete user:" + req.body.user }); 
         }
       });
     });
