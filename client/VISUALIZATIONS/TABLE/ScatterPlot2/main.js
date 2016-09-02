@@ -306,12 +306,12 @@ define(["css!./main"], function () {
       yrange[1] = +self.io.designManager().getValue("yaxisRangeMaxManual");
     }
     var xmax =  xrange[1];
-    var xmaxMargin = self.io.designManager().getValue("xaxismargin");
+    var xmaxMargin = +self.io.designManager().getValue("xaxismargin");
     if(xmaxMargin != undefined && xmaxMargin != 0){
 	xmax = xmax + xmax*xmaxMargin*0.01;
     }
     var ymax =  yrange[1];
-    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+    var ymaxMargin = +self.io.designManager().getValue("yaxismargin");
     if(ymaxMargin != undefined && ymaxMargin != 0){
 	ymax = ymax + ymax*ymaxMargin*0.01;
     }

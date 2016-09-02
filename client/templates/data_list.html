@@ -20,11 +20,18 @@
           <% data.forEach(function(item) { %>
           <tr>
           <%   for(var key in item){       %>
-          <td class='<%=key%>'><%= item[key]%></td>
+               <td class='<%=key%>'><%= item[key]%></td>
           <%   }                           %>
-          <td class='view' name='<%=item.name%>' format='default'>
-            <a class='btn-sm btn-info' name='<%=item.name%>'>VIEW</a>
+	  	  <% if(item.upload_id != undefined) {%>
+          <td class='view' name="{'upload_id':'<%=item.upload_id%>'}" format='default'>
+            <a class='btn-sm btn-info'>UPLOAD_ID</a>
           </td>
+	  <% }%>
+	  <% if(item.appl_id !== undefined){%>
+          <td class='view' name="{'appl_id':'<%=item.appl_id%>'}" format='default'>
+            <a class='btn-sm btn-warning'>APPL_ID</a>
+          </td>
+	  <% }%>
           <% });%>
           </tr>
         </tbody>

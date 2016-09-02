@@ -480,7 +480,7 @@ define(["util/CustomTooltip",
       }
 	var max =  yRange[1];
 	if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "ON"){
-	    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	    var ymaxMargin = +self.io.designManager().getValue("yaxismargin");
 	    if(ymaxMargin != undefined && ymaxMargin != 0){
 		max = max + max*ymaxMargin*0.01;
 	    }

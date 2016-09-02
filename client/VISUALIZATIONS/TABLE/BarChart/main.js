@@ -489,11 +489,11 @@ define(["util/CustomTooltip",
             ymin = self.io.designManager().getValue("yaxisRangeMinManual");
         }
         if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "ON"){
-          ymax = d3.max(data,function(d){ return +d.total;});
+          ymax = +d3.max(data,function(d){ return +d.total;});
         }else{
-          ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
+          ymax = +self.io.designManager().getValue("yaxisRangeMaxManual");
         }
-	  var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	  var ymaxMargin = +self.io.designManager().getValue("yaxismargin");
 	  if(ymaxMargin != undefined && ymaxMargin != 0 ){
 	      ymax = ymax + ymax*ymaxMargin*0.01;
 	  }
@@ -511,7 +511,7 @@ define(["util/CustomTooltip",
               ymin = tmp[0];
             }
           }else{
-            ymin = self.io.designManager().getValue("yaxisRangeMinManual");
+            ymin = +self.io.designManager().getValue("yaxisRangeMinManual");
           }
           if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "ON"){
             var ymaxList = {};
@@ -520,12 +520,12 @@ define(["util/CustomTooltip",
             if(ymaxTmp > ymax){
               ymax = ymaxTmp;
             }
-	    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	    var ymaxMargin = +self.io.designManager().getValue("yaxismargin");
 	    if(ymaxMargin != undefined && ymaxMargin != 0 ){
 		ymax = ymax + ymax*ymaxMargin*0.01;
 	    }
           }else{
-            ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
+            ymax = +self.io.designManager().getValue("yaxisRangeMaxManual");
           }
         });
         self.xGroupLabel.domain(selectedLegends)
