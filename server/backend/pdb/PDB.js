@@ -52,8 +52,6 @@ function PDB (family, core, mode) {
       // Calc Range
       var ranges = {};
       calcRange();
-      console.log("== RANGE ==");
-      console.log(ranges);
 
       // Calc Slice InverVal
       updateSliceInterval();
@@ -83,6 +81,7 @@ function PDB (family, core, mode) {
      *********/
     // Calc Range for SetInterval
     function calcRange(){
+      var stringCols = getStringColumnName();
       var rangeQuery = { "query":{"select":[],"approx_aggregate": false},"option":{"csv_comma": ","}};
       if(query.query.select !== undefined){
         var pushedCols = [];
@@ -149,8 +148,6 @@ function PDB (family, core, mode) {
       }
     }
     function updateSliceInterval(){
-      console.log(">> Update Slice Interval");
-      console.log(options);
       if(query.query !== undefined &&
          query.query.group_by !== undefined &&
          options._spk_ !== undefined){
@@ -162,10 +159,6 @@ function PDB (family, core, mode) {
           }
           query.query.group_by.forEach(function(q){
             if(realColName == q.column){
-              console.log(q.sliceInterval);
-              console.log("==================");
-              console.log(" >>" + realColName);
-              console.log(ranges[realColName]);
               /***********************
                * HARD CODED FOR TEST *
                ***********************/
@@ -182,7 +175,6 @@ function PDB (family, core, mode) {
                   info.push(parseInt(ranges[q.column][1]));
                 }
                 var range  = info[1] - info[0];
-                console.log("range ::" + range); 
                 q.sliceInterval = parseInt((pixel*range) / parseInt(options._spk_[col]));
                 if(q.sliceInterval == 0){
                   q.sliceInterval = 1;
@@ -192,6 +184,21 @@ function PDB (family, core, mode) {
           });
         }
       }
+    }
+    function getStringColumnName(){
+	var command = "pdb2csv -e .schema  -pdb " + dataPath +"/" + realFile + ";";
+        var result = exec(command);
+        var list = decoder.write(result).replace(")","").split("(")[1];
+	var cols = [];
+	list.split(",").forEach(function(d){
+	    d.split(",").forEach(function(c){
+		elem = c.split(" ")
+		if(elem[1] == "STRING"){
+		    cols.push(elem[0]);
+		}
+	    });
+	});
+	return cols;
     }
   };
 }

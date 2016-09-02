@@ -26,14 +26,17 @@ define(["util/CustomTooltip",
     this.io.dataManager().setMapperProps({
       time   : { label: 'TIME', type: 'number', map2: '', spk: 'width'},
       label  : { label: 'LABEL', type: 'string', map2: ''},
-      status : { label: 'STATUS', type: 'number', map2: ''}
+      status : { label: 'STATUS', type: 'number', map2: ''},
+      name   : { label: 'NAME(option)', type: 'string', map2: ''},
+      type   : { label: 'TYPE(option)', type: 'string', map2: ''},
+      detail   : { label: 'DETAIL(option)', type: '',  map2:[]}
     });
 
     // Design Manager
     this.io.designManager()
       .setControl("Height", {type:"regx", name: "Line Height", value:10});
     this.io.designManager()
-      .setControl("HIGH_LOW", {type:"radio", name: "HIGH & LOW", range:["HIGH/LOW", "LOW/HIGH"],value:"LOW/HIGH"});
+      .setControl("HIGH_LOW", {type:"radio", name: "HIGH & LOW", range:["HIGH/LOW", "LOW/HIGH"],value:"HIGH/LOW"});
     this.io.designManager()
       .setControl("MoveRange", {type:"regx", name: "Move Range (%)", value:10});
 
@@ -175,6 +178,14 @@ define(["util/CustomTooltip",
     this.labelTable = undefined;
     this.root_dom   = undefined;
     this.container  = undefined;
+
+    this.tooltipConfig = {
+	  caption : "",
+	  attributes : [],
+	  prefix  : "",
+	  postfix : "",
+	  offset  : 5
+    };
   };
   /**
    * setup
@@ -370,10 +381,13 @@ define(["util/CustomTooltip",
     var xrange_ =  self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
     var xrange =  [xrange_[0], xrange_[1]];
     self.x = d3.scale.linear().range([0,self.domainWidth]).domain(xrange);
-    if(self.io.designManager().getValue("HIGH_LOW")){
-      self.y = d3.scale.linear().range([0,10]).domain([0,1]);
+    var lineHeight = self.io.designManager().getValue("Height");
+    if(self.io.designManager().getValue("HIGH_LOW") == "LOW/HIGH"){
+      /*0 : High, 1: Low*/
+      self.y = d3.scale.linear().range([0,lineHeight]).domain([0,1]);
     }else{
-      self.y = d3.scale.linear().range([0,10]).domain([1,0]);
+      /*1 : High, 0: Low*/
+      self.y = d3.scale.linear().range([0,lineHeight]).domain([1,0]);
     }
     drawXAxis();
 
@@ -411,7 +425,28 @@ define(["util/CustomTooltip",
     }
 
   };
-
+  GanttChart.prototype.transformData = function() {
+    var self = this;
+    var data = {};
+    var timeKey = self.io.dataManager().getMapper("time");
+    var statusKey = self.io.dataManager().getMapper("status");
+    var labelKey = self.io.dataManager().getMapper("label");
+    var dataName = self.io.dataManager().getMapper("name");
+    var dataType = self.io.dataManager().getMapper("type");    
+    var detail = self.io.dataManager().getMapper("detail");    
+    var obj;
+    self.io.dataManager().getData().forEach(function(d){
+      if(data[d[labelKey]] == undefined){
+        data[d[labelKey]] = [];
+      }
+      obj = {};
+      detail.forEach(function(d2) {
+        obj[d2] = d[d2];
+      });
+      data[d[labelKey]].push({time:+d[timeKey],status:+d[statusKey],name:d[dataName],type:d[dataType], detail:obj});
+    });
+    return data;
+  };
   /**
    * draw Line
    * @method drawLine
@@ -419,17 +454,7 @@ define(["util/CustomTooltip",
    */
   GanttChart.prototype.drawLine = function(mouseoverTarget){
     var self = this;
-    var data = {};
-    var timeKey = self.io.dataManager().getMapper("time");
-    var statusKey = self.io.dataManager().getMapper("status");
-    var labelKey = self.io.dataManager().getMapper("label");
-    var lessThan2labelKeys = [];
-    self.io.dataManager().getData().forEach(function(d){
-      if(data[d[labelKey]] == undefined){
-        data[d[labelKey]] = [];
-      }
-      data[d[labelKey]].push({time:+d[timeKey],status:+d[statusKey]});
-    });
+    var data = self.transformData();
 
     // update first/last Time
     var firstTime = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"))[0];
@@ -438,7 +463,8 @@ define(["util/CustomTooltip",
       var first = data[label][0];
       var last  = data[label][data[label].length -1];
       if(first.time > firstTime){
-        data[label].unshift({time:firstTime,status:first.status});
+//        data[label].unshift({time:firstTime,status:first.status});
+        data[label].unshift({time:firstTime,status:0});
       }
       if(last.time < lastTime){
         data[label].push({time:lastTime,status:last.status});
@@ -472,9 +498,10 @@ define(["util/CustomTooltip",
         var label = labels[i];
         if(self.labelTable.selectAll("tr#"+label)
            .select("td.gantt-line").select("path")[0][0] == null){
-          self.labelTable.selectAll("tr#"+label)
+          var svg = self.labelTable.selectAll("tr#"+label)
             .select("td.gantt-line")
-            .select("svg")
+            .select("svg");
+            svg.append("g")
             .append("path")
             .attr("d", function(){
               if(data[label] == undefined){
@@ -486,9 +513,210 @@ define(["util/CustomTooltip",
             .style("stroke", function(d){
               return "orange";
             });
+	  if (data[label] != undefined) {
+	    if (self.io.dataManager().getMapper("type")) {
+  	      drawUnderLine(svg, data[label]);
+	    }
+	    if (self.io.dataManager().getMapper("name")) {
+	      svg.selectAll("rect").remove();
+	      svg.selectAll("text").remove();
+  	      writeDataRect(svg, data[label]);
+	      writeDataName(svg, data[label]);
+	    }
+	  }
         }
       }
-    };
+    };    
+    function writeDataRect(svg, data) {
+      var i;
+      var name = "";
+      var range = [];
+      var type = "";
+      for (i = 0; i < data.length; i++) {
+        if (data[i].name == "" || data[i].name == undefined) {
+          /*For empty name*/
+          continue;
+	}
+	if (data[i].name != name) {
+	  if (range.length > 0) {
+	    drawRect(range, name);
+	    range = [];
+	  }
+	  name = data[i].name;
+	  range.push(data[i].time);
+	} else {
+	  type = data[i].type;
+	  range.push(data[i].time);
+	}
+      }
+      if (range.length > 0 && name != undefined) {
+	drawRect(range, name);
+      }
+      function drawRect(range, name) {
+            var lineHeight = self.io.designManager().getValue("Height");
+	    svg.append("g")
+	       .append("rect")
+	       .attr("y", 0)
+	       .attr("x", self.x(range[0]))
+	       .attr("width", function() {
+		 return self.x(range[(range.length - 1)]) -  self.x(range[0]);
+	       })
+	       .attr("height", lineHeight)
+	       .attr("fill",function() {
+		 return self.io.colorManager().getColor(type);
+	       })
+	       .style("fill-opacity", 1.0)
+	       .text(name)
+	       .on("mousemove", function(d,i){
+		 /*tooltip*/
+		 var xPosition = d3.mouse(this)[0];
+                 var tooltipValue   = parseFloat(self.x.invert(xPosition));
+		 var tableData = createTableData(tooltipValue);
+		 self.tooltip.show(self.tooltip.table(tableData, self.tooltipConfig), d3.event);
+	       })
+	       .on("mouseout", function(){
+		  self.tooltip.hide();
+	       });
+      }
+    }
+    function createTableData(xValue) {
+      var tableData = [];
+      var data = self.transformData();
+      var status = {};
+      var detail = self.io.dataManager().getMapper("detail");
+      Object.keys(data).forEach(function (key) {
+        status[key] = {};
+	var name = null;
+        data[key].forEach(function (d) {
+	  if (name != d.name) {
+	    name = d.name;
+	    status[key][name] = {};
+	    status[key][name].type = d.type;
+	    status[key][name].start = d.time;
+//	    status[key][name].detail = d.detail;
+	  } else {
+	    status[key][name].detail = d.detail;
+	    status[key][name].end = d.time;	    
+	  }
+	});
+      });
+      self.tooltipConfig.caption = "[Time]" + xValue;
+      var arrayData = [];
+      Object.keys(status).forEach(function(key) {
+        var elem = {};
+        var name = searchKeyFromIndex(xValue, status[key]);
+        if (name != null) {
+          arrayData.push({key : "----" + key + "--", value: "  ----"});
+          arrayData.push({key : "Time", value: status[key][name].start + "-" + status[key][name].end});
+
+          elem.key = key + ":   ";
+  	  elem.color = self.io.colorManager().getColor(status[key][name].type);
+	  elem.value = name;
+
+	  Object.keys(status[key][name].detail).forEach(function(k) {
+              arrayData.push({key : k + "::", value: status[key][name].detail[k]});
+	  });
+	  tableData.push(elem);
+	}
+      });
+
+      self.tooltipConfig.attributes
+            = arrayData;
+      return tableData;
+      function searchKeyFromIndex(xValue, data) {
+	var ret = null;
+        Object.keys(data).forEach(function(name) {
+	  if (xValue >= data[name].start && xValue <= data[name].end) {
+	    ret = name;
+	  }
+	});
+	return ret;
+      }
+    }
+    function writeDataName(svg, data) {
+      var i;
+      var name = "";
+      for (i = 0; i < data.length; i++) {
+	if (data[i].name != name) {
+	  name = data[i].name;
+	  svg.append("g")
+	     .append("text")	    
+	     .attr("x", self.x(data[i].time))
+	     .attr("y", 10)
+	     .attr("stroke", function(d) {
+	       return "orange";
+	     })	      
+	     .attr("font-size", 1)
+	     .text(name);	  
+	}
+      }
+    }
+    function drawUnderLine(svg, data) {
+      var i;
+      var type = "",
+	  status,
+	  lineData = [];
+      var underline = d3.svg.line()
+            .interpolate("step-after")
+            .x(function(d){
+	      return self.x(d.time);
+            })
+            .y(function(d){
+              return self.y((self.io.designManager().getValue("HIGH_LOW") == "LOW/HIGH"));
+            });
+      for (i = 0; i < data.length; i++) {
+	if (isActive(data[i].status)) {
+          if (type != data[i].type) {
+            lineData.push(data[i]);
+	  } else if ( data[i].type != ""){
+	    lineData.push(data[i]);
+	  } else {
+
+	  }
+	} else {
+	  if (lineData.length > 0) {
+            lineData.push(data[i]);
+	    svg.append("g")
+	       .append("path")
+	       .attr("d", function() {
+		 return underline(lineData);
+	       })
+	       .attr("stroke", function(d) {
+  		 return self.io.colorManager().getColor(lineData[0].type);
+	       })
+	       .attr("stroke-width", 5);
+	    lineData = [];
+	  }
+	  type = "";
+	}
+      }
+      if (lineData.length > 0) {
+	svg.append("g")
+	   .append("path")
+	   .attr("d", function() {
+	    return underline(lineData);
+	   })
+	   .attr("stroke", function(d) {
+  	     return self.io.colorManager().getColor(lineData[0].type);
+	   })
+	   .attr("stroke-width", 5);
+      }
+      function isActive(status) {
+	if (self.io.designManager().getValue("HIGH_LOW") == "LOW/HIGH") {
+          if (status != 0) {
+	    return false;
+	  } else {
+            return true;
+	  }
+	} else {
+          if (status != 0) {
+	    return true;
+	  } else {
+            return false;
+	  }
+	}
+      }
+    } 
     console.timeEnd("Draw");
   };
   /**

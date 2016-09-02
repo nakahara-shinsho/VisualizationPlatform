@@ -30,7 +30,7 @@ define(["util/CustomTooltip",
 
     // Data Mapper
     this.io.dataManager().setMapperProps({
-      xaxis: {type: 'string', label: 'X axis' , map2: ''},
+      xaxis: {label: 'X axis' , map2: ''},
       yaxis: {type: 'number', label: 'Y axis' , map2:[] }
     });
 
@@ -43,6 +43,8 @@ define(["util/CustomTooltip",
       .setControl("xaxisCaption", {type:"regx", name:"X AXIS Caption", value:"__DEFAULT__"});
     this.io.designManager()
       .setControl("xaxisCaptionFontsize", {type:"regx", name:"X AXIS Caption Font-Size", value:11});
+    this.io.designManager()
+      .setControl("barMinWidth", {type:"regx", name:"BAR MIN WIDTH", value:20});
     this.io.designManager()
       .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:"Y-AXIS"});
     this.io.designManager()
@@ -198,7 +200,7 @@ define(["util/CustomTooltip",
     // X AXIS [width - YAxis_width]
     this.xConfig = {
       sort    : {key: "total", order: "descending"},
-      label   : {upper:100, minimumWidth: 16},
+      label   : {upper:100},
       caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25}
     };
@@ -352,10 +354,11 @@ define(["util/CustomTooltip",
     // Draw yAxis
     drawYAxisSVG();
     // Draw Main
+    var svgWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
+    self.io.dataManager()
     self.svg = mainDiv.append("svg")
       .attr("class", "barchart")
-      .style("width", self.containerWidth -
-             self.layout.yaxis.width - self.layout.main.margin.right)
+      .style("width", svgWidth)
       .style("height", mainHeight)
       .append("g")
       .attr("transform", "translate(0," + self.layout.top +")");
@@ -454,9 +457,8 @@ define(["util/CustomTooltip",
     // Setup xLabel range
     var axisWidth = self.containerWidth - self.layout.yaxis.width - self.layout.main.margin.right;
     var labels = data.map(function(d){return d.key;});
-    labels = labels.filter(function(d,i,self){ return self.indexOf(d) === i & i !==self.lastIndexOf(d);});
     if(labels.length > self.xConfig.label.upper){
-      axisWidth = self.xConfig.label.minimumWidth * labels.length;
+      axisWidth = self.io.designManager().getValue("barMinWidth") * labels.length;
       self.container.select("svg.barchart").style("width", axisWidth +"px");
     }
     self.xLabel = d3.scale.ordinal().rangeBands([0,axisWidth], 0.1);
@@ -487,11 +489,11 @@ define(["util/CustomTooltip",
             ymin = self.io.designManager().getValue("yaxisRangeMinManual");
         }
         if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "ON"){
-          ymax = d3.max(data,function(d){ return +d.total;});
+          ymax = +d3.max(data,function(d){ return +d.total;});
         }else{
-          ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
+          ymax = +self.io.designManager().getValue("yaxisRangeMaxManual");
         }
-	  var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	  var ymaxMargin = +self.io.designManager().getValue("yaxismargin");
 	  if(ymaxMargin != undefined && ymaxMargin != 0 ){
 	      ymax = ymax + ymax*ymaxMargin*0.01;
 	  }
@@ -509,7 +511,7 @@ define(["util/CustomTooltip",
               ymin = tmp[0];
             }
           }else{
-            ymin = self.io.designManager().getValue("yaxisRangeMinManual");
+            ymin = +self.io.designManager().getValue("yaxisRangeMinManual");
           }
           if(self.io.designManager().getValue("yaxisRangeMaxAuto") == "ON"){
             var ymaxList = {};
@@ -518,12 +520,12 @@ define(["util/CustomTooltip",
             if(ymaxTmp > ymax){
               ymax = ymaxTmp;
             }
-	    var ymaxMargin = self.io.designManager().getValue("yaxismargin");
+	    var ymaxMargin = +self.io.designManager().getValue("yaxismargin");
 	    if(ymaxMargin != undefined && ymaxMargin != 0 ){
 		ymax = ymax + ymax*ymaxMargin*0.01;
 	    }
           }else{
-            ymax = self.io.designManager().getValue("yaxisRangeMaxManual");
+            ymax = +self.io.designManager().getValue("yaxisRangeMaxManual");
           }
         });
         self.xGroupLabel.domain(selectedLegends)

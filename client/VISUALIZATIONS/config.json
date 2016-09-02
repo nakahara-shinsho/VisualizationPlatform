@@ -5,9 +5,6 @@
           path: 'TABLE/BarChart'
         },
         { type: 'LineChart',
-          path: 'TABLE/LineChart'
-        },
-        { type: 'LineChart2',
           path: 'TABLE/LineChart2'
         },
         {
@@ -16,10 +13,6 @@
         },
         {
           type: 'ScatterPlot',
-          path: 'TABLE/ScatterPlot'
-        },
-        {
-          type: 'ScatterPlot2',
           path: 'TABLE/ScatterPlot2'
         },
         {
@@ -42,18 +35,18 @@
             type: 'LineChartRowSplit',
             path: 'TABLE/LineChartRowSplit'
 	},
-        {
+	{
             type: 'GanttChart',
             path: 'Authenticated/GanttChart'
-        }
+	},
+	{
+            type: 'ConfusionMatrix',
+            path: 'Authenticated/ConfusionMatrix'
+	}
     ],
     STREAM: [],
     SourceCodeView: {
         type: 'SourceCodeView',
         path: 'Authenticated/SourceCodeView'
-    },
-    ConfusionMatrix: {
-        type: 'ConfusionMatrix',
-        path: 'Authenticated/ConfusionMatrix'
     }
 }
