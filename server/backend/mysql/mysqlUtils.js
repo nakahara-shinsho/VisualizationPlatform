@@ -43,11 +43,13 @@ function MySQL(family) {
     function run(){
       const exec  = require('child_process').execSync;
       var __template__ = fs.readFileSync(templateFile);
+	console.log(decoder.write(__template__));
       var template = JSON.parse(decoder.write(__template__));
-      var data  = JSON.parse(options._context_._database_);
+      var data  = JSON.parse('"'+options._context_._database_+'"');
       var query = template.sql;
       updateFilter();
       var result = "";
+	console.log(query);
       try {
         result = exec("mysql -ufplus -ppolyspector -e \"" + query +"\""); 
       }catch(e){
@@ -57,7 +59,6 @@ function MySQL(family) {
       return result;
 
       function updateFilter(){
-        var data  = JSON.parse(options._context_._database_);
         // WHERE
         var where = [];
         template.where.forEach(function(key){
