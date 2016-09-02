@@ -45,7 +45,6 @@ module.exports.status= function(app, db) {
       });
   };
   
-  
   var insertStatus = function(req, res) {
     var  model = req.body, 
          stmt_insert = "INSERT INTO status (user, data, tool) VALUES ($user, $data, $tool)";
@@ -70,7 +69,12 @@ module.exports.status= function(app, db) {
           errHandle(err);
           res.status(500).send( {error: err.message});
         } else {
-          if(row){
+          if(row) {
+            /*if(row.data !== req.body.data) { //clear all data filters for the user?
+              updateStatus(req, res);//TBD
+            } else {
+              updateStatus(req, res);
+            }*/
             updateStatus(req, res);
           } else {
             insertStatus(req, res);

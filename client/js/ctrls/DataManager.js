@@ -409,8 +409,6 @@ DataManager.prototype.clearAll = function(key, value) {
                       'dataExtraSelector': {},
                       'dataMapper': {}
                       });
-                      //{ slient:true }); //dataMapper
-     //this._ctrl.trigger("change:_save_model_");
  };
  
  DataManager.prototype._setInferData = function(key, value) {
@@ -438,7 +436,6 @@ DataManager.prototype.clearAll = function(key, value) {
       } else {
         this._data._default_table_key_='_table_';
         this._data._infer_= {};
-        //this._$mapper_props_ will be kept
       }
  };
  
@@ -525,7 +522,6 @@ DataManager.prototype.clearAll = function(key, value) {
         return +d[column];
     });
  };
- 
  
  DataManager.prototype.getMappedColumns = function(key) {
      var columns = [], mapper = this._readMapper();
