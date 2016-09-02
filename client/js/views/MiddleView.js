@@ -163,13 +163,14 @@ define([
           }).render();
         }
       },
+      
       hasSelectedData: function(selectedData) {
         if(selectedData) {
           this.model.set('data', selectedData);
           //next view
           this.currentView.remove();
-          if ( _.isEmpty(this.model.get('tool')) ||
-              this.model.get('tool').format !== this.model.get('data').format ) {
+          if ( _.isEmpty(this.model.get('tool')) || 
+            this.model.get('tool').format !== this.model.get('data').format ) {
             this.currentView = new ToolListView({
               el: $('<div>',{id: 'middle'}).appendTo(this.el), model: this.model
             });
@@ -177,6 +178,7 @@ define([
             this.currentView = new ScreenView({
               el: $('<div>',{id: 'middle'}).appendTo(this.$el),status: this.model 
             }).render();
+            //send clear Filters event
           }
         } else {
           console.log('should not arrive here!');//should
