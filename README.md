@@ -77,10 +77,10 @@ $sudo systemctl start rabbitmq-server ; systemctl enable rabbitmq-server
 ```
 ## Boot (using forever)
 ```
- forever server/start.js  PORT=8888 start 
- forever server/backend/worker_for_datalist.js start 
+ forever start server/start.js  PORT=8888
+ forever start server/backend/worker_for_datalist.js
  // sample
- forever server/backend/workers_default.js start 
+ forever start server/backend/workers_default.js
 ```
 ## Access
   Please access http://IP_ADDRESS:PORT Using Google Chrome.
