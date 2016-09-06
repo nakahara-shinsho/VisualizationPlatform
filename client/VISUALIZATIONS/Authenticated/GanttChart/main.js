@@ -26,10 +26,10 @@ define(["util/CustomTooltip",
     this.io.dataManager().setMapperProps({
       time   : { label: 'TIME', type: 'number', map2: '', spk: 'width'},
       label  : { label: 'LABEL', type: 'string', map2: ''},
-      status : { label: 'STATUS', type: 'number', map2: ''},
-      name   : { label: 'NAME(option)', type: 'string', map2: ''},
-      type   : { label: 'TYPE(option)', type: 'string', map2: ''},
-      detail   : { label: 'DETAIL(option)', type: '',  map2:[]}
+      status : { label: 'STATUS', type: 'number', map2: ''}
+//      name   : { label: 'NAME(option)', type: 'string', map2: ''},
+//      type   : { label: 'TYPE(option)', type: 'string', map2: ''},
+//      detail   : { label: 'DETAIL(option)', type: '',  map2:[]}
     });
 
     // Design Manager
@@ -39,6 +39,14 @@ define(["util/CustomTooltip",
       .setControl("HIGH_LOW", {type:"radio", name: "HIGH & LOW", range:["HIGH/LOW", "LOW/HIGH"],value:"HIGH/LOW"});
     this.io.designManager()
       .setControl("MoveRange", {type:"regx", name: "Move Range (%)", value:10});
+    this.io.designManager()
+      .setControl("MODE", {type:"radio", name: "RANGE or SOLO", range:["RANGE", "SOLO"],value:"RANGE"});
+    this.io.designManager()
+      .setControl("NAMEMAP", {type:"radio", name: "Name Map", range:["on", "off"],value:"off"});
+    this.io.designManager()
+      .setControl("TYPEMAP", {type:"radio", name: "Type Map", range:["on", "off"],value:"off"});
+    this.io.designManager()
+      .setControl("DETAILMAP", {type:"radio", name: "Detail Map", range:["on", "off"],value:"off"});
 
     /*
     /// X Axis
@@ -118,6 +126,7 @@ define(["util/CustomTooltip",
   GanttChart.prototype.redraw = function() {
     var self = this;
     self.setup();
+    self.createChartHeader();
     self.labelTable.selectAll("svg#time").remove();
     self.labelTable.selectAll("svg").selectAll("path").remove();
     self.drawGanttChart();
@@ -214,6 +223,21 @@ define(["util/CustomTooltip",
     // X AXIS
     self.x = d3.scale.linear().range[0,self.domainWidth];
     self.xAxis = d3.svg.axis().scale(self.x).orient("bottom");
+    if (self.io.designManager().getValue("NAMEMAP") == "on") {
+      var mapperProps = this.io.dataManager().getMapperProps();
+      self.io.dataManager().setMapperProps(
+	  $.extend({},mapperProps, {name   : { label: 'NAME(option)', type: 'string', map2: ''}}));      
+    }
+    if (self.io.designManager().getValue("TYPEMAP") == "on") {
+      var mapperProps = this.io.dataManager().getMapperProps();
+      self.io.dataManager().setMapperProps(
+	  $.extend({},mapperProps, {type   : { label: 'TYPE(option)', type: 'string', map2: ''}}));      
+    }
+    if (self.io.designManager().getValue("DETAILMAP") == "on") {
+      var mapperProps = this.io.dataManager().getMapperProps();
+      self.io.dataManager().setMapperProps(
+	  $.extend({},mapperProps, {detail   : { label: 'DETAIL(option)', type: '', map2: []}}));      
+    }
   };
 
   /**
@@ -325,7 +349,8 @@ define(["util/CustomTooltip",
         var tbody = self.labelTable.append("tbody")
               .attr("height", self.axisHeight);
         labels.forEach(function(d){
-          var labelRow = tbody.append("tr").attr("id", d)
+          var newName = self.getName4D3(d);  
+          var labelRow = tbody.append("tr").attr("id", newName)
                 .on("mouseover", function(){
                   d3.select(this).style("background-color", "green");
                   self.drawLine(d);
@@ -377,8 +402,16 @@ define(["util/CustomTooltip",
    */
   GanttChart.prototype.drawAxis = function (xcolumn,ycolumn) {
     var self = this;
-    var data = self.io.dataManager().getData();
-    var xrange_ =  self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
+//    var data = self.io.dataManager().getData();
+    var data = (self.io.isHighlightMode())? 
+            self.io.dataManager().getData(): self.io.dataManager().getFilteredRows();
+//    var xrange_ = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
+    var xrange_ = (self.io.isHighlightMode()) ? 
+             self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time")):
+	  self.io.dataManager().getRowRefiner()[self.io.dataManager().getMapper("time")];
+   if (xrange_ == undefined) {
+     xrange_ = self.io.dataManager().getFilteredDataRange(self.io.dataManager().getMapper("time"), data);
+   }
     var xrange =  [xrange_[0], xrange_[1]];
     self.x = d3.scale.linear().range([0,self.domainWidth]).domain(xrange);
     var lineHeight = self.io.designManager().getValue("Height");
@@ -435,14 +468,18 @@ define(["util/CustomTooltip",
     var dataType = self.io.dataManager().getMapper("type");    
     var detail = self.io.dataManager().getMapper("detail");    
     var obj;
-    self.io.dataManager().getData().forEach(function(d){
+    var datas = (self.io.isHighlightMode())? 
+            self.io.dataManager().getData(): self.io.dataManager().getFilteredRows();
+    datas.forEach(function(d){
       if(data[d[labelKey]] == undefined){
         data[d[labelKey]] = [];
       }
       obj = {};
-      detail.forEach(function(d2) {
-        obj[d2] = d[d2];
-      });
+      if (detail != undefined) {
+        detail.forEach(function(d2) {
+          obj[d2] = d[d2];
+        });
+      }
       data[d[labelKey]].push({time:+d[timeKey],status:+d[statusKey],name:d[dataName],type:d[dataType], detail:obj});
     });
     return data;
@@ -455,10 +492,22 @@ define(["util/CustomTooltip",
   GanttChart.prototype.drawLine = function(mouseoverTarget){
     var self = this;
     var data = self.transformData();
-
+    if (self.io.designManager().getValue("MODE") == "SOLO") {
+      convertSoloData(data);
+    }
     // update first/last Time
-    var firstTime = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"))[0];
+    var xrange = (self.io.isHighlightMode()) ? 
+             self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time")):
+	  self.io.dataManager().getRowRefiner()[self.io.dataManager().getMapper("time")];
+   if (xrange == undefined) {
+       xrange = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
+//     xrange = self.io.dataManager().getFilteredDataRange(self.io.dataManager().getMapper("time"), data);
+   }
+    var firstTime = xrange[0];
+    var lastTime = xrange[1];
+/*    var firstTime = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"))[0];
     var lastTime  = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"))[1];
+*/
     for(var label in data){
       var first = data[label][0];
       var last  = data[label][data[label].length -1];
@@ -496,9 +545,10 @@ define(["util/CustomTooltip",
       }
       if(i >= self.limitLower){
         var label = labels[i];
-        if(self.labelTable.selectAll("tr#"+label)
+        var newName = self.getName4D3(label);
+        if(self.labelTable.selectAll("tr#"+newName)
            .select("td.gantt-line").select("path")[0][0] == null){
-          var svg = self.labelTable.selectAll("tr#"+label)
+          var svg = self.labelTable.selectAll("tr#"+newName)
             .select("td.gantt-line")
             .select("svg");
             svg.append("g")
@@ -526,15 +576,55 @@ define(["util/CustomTooltip",
 	  }
         }
       }
-    };    
+    };
+    function convertSoloData(data) {
+      var i;
+      var obj;
+      var lastTime;
+      Object.keys(data).forEach(function(key) {
+        lastTime =  data[key][data[key].length - 1].time;
+        if (data[key].length == 1) {
+          obj = $.extend(true, {}, data[key][0]);
+          /*Fix for Variable time*/
+          obj.time; 
+          obj.status = 0;
+          data[key].splice(1, 0, obj);                    
+        } else { 
+          for (i = 0; i < data[key].length; i++) {         
+            if (data[key][i].time > lastTime) {
+              break;
+            }
+            if (data[key][i].status == 1) {
+              obj = $.extend(true, {}, data[key][i]);
+              /*Fix for Variable time*/
+              obj.time; 
+              obj.status = 0;
+            data[key].splice(i+1, 0, obj);
+            }
+          }
+        }
+      });
+    }
     function writeDataRect(svg, data) {
       var i;
       var name = "";
       var range = [];
       var type = "";
       for (i = 0; i < data.length; i++) {
+        if (isActive(data[i].status)) {
+	  range.push(data[i].time);
+          name = data[i].name;
+	} else {
+          if (range.length != 0) {
+            range.push(data[i].time);
+            drawRect(range, name);
+            range = [];
+	  }
+	}
+      }
+/*
+      for (i = 0; i < data.length; i++) {
         if (data[i].name == "" || data[i].name == undefined) {
-          /*For empty name*/
           continue;
 	}
 	if (data[i].name != name) {
@@ -552,6 +642,7 @@ define(["util/CustomTooltip",
       if (range.length > 0 && name != undefined) {
 	drawRect(range, name);
       }
+*/
       function drawRect(range, name) {
             var lineHeight = self.io.designManager().getValue("Height");
 	    svg.append("g")
@@ -637,6 +728,19 @@ define(["util/CustomTooltip",
       var i;
       var name = "";
       for (i = 0; i < data.length; i++) {
+        if (isActive(data[i].status)) {
+	  name = data[i].name;
+	  svg.append("g")
+	     .append("text")	    
+	     .attr("x", self.x(data[i].time))
+	     .attr("y", 10)
+	     .attr("stroke", function(d) {
+	       return "orange";
+	     })	      
+	     .attr("font-size", 1)
+	     .text(name);
+        }
+/*
 	if (data[i].name != name) {
 	  name = data[i].name;
 	  svg.append("g")
@@ -647,8 +751,9 @@ define(["util/CustomTooltip",
 	       return "orange";
 	     })	      
 	     .attr("font-size", 1)
-	     .text(name);	  
+	     .text(name);
 	}
+*/
       }
     }
     function drawUnderLine(svg, data) {
@@ -701,7 +806,9 @@ define(["util/CustomTooltip",
 	   })
 	   .attr("stroke-width", 5);
       }
-      function isActive(status) {
+
+    } 
+    function isActive(status) {
 	if (self.io.designManager().getValue("HIGH_LOW") == "LOW/HIGH") {
           if (status != 0) {
 	    return false;
@@ -715,8 +822,7 @@ define(["util/CustomTooltip",
             return false;
 	  }
 	}
-      }
-    } 
+    }
     console.timeEnd("Draw");
   };
   /**
@@ -753,5 +859,77 @@ define(["util/CustomTooltip",
       .attr("y", -10)
       .attr("height", self.xConfig.axis.height + 10);
   };
+
+  GanttChart.prototype.getName4D3 = function(name)
+  {
+    var space,
+        lp,
+        rp,
+        slash,
+        and,
+        newName = name.concat();
+    space = searchIndexs(name, " ");
+    lp = searchIndexs(name, "(");
+    rp = searchIndexs(name, ")");
+    slash = searchIndexs(name, "/");
+    and = searchIndexs(name, "&");
+    newName = generateNewWord(newName, space, " ", "space");
+    newName = generateNewWord(newName, lp, "(", "LeftParenthesis");
+    newName = generateNewWord(newName, rp, ")", "RightParenthesis");
+    newName = generateNewWord(newName, slash, "/", "slash");
+    newName = generateNewWord(newName, and, "&", "and");
+    newName = replaceHeadNum(newName);
+    return newName;
+    /**
+     * Replace head num 
+     * @param word
+     */
+    function replaceHeadNum(word) {
+      var num = word.match(/^\d/);
+      if (num != null) {
+	return word.replace(/^\d/, "_" + num);
+      }
+	return word;
+    }
+    /**
+    * Search target indexs
+    * @param  word
+    * @param  key
+    * @return {array index}
+    */
+    function searchIndexs(word, key) {
+      var aindex = [];
+      var pos = word.indexOf(key);
+      while (pos != -1) {
+        aindex.push(pos);
+        pos = word.indexOf(key, pos + 1);	
+      }
+      return aindex;
+    }
+    /**
+    * Convert word
+    * @param  word
+    * @param  index
+    * @param  before key
+    * @param  after key
+    * @return converted word
+    */
+    function generateNewWord(word, index, before, after) {
+      var pos = word.indexOf(before);
+      var ele;
+      while (pos != -1) {
+	ele = index.shift();
+        if (ele == undefined) {
+          console.error("Illegal index");
+        }
+        word = word.replace(before, after + String(ele));
+        pos = word.indexOf(before, pos + 1);	
+      }
+      return word;
+    }
+  };
+
+
   return GanttChart;
 });
+
