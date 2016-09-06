@@ -1455,7 +1455,7 @@ define(["css!./Legend"], function () {
     rp = searchIndexs(name, ")");
     slash = searchIndexs(name, "/");
     and = searchIndexs(name, "&");
-    newName = generateNewWord(newName, space, " ", "spcae");
+    newName = generateNewWord(newName, space, " ", "space");
     newName = generateNewWord(newName, lp, "(", "LeftParenthesis");
     newName = generateNewWord(newName, rp, ")", "RightParenthesis");
     newName = generateNewWord(newName, slash, "/", "slash");
