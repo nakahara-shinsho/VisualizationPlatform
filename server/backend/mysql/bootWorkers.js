@@ -3,6 +3,7 @@ var amqp    = require('amqplib');
 var config  = require('config');
 var fs      = require('fs');
 var pathLib = require('path');
+var MqBackend = require('../utils/MqBackend');
 var gconfig = JSON.parse( fs.readFileSync(__dirname+'/../config.json', 'utf8') );
 var entrance = gconfig.dataPath.toString();
 console.log("[INFO] :: Boot MySQL Workers");
@@ -37,11 +38,10 @@ function collector (path) {
 
 amqp.connect('amqp:'+ config.get('RabbitMQ.server.host')).then(function (conn) {
   return conn.createChannel().then(function (ch) {
-    var mqBackend = new (require('../utils/MqBackend'))(ch);
+    var mqBackend = new MqBackend(ch);
     setInterval(function(){
       var family  = collector(entrance);
       mqBackend.starts('TABLE', entrance, family, new (require(__dirname+'/mysqlUtils.js'))(family));
     }, 5000);
   });
 }).then(null, console.warn);
-

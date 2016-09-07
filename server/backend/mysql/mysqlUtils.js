@@ -45,7 +45,8 @@ function MySQL(family) {
       var __template__ = fs.readFileSync(templateFile);
 	console.log(decoder.write(__template__));
       var template = JSON.parse(decoder.write(__template__));
-      var data  = JSON.parse('"'+options._context_._database_+'"');
+console.log(options._context_._database_);
+      var data  = JSON.parse(options._context_._database_.replace(/\'/g, "\""));
       var query = template.sql;
       updateFilter();
       var result = "";
@@ -66,10 +67,10 @@ function MySQL(family) {
             where.push(key + " = '" + data[key] + "'");
           }
         });
-        if(where.length > 0){
-          query += " WHERE ";
-          query += where.join(" AND ");
-        }
+//        if(where.length > 0){
+//          query += " WHERE ";
+//          query += where.join(" AND ");
+//       }
         // GROUPBY
         var groupby = [];
         if(template.groupby !== undefined){
