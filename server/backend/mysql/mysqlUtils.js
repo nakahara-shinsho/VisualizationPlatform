@@ -11,7 +11,7 @@ function MySQL(family) {
   var $  = require('jquery-deferred');
   var StringDecoder = require('string_decoder').StringDecoder;
   var decoder = new StringDecoder('UTF-8');
-
+  var exec  = require('child_process').execSync;
   //public member for asyn call
   this.vts = function(wk_name) {
     var ret = [];
@@ -41,7 +41,7 @@ function MySQL(family) {
       deferred.resolve(response);
     }
     function run(){
-      const exec  = require('child_process').execSync;
+      
       var __template__ = fs.readFileSync(templateFile);
 	console.log(decoder.write(__template__));
       var template = JSON.parse(decoder.write(__template__));

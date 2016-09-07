@@ -33,8 +33,9 @@ function PDB (family, core, mode) {
       if(fileinfo.length == 2){
         this.name      = filename;
         this.queryFile = __dirname + "/VirtualTable/" + fileinfo[1]+".json.template";
-        if(mode == "last" || mode == "all"){
-          dataPath       = entrance +"/" + options._context_._database_;
+        if(mode == "last" || mode == "all") {
+          var file = JSON.parse(options._context_._database_);
+          dataPath       = entrance +"/" + file.name;
           realFile  =  fileinfo[0]+".db";
         }else{
           realFile  = fileinfo[0]+".db";

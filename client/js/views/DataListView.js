@@ -6,6 +6,7 @@ define([ "js/app",
     initialize: function (options) {
       _.bindAll(this, 'render');
       var self = this;
+      this.$el.html( this.template());
       this.user = app.session.user.get('id');
       var data = { user: this.user };
       if(this.model.get('tool')) {
@@ -28,31 +29,43 @@ define([ "js/app",
     },
     // Events
     events: {
-      "click table tr.clickable_row": 'selectRow',
-      "click td.view": 'selectProject'
+      "dblclick table tr.clickable_row": 'selectRow',
+      //"click td.view": 'selectProject'
     },
     // Render FooterView
     render: function (response) {
-      if(response &&
-         response.format.toLowerCase() ==="json" &&
-         response.filled.list) {
-        this.$el.html(this.template({data: response.filled.list}));
+      if(response && response.format.toLowerCase() ==="json" && response.filled.list) {
+        //this.$el.html(this.template({data: response.filled.list}));
         //drawchart with response.filled.chart
+         var dlist = response.filled.list,
+             $lheader = this.$el.find('#datalist_header'),
+             $lbody = this.$el.find('#datalist_body');
+         
+         for(var key in dlist[0]) {  //add header
+           $lheader.append("<th>"+ key + "</th>");
+         }
+         dlist.forEach(function(dline) { //add body
+           var $line = $("<tr class='clickable_row'>").appendTo($lbody);
+            for(var key in dline) {
+              $line.append("<td>"+ dline[key] + "</td>");
+            }
+            $line.data('row_id', dline);
+            $line.data('row_format', (dline.format)?dline.format: 'default');
+         });
       }
       return this;
     },
     selectRow: function(ev){
-      var id     = $(ev.currentTarget).find('td.name').html();
-      var format = $(ev.currentTarget).find('td.format').html();
+      var row_id     = $(ev.currentTarget).data("row_id");
+      var row_format = $(ev.currentTarget).data("row_format");
       framework.mediator.trigger( 'middleview:selectedData',
-                                  { id: id,  format: format } );
+                                   { id: JSON.stringify(row_id), format: row_format } );
     },
     selectProject: function(ev){
-      var id     = $(ev.currentTarget).attr("name");
-      var format = $(ev.currentTarget).attr("format");
+      var row_id     = $(ev.currentTarget).data("id");
+      var row_format = $(ev.currentTarget).data("format");
       framework.mediator.trigger( 'middleview:selectedData',
-                                  { id: id, format: format } );
-
+                                  { id: JSON.stringify(row_id), format: row_format } );
     }
   });
   return MyClass;
