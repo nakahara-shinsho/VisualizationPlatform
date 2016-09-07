@@ -37,6 +37,7 @@ define([
         self.chartctrl.loading = true;
         self.$el.find('.loading').css("display", "block"); 
       });
+      
       this.listenTo(this.chartctrl, 'loading:end', function() {
          self.chartctrl.loading = false;
          self.$el.find('.loading').css("display", "none");

@@ -25,18 +25,18 @@ function ReadFile () {
     var deferred = $.Deferred();
     var response = {};
       if(options !== undefined && 
-	 options._context_ !== undefined &&
-	 options._context_._database_){
-	  entrance += "/" + options._context_._database_ + "/";
-      }
-      console.log("[INFO] : Access DATA: " + entrance + filename);
+	  options._context_ !== undefined && options._context_._database_){
+      var file = JSON.parse(options._context_._database_);
+	    entrance += "/" + file.name + "/";
+    }
+    console.log("[INFO] : Access DATA: " + entrance + filename);
     fs.readFile(entrance + filename, 'utf8', function(err, text){
       if(err){
         response._error_= {};
         response._error_.format = 'json';
         response._error_.filled = err;
         deferred.reject(response);
-      } else {
+    } else {
         response._table_ = {};
         response._table_.big = BIG.NONE;
         response._table_.format = filename.split('.').pop().toLowerCase();
