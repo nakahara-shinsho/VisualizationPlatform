@@ -18,7 +18,6 @@ function MyClass () {
     var StringDecoder = require('string_decoder').StringDecoder;
     var decoder = new StringDecoder('UTF-8');
     var list =  decoder.write(result);
-
     var data    = {list:[]};
     var headers = [];
     list.split("\n").forEach(function(row,i){

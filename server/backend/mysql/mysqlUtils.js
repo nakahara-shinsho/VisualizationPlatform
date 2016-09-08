@@ -71,6 +71,7 @@ console.log(options._context_._database_);
 //          query += " WHERE ";
 //          query += where.join(" AND ");
 //       }
+
         // GROUPBY
         var groupby = [];
         if(template.groupby !== undefined){
@@ -82,6 +83,7 @@ console.log(options._context_._database_);
             query += groupby.join(",");
           }
         }
+
         // LIMIT
         if(template.limit !== undefined){
           query += " LIMIT " + template.limit;
