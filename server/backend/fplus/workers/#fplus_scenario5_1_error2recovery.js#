@@ -1,0 +1,136 @@
+
+function MyClass (dbs) {
+  var BIG = {
+    NONE  : 0,
+    ROW   : 1,
+    COLUMN: 2,
+    BOTH  : 3
+  };
+  //private members ( static variables)
+  var $ = require('jquery-deferred');
+  var sqlite3 = require("sqlite3").verbose();
+  this.vts = function(wk_name){
+    return [wk_name];
+  };
+  
+  //public member for asyn call
+  this.asyn = function(options, dataPath) {
+    console.log("============================================");
+    console.log(">> [WORKER] :: fplus_scenario5_1_error2recovery.js");
+    console.log('request options:  ' + JSON.stringify(options)  );
+
+    if(options !== undefined &&
+       options._context_ !== undefined &&
+       options._context_._database_ !== undefined){
+      dataPath += options._context_._database_;
+    }
+    var splitValue = 10;
+
+    var deferred = $.Deferred();
+    var response = { _table_: {format: "csv"}};
+
+    // sqlite
+    var db = dbs[dataPath];
+    if(!db) {
+      db= new sqlite3.Database(dataPath+"/fplus.db");
+      dbs[dataPath]=db;
+    }
+
+    db.serialize(function(){
+      // get max,min
+      var command = 'select MAX("リカバリ時間") AS max,MIN("リカバリ時間") AS min from scenario_5_1_testlist where "リカバリ時間" != "-"';
+      db.all(command, function(err0,data0){
+        if(err0){
+          console.log(err0);
+          response._table_.format = "json";
+          response._table_.filled = err0;
+          deferred.reject(response);
+        }
+        // create query
+        //var _delta = (+data0[0].max - +data0[0].min) / splitValue;
+        var _delta = +data0[0].max / splitValue;
+        var _pow   = Math.pow(10,2);
+        var delta  = Math.round(_delta*_pow)/_pow;
+        //var curLow = +data0[0].min;
+        var curLow  = 0;
+        var curHigh = 0;
+        if(delta == 0){
+          delta  = 0.01;
+        }
+        command  = 'select ';
+        // Main
+        for(var i=0; i <splitValue; i++){
+          curHigh = curLow + delta;
+          curHigh = Math.round(curHigh*_pow)/_pow;
+          command += 'sum(case when "リカバリ時間" >= ' + curLow + ' and ';
+          command += ' "リカバリ時間" < '+ curHigh + ' then 1 else 0 end ) as "'+ curLow +' - ' + curHigh + '"';
+          if(i !== (splitValue-1)){
+            command += ',';
+          }
+          curLow = curHigh;
+        }
+        command +=  'from scenario_5_1_testlist where ("リカバリ時間" != "-" )';
+        // OPTIONS
+	var wk_vtName = "";
+        var testExecIds = [];
+	wk_vtName = 'scenario5-1:TestList.scenario5-1:TestList';
+        if(options._extra_where_ !== undefined && options._extra_where_[wk_vtName] !== undefined){
+          var conds = options._extra_where_[wk_vtName];
+          for(var k1 in conds){
+              if(conds[k1] !== ""){
+                testExecIds = conds[k1];
+              }
+          }
+        }
+        if(testExecIds.length > 0){
+          command += " AND (テスト実行ID in (\"" + testExecIds.join(",").replace(/,/g, "\",\"") + "\"))";
+        }
+
+	 wk_vtName = 'scenario5-1:TimeSeriesWithoutEvent.scenario5-1:TimeSeriesWithoutEvent';
+	 var queries =[];
+         if(options._extra_where_ !== undefined && options._extra_where_[wk_vtName] !== undefined){
+          var conds = options._extra_where_[wk_vtName];
+          for(var k1 in conds){
+              queries.push(" " + k1 + " >= " + conds[k1][0]);
+              queries.push(" " + k1 + " <= " + conds[k1][1]);
+          }
+	     if(queries.length > 0){
+		 command += " AND テスト実行ID in (";
+		 command +="select テスト実行ID from scenario_5_1_timeseries  where ";
+		 command += queries.join(" AND ") + " group by テスト実行ID)";
+	     }
+	     
+        }
+	  
+        console.log(command);
+        db.all(command, function(err,data){
+          if(err){
+            console.log(err);
+            response._table_.format = "json";
+            response._table_.filled = err;
+            deferred.reject(response);
+          }else{
+            // Transposition
+            var csv = [];
+            csv.push("label,count");
+            for(var k in data[0]){
+              csv.push(k +"," + data[0][k] );
+            }
+            response._table_.filled   = csv.join("\n");
+            response._table_.big = BIG.NONE;
+            response._table_.family = [
+            'fplus_matrix.fplus_matrix',
+            'scenario5-1:TimeSeriesWithoutEvent.scenario5-1:TimeSeriesWithoutEvent',
+            'scenario5-1:TestList.scenario5-1:TestList'
+            ];
+            deferred.reject(response);
+          }
+        });
+      });
+    });
+    return deferred.promise();
+  };
+  return this;
+}
+
+module.exports = MyClass;
