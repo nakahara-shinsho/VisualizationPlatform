@@ -1,0 +1,7 @@
+
+{
+    "sql"       : "SELECT * FROM fplus.pc2line",
+    "where"     : ["fault_point_hierarchy_d","fpoint_id"],
+    "limit"     : 100
+}
+

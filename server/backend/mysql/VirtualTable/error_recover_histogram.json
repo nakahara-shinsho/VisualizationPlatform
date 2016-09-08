@@ -1,0 +1,6 @@
+{
+"sql":
+"SELECT floor(error_recov*10)/10 as order_me, concat(floor(error_recov*10)/10,'～', floor(error_recov*10+1)/10) as ERR_RECOV_RANGE, count(*) as COUNT FROM (SELECT test_execution_id, (max(CASE WHEN value LIKE '%RECOVERY%' AND value LIKE '%END%'THEN timestamp ELSE NULL END) - min(CASE WHEN type ='TYPE_ERROR' THEN timestamp ELSE NULL END)) AS error_recov FROM fplus.event GROUP BY test_execution_id) as hist WHERE hist.error_recov != 'NULL' GROUP BY order_me ORDER BY order_me",
+"where": ["upload_id"]
+}
+

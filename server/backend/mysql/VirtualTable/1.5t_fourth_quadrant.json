@@ -1,0 +1,5 @@
+
+{
+    "sql"  : "SELECT * FROM fplus.fourth_quadrant",
+    "where": ["upload_id"]
+}

@@ -1,0 +1,5 @@
+
+{
+    "sql"  : "SELECT event.UPLOAD_ID, event.value AS CAUSE_ID, SUM(CASE WHEN fourth_quadrant.fourth_quadrant = 'DETECTED_NORMAL' THEN 1 ELSE 0 END) AS DETECTED_NORMAL, SUM(CASE WHEN fourth_quadrant.fourth_quadrant = 'NO_DETECTED_NORMAL' THEN 1 ELSE 0 END) AS NO_DETECTED_NORMAL, SUM(CASE WHEN fourth_quadrant.fourth_quadrant = 'DETECTED_FAILURE' THEN 1 ELSE 0 END) AS DETECTED_FAILURE, SUM(CASE WHEN fourth_quadrant.fourth_quadrant = 'NO_DETECTED_FAILURE' THEN 1 ELSE 0 END) AS NO_DETECTED_FAILURE FROM fplus.event INNER JOIN fplus.fourth_quadrant ON event.test_execution_id = fourth_quadrant.test_execution_id WHERE event.record_info_id = 'RECORD_INFO_ID_SYSTEM_DETECTED_CAUSE' GROUP BY CAUSE_ID;",
+    "where": ["upload_id","appl_id"]
+}

@@ -1,0 +1,5 @@
+
+{
+    "sql":"SELECT SUM(CASE WHEN fourth_quadrant = 'DETECTED_NORMAL' THEN 1 ELSE 0 END) AS '検出／正常', SUM(CASE WHEN fourth_quadrant = 'NO_DETECTED_NORMAL'  THEN 1 ELSE 0 END) AS '未検出／正常', SUM(CASE WHEN fourth_quadrant = 'DETECTED_FAILURE'    THEN 1 ELSE 0 END) AS '検出／異常', SUM(CASE WHEN fourth_quadrant = 'NO_DETECTED_FAILURE' THEN 1 ELSE 0 END) AS '未検出／異常', COUNT(*) AS 'total'  FROM fplus.fourth_quadrant GROUP BY upload_id;",
+    "where" :["upload_id"]
+}

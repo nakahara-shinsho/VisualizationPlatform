@@ -1,0 +1,5 @@
+
+{
+    "sql"  : "SELECT * FROM fplus.scenario_information",
+    "where": ["appl_id","scenaio_execution_id"]
+}

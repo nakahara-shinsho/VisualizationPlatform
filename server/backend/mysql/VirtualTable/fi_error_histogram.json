@@ -1,0 +1,7 @@
+{
+"sql":
+"SELECT floor(FI_ERROR*10)/10 as order_me, concat(floor(FI_ERROR*10)/10, '～', floor(FI_ERROR*10+1)/10) as FI_ERR, count(*) as COUNT FROM (SELECT test.test_execution_id,        event.error - min(test.fault_injection_time) AS FI_ERROR FROM fplus.test_execution test LEFT JOIN (SELECT test_execution_id, min(timestamp) AS error FROM fplus.event WHERE type = 'TYPE_ERROR' GROUP BY test_execution_id) AS event ON test.test_execution_id = event.test_execution_id GROUP BY test.test_execution_id) as hist where FI_ERROR !='NULL' GROUP BY order_me ORDER BY order_me",
+"where": ["upload_id"]
+}
+
+

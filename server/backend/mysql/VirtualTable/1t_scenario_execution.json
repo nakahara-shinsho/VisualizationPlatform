@@ -1,0 +1,5 @@
+
+{
+    "sql"  : "SELECT * FROM fplus.scenario_execution",
+    "where": ["upload_id","libfg_version","fault_point_hierarchy_id","cause_hierarchy_id","record_info_type_id"]
+}

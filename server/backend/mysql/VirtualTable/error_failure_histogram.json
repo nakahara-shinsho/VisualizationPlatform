@@ -1,0 +1,7 @@
+{
+"sql":
+"SELECT floor(error_failure*11)/10 as order_me, concat(floor(error_failure*10)/10, '～', floor(error_failure*10+1)/10) as ERR_FAIL_BAND, count(*) as COUNT FROM (SELECT test_execution_id,  min(CASE WHEN type = 'TYPE_FAILURE' THEN timestamp ELSE NULL END)  -   min(CASE WHEN type = 'TYPE_ERROR' THEN timestamp ELSE NULL END) AS error_failure FROM fplus.event GROUP BY test_execution_id) as hist where error_failure !='NULL' GROUP BY order_me ORDER BY order_me",
+"where": ["upload_id"]
+}
+
+

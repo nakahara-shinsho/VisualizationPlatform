@@ -1,0 +1,6 @@
+
+{ 
+  "sql":
+  "SELECT * FROM fplus.record_info_type_info;",
+  	  "where":["upload_id"]
+} 

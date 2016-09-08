@@ -1,0 +1,6 @@
+
+{
+    "sql"       : "SELECT * FROM fplus.fault_point_info",
+    "where"     : ["fpoint_id"]
+}
+

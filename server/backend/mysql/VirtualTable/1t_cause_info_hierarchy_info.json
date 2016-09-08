@@ -1,0 +1,6 @@
+
+{
+    "sql"       : "SELECT * FROM fplus.cause_info_hierarchy_info",
+    "where"     : ["cause_hierarchy_id","cause_id"]
+}
+

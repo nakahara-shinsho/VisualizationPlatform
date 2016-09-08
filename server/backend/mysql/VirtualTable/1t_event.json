@@ -1,0 +1,7 @@
+
+{
+    "sql"       : "SELECT * FROM fplus.event",
+    "where"     : ["upload_id","appl_id","test_execution_id","record_info_type_id"],
+    "limit"     : 100
+}
+

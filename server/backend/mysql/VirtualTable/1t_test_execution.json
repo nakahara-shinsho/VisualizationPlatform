@@ -1,0 +1,5 @@
+
+{
+    "sql"  : "SELECT * FROM fplus.test_execution;",
+    "where": ["upload_id","appl_id"]
+}
