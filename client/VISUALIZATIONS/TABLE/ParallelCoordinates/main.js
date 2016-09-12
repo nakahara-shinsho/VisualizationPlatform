@@ -150,6 +150,31 @@ define(["util/CustomTooltip",
     var selectedLegends = self.getSelectedLegends();
     var row = {};
     self.columnsStringLabel2Value = {};
+
+    // create SORTed list for string column
+    dataManager.getData().forEach(function(data){
+      row = {};
+      selectedLegends.forEach(function(colName){
+        if(dataTypes[colName] !== 'number'){
+          // Update Label2Value for colName & return data
+          row[colName] = self.label2value(colName, data[colName]);
+        }
+      });
+    });
+    selectedLegends.forEach(function(colName){
+        if(dataTypes[colName] !== 'number'){
+	    //console.log(JSON.stringify(self.columnsStringLabel2Value[colName]))
+	    self.columnsStringLabel2Value[colName] = self.sortStringLabel(self.columnsStringLabel2Value[colName]);
+	    var labelNum = 0;
+	    for (var key in  self.columnsStringLabel2Value[colName]){
+		labelNum += 1;
+		self.columnsStringValue2Label[colName][labelNum] = key;
+		self.columnsStringLabel2Value[colName][key] = labelNum;
+	    }
+	    //console.log(JSON.stringify(self.columnsStringLabel2Value[colName]))
+	}
+    });
+    // push chart data
     dataManager.getData().forEach(function(data){
       row = {};
       selectedLegends.forEach(function(colName){
@@ -216,6 +241,35 @@ define(["util/CustomTooltip",
     
     return;
   };
+  ParallelCoordinates.prototype.sortStringLabel = function (object) {
+      //戻り値用新オブジェクト生成
+      var sorted = {};
+      //キーだけ格納し，ソートするための配列生成
+      var array = [];
+      //for in文を使用してオブジェクトのキーだけ配列に格納
+      for (key in object) {
+          //指定された名前のプロパティがオブジェクトにあるかどうかチェック
+          if (object.hasOwnProperty(key)) {
+              //if条件がtrueならば，配列の最後にキーを追加する
+              array.push(key);
+          }
+      }
+      //配列のソート
+      array.sort(); 
+      //配列の逆ソート
+      //array.reverse();
+      
+      //キーが入った配列の長さ分だけfor文を実行
+      for (var i = 0; i < array.length; i++) {
+          /*戻り値用のオブジェクトに
+            新オブジェクト[配列内のキー] ＝ 引数のオブジェクト[配列内のキー]を入れる．
+            配列はソート済みなので，ソートされたオブジェクトが出来上がる*/
+          sorted[array[i]] = object[array[i]];
+      }
+      //戻り値にソート済みのオブジェクトを指定
+      //      console.log(JSON.stringify(sorted));
+      return sorted;
+  }
 
   /**
    * create bar chart depend on selected items by user
