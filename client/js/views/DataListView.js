@@ -29,7 +29,7 @@ define([ "js/app",
     },
     // Events
     events: {
-      "dblclick table tr.clickable_row": 'selectRow',
+      "click table tr.clickable_row": 'selectRow',
       //"click td.view": 'selectProject'
     },
     // Render FooterView
