@@ -75,21 +75,28 @@ $sudo systemctl start rabbitmq-server ; systemctl enable rabbitmq-server
  // sample
  node server/backend/workers_default.js start
 ```
-## Boot minimum platform (using forever)
+## Boot minimum platform 
 ```
- forever start server/start.js  PORT=8888
+ node server/start.js  PORT=8888
  //default data list
- forever start server/backend/worker_for_datalist.js
+ node server/backend/worker_for_datalist.js
  //default workers for sample data (csv, tsv)
- forever start server/backend/workers_default.js
+ node  server/backend/workers_default.js
 ```
-##Boot application-based platform
- node start start/start PORT=8888
+## Boot application-based platform
+``` 
+ PORT=8888 node start start/start.js
  //application datalist
- NODE_PATH=./node_modules node $application_folder/boot_datalist.js 
+ NODE_PATH=./node_modules VISPLA_PATH=$(pwd) node $application_folder/boot_datalist.js 
  //application workers
- NODE_PATH=./node_modules node $application_folder/boot_virtualtable.js 
+ NODE_PATH=./node_modules VISPLA_PATH=$(pwd) node $application_folder/boot_virtualtable.js 
 
+ //for PM2
+ pm2 start server/start.js
+ NODE_PATH=$(pwd)/node_modules pm2 start ~/fplus-all/workers/boot_datalist.js
+ NODE_PATH=$(pwd)/node_modules pm2 start ~/fplus-all/workers/boot_virtualtable.js
+
+```
 ## Access
   Please access http://IP_ADDRESS:PORT Using Google Chrome.
 
