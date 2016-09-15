@@ -45,6 +45,7 @@
 	}
     ],
     STREAM: [],
+    
     SourceCodeView: {
         type: 'SourceCodeView',
         path: 'Authenticated/SourceCodeView'

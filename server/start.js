@@ -10,7 +10,7 @@ var http_port = (GLOBAL.config.has('Http.server.port'))? GLOBAL.config.get('Http
 
 GLOBAL.mqFrontend = new (require('./stream/MqFrontend'))(mq_server);
 
-console.log('PORT = ' + http_port);
+//console.log('PORT = ' + http_port);
 GLOBAL.httpServer = new(require('./stream/HttpServer')) (__dirname, process.env.PORT || http_port );
 
 GLOBAL.wsServer = new (require('./stream/WsServer'))(GLOBAL.httpServer.server);
