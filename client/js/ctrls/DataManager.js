@@ -993,12 +993,13 @@ DataManager.prototype.clearAll = function(key, value) {
         } else { //compare
           if(family && family.indexOf(linked_vtName) >=0) {
               deepStatus = DEEPLINK.WORKER;
+              
               //WORKER : inside the same worker
           }
         }
       }
       else       
-      if(family && family.indexOf(linked_wkName+'.'+linked_vtName) >=0) { 
+      if(family && ( family.indexOf(linked_wkName) >=0 || family.indexOf(linked_wkName+'.'+linked_vtName) >=0)) { 
           deepStatus = DEEPLINK.GLOBAL;
           //GLOBAL: outside the worker
       }

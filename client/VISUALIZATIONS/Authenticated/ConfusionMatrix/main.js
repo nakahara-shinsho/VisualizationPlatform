@@ -22,6 +22,7 @@ define([], function() {
      */
   var ConfusionMatrix = function(io) {
     this.io = io;
+    
   };
 
   ConfusionMatrix.prototype.update = function(changed){
@@ -40,7 +41,7 @@ define([], function() {
     this.root_dom = undefined;
 
     this.data = [];
-    this.selectedLegends = ["未検出／正常","検出／正常","未検出／異常","検出／異常"];
+    this.selectedLegends = ["NO_DETECTED_NORMAL","DETECTED_NORMAL","NO_DETECTED_NORMAL","NO_DETECTED_NORMAL"];
     this.rectSize  = {
       width : (this.containerWidth/2 - this.margin.left),
       height: (this.containerHeight/2 - this.margin.top)
@@ -193,7 +194,7 @@ define([], function() {
           main.select("text.confusionMatrixValue_"+ val.key)
             .style("fill","#000000");
           self.selectedLegends.splice(index,1);
-          self.io.dataManager().setColumnRefiner(self.selectedLegends.concat());
+          self.io.dataManager().setValue("fourth_quadrant", self.selectedLegends.concat());
         }else{
           main.select("rect#"+val.key).style("fill-opacity",1);
           main.select("text.confusionMatrixTitle_"+ val.key)
@@ -201,7 +202,7 @@ define([], function() {
           main.select("text.confusionMatrixValue_"+ val.key)
             .style("fill","#ffffff");
           self.selectedLegends.push(val.key);
-          self.io.dataManager().setColumnRefiner(self.selectedLegends.concat());
+          self.io.dataManager().setValue("fourth_quadrant", self.selectedLegends.concat());
         }
       }
     }
@@ -217,28 +218,28 @@ define([], function() {
       color: undefined
     };
     switch (id){
-    case "検出／正常":
+    case "DETECTED_NORMAL":
       info.rectX = self.margin.left;
       info.rectY = self.margin.top;
       info.textX = self.margin.left + self.rectSize.width/2;
       info.textY = self.rectSize.height/2 + self.margin.top;
       info.color = "#5bc0de";
       break;
-    case "未検出／正常":
+    case "NO_DETECTED_NORMAL":
       info.rectX = self.margin.left + self.rectSize.width;
       info.rectY = self.margin.top;
       info.textX = self.margin.left + (self.rectSize.width/2) + self.rectSize.width;
       info.textY = self.rectSize.height/2 + self.margin.top;
       info.color = "#62c462";
       break;
-    case "検出／異常":
+    case "DETECTED_FAILURE":
       info.rectX = self.margin.left;
       info.rectY = self.rectSize.height + self.margin.top;
       info.textX = self.margin.left + self.rectSize.width/2;
       info.textY = (self.rectSize.height/2)*3 + self.margin.top;
       info.color = "#f89406";
       break;
-    case "未検出／異常":
+    case "NO_DETECTED_FAILURE":
       info.rectX = self.margin.left + self.rectSize.width;
       info.rectY = self.rectSize.height + self.margin.top;
       info.textX = self.margin.left + (self.rectSize.width/2) + self.rectSize.width;
