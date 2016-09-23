@@ -41,7 +41,7 @@ define([], function() {
     this.root_dom = undefined;
 
     this.data = [];
-    this.selectedLegends = ["NO_DETECTED_NORMAL","DETECTED_NORMAL","NO_DETECTED_NORMAL","NO_DETECTED_NORMAL"];
+    this.selectedLegends = ["NO_DETECTED_NORMAL","DETECTED_NORMAL","NO_DETECTED_FAILURE","DETECTED_FAILURE"];
     this.rectSize  = {
       width : (this.containerWidth/2 - this.margin.left),
       height: (this.containerHeight/2 - this.margin.top)
@@ -79,8 +79,8 @@ define([], function() {
         var total = parseInt(originalData.total);
         var elem = {};
         var tmp  = 0.0;
-        for(var key in originalData){
-          if(key !== "total"){
+        for(var key in originalData) {
+          if(_.contains( self.selectedLegends, key)){
             elem = {key: key, value: originalData[key], ratio: 0};
             tmp = (parseFloat(originalData[key])/ total) * 100;
             elem.ratio = Math.round(tmp * 10) / 10;
@@ -98,7 +98,7 @@ define([], function() {
         mainDiv = rootDiv.append("div").attr("class","confusionMatrix-main");
       }
 
-      function drawMain(){
+      function drawMain() {
         mainDiv.append("svg")
           .attr("class", "confusionMatrix")
           .transition().duration(500)
