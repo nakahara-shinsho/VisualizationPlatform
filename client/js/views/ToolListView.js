@@ -83,7 +83,7 @@ define(["js/app",
             params  = "id=" + toolId;
           
           params += "&format="+ toolFormat;
-          params += "&user="+ id;
+          params += "&user="+ userId;
 
           //delete data in database
           $.ajax({ //query databases worker
