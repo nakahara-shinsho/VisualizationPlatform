@@ -12,7 +12,8 @@
  * @class ConfusionMatrix
  * @returns {ConfusionMatrix}
   */
-define([], function() {
+define(["text!./control.html",
+        "css!./style"], function(designTpl) {
     /**
      * Constructor create ConfusionMatrics Chart
      * @method ConfusionMatrix
@@ -22,7 +23,7 @@ define([], function() {
      */
   var ConfusionMatrix = function(io) {
     this.io = io;
-    
+    this.io.designManager().setTemplate(designTpl);
   };
 
   ConfusionMatrix.prototype.update = function(changed){
@@ -59,7 +60,7 @@ define([], function() {
     var self = this;
     // initialize
     self.initialize(containerWidth, containerHeight);
-    if(self.root_dom == undefined){
+    if(self.root_dom === undefined){
       self.root_dom   = self.root_dom  = document.createElement("div");
       self.container = d3.select(self.root_dom);
     }
@@ -164,7 +165,7 @@ define([], function() {
               }
               return "#000000";
             })
-            .text(val.key)
+            .text(self.io.designManager().getValue(val.key))
             .on("click", function(){
               clickAction(main, val);
             });
