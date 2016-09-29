@@ -35,6 +35,9 @@ define(["util/CustomTooltip",
     });
 
     // Design Mapper
+    if(!this.io.isHighlightMode() && !this.io.isDrilldownMode()) {
+      this.io.setHighlightMode();
+    }
     this.io.designManager()
       .setControl("graphType", {type:"radio", name:"Graph Type", range:["stacked", "grouped","normalized"], value: "stacked"});
     this.io.designManager()
