@@ -25,11 +25,8 @@ define(["util/CustomTooltip",
     }
     this.io.dataManager().setMapperProps({
       time   : { label: 'TIME', type: 'number', map2: '', spk: 'width'},
-      label  : { label: 'LABEL', type: 'string', map2: ''},
+      label  : { label: 'LABEL', type: '', map2: ''},
       status : { label: 'STATUS', type: 'number', map2: ''}
-//      name   : { label: 'NAME(option)', type: 'string', map2: ''},
-//      type   : { label: 'TYPE(option)', type: 'string', map2: ''},
-//      detail   : { label: 'DETAIL(option)', type: '',  map2:[]}
     });
 
     // Design Manager
@@ -47,33 +44,18 @@ define(["util/CustomTooltip",
       .setControl("TYPEMAP", {type:"radio", name: "Type Map", range:["on", "off"],value:"off"});
     this.io.designManager()
       .setControl("DETAILMAP", {type:"radio", name: "Detail Map", range:["on", "off"],value:"off"});
-
-    /*
-    /// X Axis
+    this.io.designManager()
+      .setControl("SoloRange", {type:"regx", name: "Solo Range", value:0});
     this.io.designManager()
       .setControl("xaxisCaption", {type:"regx", name:"X AXIS Caption", value:""});
     this.io.designManager()
-      .setControl("xaxisticktype", {type: "radio", name: " X AXIS Label Format", range:["dec", "hex"],value:"dec"});
-    this.io.designManager()
-      .setControl("xaxisticknum", {type: "regx", name: " X AXIS Tick Number", value:4});
-        this.io.designManager()
-      .setControl("xaxisticktype", {type: "radio", name: " X AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+      .setControl("Zoom", {type:"regx", name: "Zoom(%)", value:10});
     this.io.designManager()
       .setControl("xaxisdigitnum", {type: "regx", name: " X AXIS Digit Number", value:""});
-    /// Y Axis
     this.io.designManager()
-      .setControl("yaxisCaption", {type:"regx", name:"Y AXIS Caption", value:""});
-    this.io.designManager()
-      .setControl("yaxisticknum", {type: "regx", name: " Y AXIS Tick Number", value:4});
-    this.io.designManager()
-      .setControl("yaxisticktype", {type: "radio", name: " Y AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
-    this.io.designManager()
-      .setControl("yaxisdigitnum", {type: "regx", name: " Y AXIS Digit Number", value:""});
-    this.io.designManager().setControl("yaxisRangeMaxAuto"  , {type:"radio", name:"Y AXIS Max (Auto)",range:["ON", "OFF"], value:"ON"});
-    this.io.designManager().setControl("yaxisRangeMaxManual", {type:"regx", name:"Y AXIS Max (Manual)", value:100});
-    this.io.designManager().setControl("yaxisRangeMinAuto"  , {type:"radio", name:"Y AXIS Min (Auto)",range:["ON", "OFF"], value:"OFF"});
-    this.io.designManager().setControl("yaxisRangeMinManual", {type:"regx", name:"Y AXIS Min (Manual)", value: 0});
- */
+      .setControl("xaxisticktype", {type: "radio", name: " X AXIS Tick Type", range:["Dec","%","Float","SI","Round","Hex"], value:"Dec"});
+    this.beforeRange = [-1, -1];
+    this.undoRange = [-1, -1];
   };
   /**
    * update chart according with changed of interface variables
@@ -169,7 +151,7 @@ define(["util/CustomTooltip",
     /** X AXIS **/
     // X AXIS [width - YAxis_width]
     this.xConfig = {
-      label   : {height: 50, width: 0},
+      label   : {height: 10, width: 0},
       range   : {max:"auto", min:"auto"},
       caption : {height:30, top:20, left:"auto"},
       scrollbar: {height:25},
@@ -226,7 +208,7 @@ define(["util/CustomTooltip",
     if (self.io.designManager().getValue("NAMEMAP") == "on") {
       var mapperProps = this.io.dataManager().getMapperProps();
       self.io.dataManager().setMapperProps(
-	  $.extend({},mapperProps, {name   : { label: 'NAME(option)', type: 'string', map2: ''}}));      
+	  $.extend({},mapperProps, {name   : { label: 'NAME(option)', type: '', map2: ''}}));      
     }
     if (self.io.designManager().getValue("TYPEMAP") == "on") {
       var mapperProps = this.io.dataManager().getMapperProps();
@@ -252,7 +234,7 @@ define(["util/CustomTooltip",
       self.root_dom  = document.createElement("div");
       self.container = d3.select(self.root_dom);
     }
-    var ctrlDiv, timeDiv, labelDiv, mainDiv, labelCaptionDiv, mainCaptionDiv;
+    var ctrlDiv, timeDiv, labelDiv, mainDiv, labelCaptionDiv, mainCaptionDiv, formDiv;
     drawDiv();
     drawControl();
     drawLabelTable();
@@ -271,19 +253,27 @@ define(["util/CustomTooltip",
         .style("width", function(){
           return self.layout.label.width;
         });
+      formDiv = div.append("div").attr("class","form-group")
+        .style("width", function(){
+          return self.layout.label.width;
+        });      
       // 2. [LABEL CAPTION]
       labelCaptionDiv = div.append("div").attr("class","labelCaption");
       // 3. [MAIN CAPTION]
       mainCaptionDiv = div.append("div").attr("class","mainCaption");
       // 4. [TIME AXIS]
-      /*
-      timeDiv = div.append("div").attr("class","timeAxis");
-      self.timeSVG  = timeDiv.append("svg").attr("class","timeAxis")
-        .style("width", self.axisWidth)
-        .style("height", self.xConfig.axis.height);
-       */
       // 4. [MAIN]
       mainDiv = div.append("div").attr("class","main");
+      mainDiv.append("svg")
+        .attr("class", "xaxiscaption")
+        .attr("width", self.containerWidth)
+        .attr("height", self.xConfig.caption.height)
+        .append("g")
+        .attr("transform","translate("+self.containerWidth/2+","+ self.xConfig.caption.top+")")
+        .append("text").attr("class","xaxis")
+        .text(self.io.designManager().getValue("xaxisCaption"));
+
+
       // 5. [LABEL]
       var mainHeight = self.containerHeight -
             self.layout.top -
@@ -296,17 +286,10 @@ define(["util/CustomTooltip",
       self.labelTable = labelDiv.append("table")
         .attr("class","gantt");
       // 6. [GANTT]
-      /*
-      mainDiv = mainDiv.append("div").attr("class","gantt");
-      self.mainSVG = mainDiv.append("svg").attr("class","gantt")
-        .style("width", self.containerWidth - self.layout.label.width - self.layout.main.margin.right)
-        .style("height", mainHeight)
-        .append("g")
-        .attr("transform", "translate(0," + self.layout.top +")");
-       */
     }
     function drawControl(){
       // MOVE LEFT
+      var moveRange = self.io.designManager().getValue("MoveRange") * 0.01;
       ctrlDiv.append("a")
         .attr("class","btn btn-default btn-gantt")
         .attr("id","move-left")
@@ -314,7 +297,7 @@ define(["util/CustomTooltip",
         .text("<")
         .on("click", function(){
           var range = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
-          var diff  = (+range[1] - +range[0])*0.1;
+          var diff  = (+range[1] - +range[0])*moveRange;
           var filter = {}, xcol = self.io.dataManager().getMapper('time');
           filter[xcol] = [+range[0] - diff, +range[1]  - diff];
           self.io.dataManager().setRowRefiner(filter);
@@ -327,10 +310,70 @@ define(["util/CustomTooltip",
         .text(">")
         .on("click", function(){
           var range = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
-          var diff  = (+range[1] - +range[0])*0.1;
+          var diff  = (+range[1] - +range[0])*moveRange;
           var filter = {}, xcol = self.io.dataManager().getMapper('time');
           filter[xcol] = [+range[0] + diff, +range[1] + diff];
           self.io.dataManager().setRowRefiner(filter);
+        });
+
+      var zoomVal = self.io.designManager().getValue("Zoom") * 0.01;
+      // ZOOM IN
+      ctrlDiv.append("a")
+        .attr("class","btn btn-default btn-gantt")
+        .attr("id","zoom-in")
+        .attr("href","javascript:void(0);")
+        .text("+")
+        .on("click", function(){
+	  var xcol = self.io.dataManager().getMapper("time")
+          var range = self.io.dataManager().getDataRange(xcol);
+          var margin  = ((+range[1] + +range[0]) / 2 - (+range[0])) * zoomVal;
+	    
+          var filter = {};
+	  var min, max;
+	  min = +range[0] + margin;
+	  max = +range[1] - margin;
+	  if (min >= max) {
+	      max = min + 1;
+	  }
+          filter[xcol] = [min, max];
+          self.io.dataManager().setRowRefiner(filter);
+          self.io.dataManager().setDataRange(filter);
+        });
+      ctrlDiv.append("a")
+        .attr("class","btn btn-default btn-gantt")
+        .attr("id","zoom-in")
+        .attr("href","javascript:void(0);")
+        .text("-")
+        .on("click", function(){
+	  var xcol = self.io.dataManager().getMapper("time");
+          var range = self.io.dataManager().getDataRange(xcol);
+          var margin  = ((+range[1] + +range[0]) / 2 - (+range[0])) * zoomVal;
+	  var filter = {};
+	  var min, max;
+	  var xdomain = self.x.domain();
+	  min = +range[0] - margin;
+	  if (min < 0) {
+            min = xdomain[0]
+	  }
+	  max = +range[1] + margin;
+          filter[xcol] = [min, max];
+          self.io.dataManager().setRowRefiner(filter);
+          self.io.dataManager().setDataRange(filter);
+
+        });
+      ctrlDiv.append("a")
+        .attr("class","btn btn-default btn-gantt")
+        .attr("id","zoom-in")
+        .attr("href","javascript:void(0);")
+        .text("undo")
+        .on("click", function(){
+	  if (self.undoRange[0] != -1) {
+            var xcol = self.io.dataManager().getMapper("time");            
+            var filter = {};
+            filter[xcol] = [self.undoRange[0], self.undoRange[1]];
+            self.io.dataManager().setRowRefiner(filter);
+            self.io.dataManager().setDataRange(filter);
+          }
         });
     }
     function drawLabelTable(){
@@ -348,6 +391,8 @@ define(["util/CustomTooltip",
 
         var tbody = self.labelTable.append("tbody")
               .attr("height", self.axisHeight);
+        labels.sort();
+        labels = trimLabel(labels);
         labels.forEach(function(d){
           var newName = self.getName4D3(d);  
           var labelRow = tbody.append("tr").attr("id", newName)
@@ -361,7 +406,7 @@ define(["util/CustomTooltip",
           var td = labelRow.append("td")
                 .attr("class","gantt-label")
                 .attr("width", self.layout.label.width);
-          td.append("text").text(d.substring(0,20))
+          td.append("text").text((d + "").substring(0,20))
             .on("mouseover", function(){
                  self.tooltip.show(d, d3.mouse(d3.select("contents")[0][0]));})
             .on("mouseout",  self.tooltip.hide());
@@ -370,6 +415,33 @@ define(["util/CustomTooltip",
             .style("height",lineHeight)
             .style("width", self.axisWidth);
         });
+      function trimLabel(labels) {
+       var newLabels = [];
+       var labelCol = self.io.dataManager().getMapper("label");
+       labels.sort();
+       mergeArray(newLabels, labels);
+       if (self.lableColumn == labelCol) {
+         mergeArray(newLabels, self.labels);
+       } 
+       self.labels = newLabels;
+       self.lableColumn = labelCol
+       newLabels.sort();
+       function mergeArray(dst, src) {
+         var flg = true;
+         src.forEach(function(s) {
+           flg = true;
+           dst.forEach(function(d) {
+             if (d == s) {
+               flg = false;
+             }      
+           });
+           if (flg == true) {
+             dst.push(s)
+           }
+         });
+       }
+       return newLabels;
+      }
       }
     }
   };
@@ -384,7 +456,7 @@ define(["util/CustomTooltip",
     var data    = self.io.dataManager().getData();
     var xcolumn = self.io.dataManager().getMapper('time');
     var ycolumn = self.io.dataManager().getMapper('label');
-    if(data.length <=0 || _.isEmpty(xcolumn) || _.isEmpty(ycolumn)){
+    if(_.isEmpty(xcolumn) || _.isEmpty(ycolumn)){
       return;
     }
     // drawX
@@ -394,6 +466,21 @@ define(["util/CustomTooltip",
     // drawLine
     self.drawLine();
   };
+
+  GanttChart.prototype.registerBeforeRange = function (range) {
+    var self = this;
+    if (self.beforeRange[0] != -1) {
+      if ((self.beforeRange[0] != range[0]) || (self.beforeRange[1] != range[1])) {
+        self.undoRange[0] = self.beforeRange[0];
+        self.undoRange[1] = self.beforeRange[1];
+        self.beforeRange[0] = range[0];
+        self.beforeRange[1] = range[1];	  
+      }
+    } else {
+      self.beforeRange[0] = range[0];
+      self.beforeRange[1] = range[1];
+    }
+  }
   /**
    * For draw axis X, Y
    * @method drawAxis
@@ -402,17 +489,16 @@ define(["util/CustomTooltip",
    */
   GanttChart.prototype.drawAxis = function (xcolumn,ycolumn) {
     var self = this;
-//    var data = self.io.dataManager().getData();
     var data = (self.io.isHighlightMode())? 
             self.io.dataManager().getData(): self.io.dataManager().getFilteredRows();
-//    var xrange_ = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
     var xrange_ = (self.io.isHighlightMode()) ? 
              self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time")):
 	  self.io.dataManager().getRowRefiner()[self.io.dataManager().getMapper("time")];
    if (xrange_ == undefined) {
-     xrange_ = self.io.dataManager().getFilteredDataRange(self.io.dataManager().getMapper("time"), data);
+       xrange_ = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"))
    }
     var xrange =  [xrange_[0], xrange_[1]];
+    self.registerBeforeRange(xrange);
     self.x = d3.scale.linear().range([0,self.domainWidth]).domain(xrange);
     var lineHeight = self.io.designManager().getValue("Height");
     if(self.io.designManager().getValue("HIGH_LOW") == "LOW/HIGH"){
@@ -482,7 +568,43 @@ define(["util/CustomTooltip",
       }
       data[d[labelKey]].push({time:+d[timeKey],status:+d[statusKey],name:d[dataName],type:d[dataType], detail:obj});
     });
+    if (self.io.designManager().getValue("MODE") == "SOLO") {
+      convertSoloData(data);
+    }
+
     return data;
+    function convertSoloData(data) {
+      var i;
+      var obj;
+      var lastTime;
+      var width = parseFloat(self.io.designManager().getValue("SoloRange"));
+      Object.keys(data).forEach(function(key) {
+        lastTime =  data[key][data[key].length - 1].time;
+        if (data[key].length == 1) {
+          obj = $.extend(true, {}, data[key][0]);
+          /*Fix for Variable time*/
+         obj.time += width; 
+          obj.status = 0;
+          data[key].splice(1, 0, obj);                    
+        } else { 
+          for (i = 0; i < data[key].length; i++) {         
+            if (data[key][i].time > lastTime) {
+              break;
+            }
+            if (data[key][i].status == 1) {
+              obj = $.extend(true, {}, data[key][i]);
+              /*Fix for Variable time*/
+	      obj.time += width; 
+	      if (lastTime < obj.time) {
+		  lastTime = obj.time
+	      }
+              obj.status = 0;
+            data[key].splice(i+1, 0, obj);
+            }
+          }
+        }
+      });
+    }
   };
   /**
    * draw Line
@@ -492,27 +614,20 @@ define(["util/CustomTooltip",
   GanttChart.prototype.drawLine = function(mouseoverTarget){
     var self = this;
     var data = self.transformData();
-    if (self.io.designManager().getValue("MODE") == "SOLO") {
-      convertSoloData(data);
-    }
     // update first/last Time
     var xrange = (self.io.isHighlightMode()) ? 
              self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time")):
 	  self.io.dataManager().getRowRefiner()[self.io.dataManager().getMapper("time")];
    if (xrange == undefined) {
        xrange = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"));
-//     xrange = self.io.dataManager().getFilteredDataRange(self.io.dataManager().getMapper("time"), data);
    }
     var firstTime = xrange[0];
     var lastTime = xrange[1];
-/*    var firstTime = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"))[0];
-    var lastTime  = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("time"))[1];
-*/
+
     for(var label in data){
       var first = data[label][0];
       var last  = data[label][data[label].length -1];
       if(first.time > firstTime){
-//        data[label].unshift({time:firstTime,status:first.status});
         data[label].unshift({time:firstTime,status:0});
       }
       if(last.time < lastTime){
@@ -520,6 +635,7 @@ define(["util/CustomTooltip",
       }
     }
     var labels = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("label"));
+    labels = self.labels; /*ダミーのlabelに関しても線を引く*/
     var emptyData = [{time:firstTime, status:0}, {time:lastTime, status:0}];
 
     var line = d3.svg.line()
@@ -555,7 +671,7 @@ define(["util/CustomTooltip",
             .append("path")
             .attr("d", function(){
               if(data[label] == undefined){
-                return line(emptyData);
+                return line(emptyData); /*ダミーデータを引く*/
               }
               return line(data[label]);
             })
@@ -576,34 +692,6 @@ define(["util/CustomTooltip",
 	  }
         }
       }
-    };
-    function convertSoloData(data) {
-      var i;
-      var obj;
-      var lastTime;
-      Object.keys(data).forEach(function(key) {
-        lastTime =  data[key][data[key].length - 1].time;
-        if (data[key].length == 1) {
-          obj = $.extend(true, {}, data[key][0]);
-          /*Fix for Variable time*/
-          obj.time; 
-          obj.status = 0;
-          data[key].splice(1, 0, obj);                    
-        } else { 
-          for (i = 0; i < data[key].length; i++) {         
-            if (data[key][i].time > lastTime) {
-              break;
-            }
-            if (data[key][i].status == 1) {
-              obj = $.extend(true, {}, data[key][i]);
-              /*Fix for Variable time*/
-              obj.time; 
-              obj.status = 0;
-            data[key].splice(i+1, 0, obj);
-            }
-          }
-        }
-      });
     }
     function writeDataRect(svg, data) {
       var i;
@@ -614,38 +702,18 @@ define(["util/CustomTooltip",
         if (isActive(data[i].status)) {
 	  range.push(data[i].time);
           name = data[i].name;
+	  type = data[i].type;
 	} else {
           if (range.length != 0) {
             range.push(data[i].time);
-            drawRect(range, name);
+            drawRect(range, name, type);
             range = [];
 	  }
 	}
       }
-/*
-      for (i = 0; i < data.length; i++) {
-        if (data[i].name == "" || data[i].name == undefined) {
-          continue;
-	}
-	if (data[i].name != name) {
-	  if (range.length > 0) {
-	    drawRect(range, name);
-	    range = [];
-	  }
-	  name = data[i].name;
-	  range.push(data[i].time);
-	} else {
-	  type = data[i].type;
-	  range.push(data[i].time);
-	}
-      }
-      if (range.length > 0 && name != undefined) {
-	drawRect(range, name);
-      }
-*/
-      function drawRect(range, name) {
+      function drawRect(range, name, type) {
             var lineHeight = self.io.designManager().getValue("Height");
-	    svg.append("g")
+	    var rect = svg.append("g")
 	       .append("rect")
 	       .attr("y", 0)
 	       .attr("x", self.x(range[0]))
@@ -654,10 +722,10 @@ define(["util/CustomTooltip",
 	       })
 	       .attr("height", lineHeight)
 	       .attr("fill",function() {
-		 return self.io.colorManager().getColor(type);
+  		 return self.io.colorManager().getColor(type);
 	       })
-	       .style("fill-opacity", 1.0)
-	       .text(name)
+	       .style("fill-opacity", 0.5)
+//	       .text(name)
 	       .on("mousemove", function(d,i){
 		 /*tooltip*/
 		 var xPosition = d3.mouse(this)[0];
@@ -680,14 +748,20 @@ define(["util/CustomTooltip",
 	var name = null;
         data[key].forEach(function (d) {
 	  if (name != d.name) {
-	    name = d.name;
-	    status[key][name] = {};
-	    status[key][name].type = d.type;
-	    status[key][name].start = d.time;
-//	    status[key][name].detail = d.detail;
+	    if (d.time <= xValue) {
+	      name = d.name;
+	      status[key][name] = {};
+	      status[key][name].type = d.type;
+	      status[key][name].start = d.time;
+	      status[key][name].end = 0;
+	    }
 	  } else {
-	    status[key][name].detail = d.detail;
-	    status[key][name].end = d.time;	    
+            if (xValue <= d.time) {
+	      if (status[key][name].end == 0) {
+ 	        status[key][name].detail = d.detail;
+	        status[key][name].end = d.time;	    
+	      }
+            }
 	  }
 	});
       });
@@ -727,33 +801,35 @@ define(["util/CustomTooltip",
     function writeDataName(svg, data) {
       var i;
       var name = "";
+      var range = [];
+      var position; 
       for (i = 0; i < data.length; i++) {
         if (isActive(data[i].status)) {
+          range.push(data[i].time)
+          position = data[i].time;
 	  name = data[i].name;
-	  svg.append("g")
-	     .append("text")	    
-	     .attr("x", self.x(data[i].time))
-	     .attr("y", 10)
-	     .attr("stroke", function(d) {
-	       return "orange";
-	     })	      
-	     .attr("font-size", 1)
-	     .text(name);
-        }
-/*
-	if (data[i].name != name) {
-	  name = data[i].name;
-	  svg.append("g")
-	     .append("text")	    
-	     .attr("x", self.x(data[i].time))
-	     .attr("y", 10)
-	     .attr("stroke", function(d) {
-	       return "orange";
-	     })	      
-	     .attr("font-size", 1)
-	     .text(name);
+        } else {
+          if (range.length != 0) { 
+            range.push(data[i].time);
+	    var xaxisLength = self.x.domain()[1] - self.x.domain()[0];
+	    var rangeLength = range[range.length - 1] - range[0];
+            if (rangeLength != 0) {
+		    var textSvg = svg.append("g")
+			.append("text")	    
+			.attr("x", self.x(position))
+			.attr("y", 10)
+			.attr("stroke", function(d) {
+			    return "orange";
+			})	      
+			.attr("font-size", 1);
+		if (rangeLength / xaxisLength  >= 0.1) {
+			textSvg.text(name);
+		}	      
+	    }
+	    range = [];
+	  }
 	}
-*/
+
       }
     }
     function drawUnderLine(svg, data) {
@@ -767,7 +843,7 @@ define(["util/CustomTooltip",
 	      return self.x(d.time);
             })
             .y(function(d){
-              return self.y((self.io.designManager().getValue("HIGH_LOW") == "LOW/HIGH"));
+              return self.y((self.io.designManager().getValue("HIGH_LOW") == "LOW/HIGH") );
             });
       for (i = 0; i < data.length; i++) {
 	if (isActive(data[i].status)) {
@@ -789,7 +865,7 @@ define(["util/CustomTooltip",
 	       .attr("stroke", function(d) {
   		 return self.io.colorManager().getColor(lineData[0].type);
 	       })
-	       .attr("stroke-width", 5);
+	       .attr("stroke-width", 10);
 	    lineData = [];
 	  }
 	  type = "";
@@ -867,7 +943,9 @@ define(["util/CustomTooltip",
         rp,
         slash,
         and,
-        newName = name.concat();
+        newName;
+    name = name + ''; /*For Number*/
+    newName = name.concat();
     space = searchIndexs(name, " ");
     lp = searchIndexs(name, "(");
     rp = searchIndexs(name, ")");

@@ -22,7 +22,9 @@ define(["util/AxisSelectable",
   var AreaChart = function (io) {
     this.io = io;
 
-   this.io.setHighlightMode();
+    if(!this.io.isHighlightMode() && !this.io.isDrilldownMode()) {
+	this.io.setHighlightMode();
+    }
     
     //higher priority for set initial io variable values from template
     this.io.dataManager().setMapperProps({

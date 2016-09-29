@@ -9,7 +9,8 @@
  * @param {type} CustomTooltip CustomTooltip class
  * @returns {Legend}
  */
-define(["css!./Legend"], function () {
+define(["util/CustomTooltip",
+	"css!./Legend"], function (CustomTooltip) {
   /**
    * Constructor create Legend
    * @class Legend
@@ -269,6 +270,16 @@ define(["css!./Legend"], function () {
       this.container = undefined;
       this.initializeDesignPanel();
       this.initializeDataPanel();
+
+      this.tooltipConfig = {
+	  caption : "",
+	  attributes : [],
+	  prefix  : "",
+	  postfix : "",
+	  offset  : 5
+      };
+      this.tooltip = new CustomTooltip("tooltip", 200);
+      this.tooltip.initialize();
   };
 
   /**
@@ -528,7 +539,7 @@ define(["css!./Legend"], function () {
       calcSvgSize(groups, sum);
       size[0] = sum[0] * 100;
       size[1] = sum[1] * 30;
-      self.updateSvgSize(svg.select(".svg-groupSelector-cols"), size);
+//      self.updateSvgSize(svg.select(".svg-groupSelector-cols"), size);
       var svg_g = svg.select(".svg-groupSelector").append("g");
       Object.keys(groups).forEach(function (name) {
 	      if (groups[name]){
@@ -578,6 +589,13 @@ define(["css!./Legend"], function () {
 	      vals[0] = offset[0];
 	      vals[1] = offset[1] + 30;	  
 	      drawNamesFromGroup(svg_g, groups[name], [offset[0], offset[1]]);
+	      })
+	      .on("mousemove", function(){
+		  var tableData = self.createTableData(name);
+		  self.tooltip.show(self.tooltip.table(tableData, self.tooltipConfig), d3.event);			      
+	      })
+	      .on("mouseout", function(){
+		  self.tooltip.hide();
 	      })	  
 	  ;	  
 	  svg_g.append("text")
@@ -632,6 +650,14 @@ define(["css!./Legend"], function () {
 				  refiner = self.addElement(refiner, g.data.name);
 				  self.sendDatas(refiner);
 			      }
+			  })
+			  .on("mousemove", function(){
+			      var name = g.data.name;
+			      var tableData = self.createTableData(name);
+			      self.tooltip.show(self.tooltip.table(tableData, self.tooltipConfig), d3.event);			      
+			  })
+			  .on("mouseout", function(){
+			      self.tooltip.hide();
 			  })
 			  .append("g").attr("class", "on");
 		      svg.append("text")
@@ -831,6 +857,12 @@ define(["css!./Legend"], function () {
 	  return outerGroups;
       }
 
+  };
+  Legend.prototype.createTableData = function (name)
+  {
+      var tableData = [];
+      tableData.push({key: name, value: "" });
+      return tableData;
   };
 
   /**
