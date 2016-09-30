@@ -21,7 +21,7 @@ define(["util/CustomTooltip",
 
     //set default to highligh mode
     if(!this.io.isHighlightMode() && !this.io.isDrilldownMode()) {
-      this.io.setHighlightMode();
+      this.io.setDrilldownMode();
     }
     this.io.dataManager().setMapperProps({
       time   : { label: 'TIME', type: 'number', map2: '', spk: 'width'},
@@ -422,7 +422,9 @@ define(["util/CustomTooltip",
        mergeArray(newLabels, labels);
        if (self.lableColumn == labelCol) {
          mergeArray(newLabels, self.labels);
-       } 
+       } else {
+	   self.io.dataManager().setColumnRefiner(labelCol);
+       }
        self.labels = newLabels;
        self.lableColumn = labelCol
        newLabels.sort();
@@ -430,13 +432,15 @@ define(["util/CustomTooltip",
          var flg = true;
          src.forEach(function(s) {
            flg = true;
-           dst.forEach(function(d) {
-             if (d == s) {
-               flg = false;
-             }      
-           });
-           if (flg == true) {
-             dst.push(s)
+           if (s != "") {
+             dst.forEach(function(d) {
+               if (d == s) {
+                 flg = false;
+               }      
+             });
+             if (flg == true) {
+               dst.push(s)
+             }
            }
          });
        }
@@ -636,6 +640,9 @@ define(["util/CustomTooltip",
     }
     var labels = self.io.dataManager().getDataRange(self.io.dataManager().getMapper("label"));
     labels = self.labels; /*ダミーのlabelに関しても線を引く*/
+    if (labels == undefined || labels == "") {
+      return;
+    }
     var emptyData = [{time:firstTime, status:0}, {time:lastTime, status:0}];
 
     var line = d3.svg.line()
@@ -712,6 +719,10 @@ define(["util/CustomTooltip",
 	}
       }
       function drawRect(range, name, type) {
+            if ((range[(range.length - 1)] - range[0]) < 0) {
+                /*幅がマイナスだったら描画しない。入力がおかしい*/
+		return 
+	    }
             var lineHeight = self.io.designManager().getValue("Height");
 	    var rect = svg.append("g")
 	       .append("rect")
