@@ -16,6 +16,7 @@ module.exports.chart = function (router, db) {
            "colorDomainName TEXT default '', " +
            "colorDomain TEXT default '[]', " +
            "colorIndexes TEXT default '{}', " +
+           "colorSeparator TEXT default '{}', " +
            "dataRefiner TEXT default '{}', " +
            "dataSelector TEXT default '[]', " +
            "dataExtraRefiner TEXT default '{}', " +
@@ -159,7 +160,9 @@ module.exports.chart = function (router, db) {
           }
       }
       var stmt_update = "UPDATE chart SET "+ andpart+ " where id=?";
+     
       valarrs.push( +req.params.id );
+     
       db.run(stmt_update, valarrs,
            function(err) {
              if(err) {

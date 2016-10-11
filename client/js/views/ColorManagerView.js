@@ -1,8 +1,9 @@
-define(['text!templates/color_manager.html',
+define(['util/unic/Wrapper',
+        'text!templates/color_manager.html',
         'util/simplecolorpicker/jquery.simplecolorpicker',
         'css!util/simplecolorpicker/jquery.simplecolorpicker.css',
         'css!util/simplecolorpicker/jquery.simplecolorpicker-regularfont.css'], 
-        function(dataMappingTpl) {
+        function(Wrapper,dataMappingTpl) {
   var UPDATE_COLOR_MAP = {
         EMPTY: 0,
         THEME: 1,
@@ -18,12 +19,13 @@ define(['text!templates/color_manager.html',
       _.bindAll(this, 'render');
       this.$el.html( this.template());
       this.listenTo(framework.mediator, 'data_mapping:update_number_dataset', this.updateWithNewDataMapping);// only one colorview , so mediator
-      //this.listenTo(framework.mediator, 'color_mapping:update_separator', this.updateNumberSeparator);//not used
+      this.listenTo(framework.mediator, 'color_mapping:update_separator', this.updateNumberSeparator);//not used
     },
    
     events: { 
         "change .optionset .dataset" : "datalistSelected",
         "change .optionset .colorset": "themeSelected",
+        "dblclick .colormap": "_drawColorSlider"
     },
     
     render: function(colorManager) {
@@ -103,7 +105,7 @@ define(['text!templates/color_manager.html',
           domainName = colorManager.getDomainName();
        
         var $padContainer=$('<div/>', {class: 'color-pad'})
-            .append('<i>'+  key   +'</i>'),
+            .append('<i>'+  (isNumberDomain)?'': key   +'</i>'),
             $selection = $('<selection/>', {name: key}).appendTo($padContainer);
           
           themeColors.forEach(function(themeColor){
@@ -121,10 +123,10 @@ define(['text!templates/color_manager.html',
               }
               if(colorManager.setColor(domainItem, $(this).val())) { //update gradient bar when changeing color
                   if(isNumberDomain) {
-                    var colormap = colorManager.getColormap(),
-                        keys = Object.keys(colormap),
-                        $gradient = self._drawGradientBar(colormap[keys[0]], colormap[keys[1]]);
-                        $parent.find('.color-ranges').replaceWith($gradient);
+                    //var colormap = colorManager.getColormap(),
+                    //    keys = Object.keys(colormap),
+                    //    $gradient = self._drawGradientBar(colormap[keys[0]], colormap[keys[1]]);
+                    //    $parent.find('.color-ranges').replaceWith($gradient);
                   }
                  colorManager.chartUpdatingWithColors(null, false);
               }
@@ -135,6 +137,18 @@ define(['text!templates/color_manager.html',
           return $padContainer;
     },
     
+    _drawColorSlider: function(evt) {
+        var self=this,
+          colorManager = this.colorManager,
+          isNumberDomain =colorManager.isNumberDomain();
+        
+        if(isNumberDomain) {
+          Wrapper.show($("<div/>", {id: 'multi-ranges-silder'}).data('type', 'multi-ranges-silder'), 
+            this.$el.find(".colormap"), 
+            self.colorManager);
+        }
+    },
+
     _drawGradientBar: function(color1, color2) {
      
       return $('<div>',{ class: 'color-ranges'})
@@ -146,6 +160,13 @@ define(['text!templates/color_manager.html',
           });
    },
    
+    updateNumberSeparator: function (separator) {
+      if(this.colorManager.setSeparator(separator)) {
+        //update colormap with changed color domain
+         this.colorManager.chartUpdatingWithColors(null, true);//true-- check whether or not data is completely
+      }
+    },
+    
    drawColormap: function(updateStatus) {
       var self=this,
           isNumberDomain = this.colorManager.isNumberDomain(), 
@@ -153,21 +174,47 @@ define(['text!templates/color_manager.html',
           $colormap_content = this.$el.find('.colormap-content').empty();
   
       if(this.colorManager.isNumberDomain()) { //draw numder domain color-map
-          var $container = $('<div/>').css({display: 'inline-block', width: '100%'}).appendTo($colormap_content),
+         
+         /* var $container = $('<div/>').css({display: 'inline-block', width: '100%'}).appendTo($colormap_content),
               keys = Object.keys(colormap);
           if(keys.length >1 ) {
             self._drawColorpad(colormap[keys[0]], keys[0], $container).css({display: 'inline-block', margin: '0px', width: '10%'});//start
             this._drawGradientBar(colormap[keys[0]], colormap[keys[1]]).appendTo($container);//bar
             self._drawColorpad(colormap[keys[1]], keys[1], $container).css({display: 'inline-block', margin: '0px', width: '10%'});//end
           }
+          */
+         _.each(colormap, function(color, key) {
+           self._drawColorpad(color, key, $colormap_content);
+        });
+
+        //Wrapper.show($("<div/>").data('type', 'multi-ranges-silder'), $colormap_content, self.colorManager);
+
+/*
+        var $container = $('<div/>').css({display: 'inline-block', width: '100%'}).appendTo($colormap_content);
+        _.each(colormap, function(color, key) {
+            self._drawColorpad(color, key, $container).css({display: 'inline-block', margin: '0px', width: '10%'});
+        });
+
+       // var multiRangesSlider =  new SliderLib();
+        require(['util/unic/multiRangesSlider/main'], function(CtrlLib){
+          var multiRangesSlider =  new CtrlLib();
+          _.each(colormap, function(color, key) {
+            var $ctrl_content= multiRangesSlider.render(null, self.colorManager);
+            $('<div class="content">').append($ctrl_content).appendTo($colormap_content);
+          });
+        });      
+        
+*/
       } else { //draw string domain color-pad
         _.each(colormap, function(color, key) {
            self._drawColorpad(color, key, $colormap_content);
         });
       }
+
+      //update chart
       if(updateStatus && updateStatus != UPDATE_COLOR_MAP.EMPTY ) { //update the whole colormap
           //update chart
-          this.colorManager.chartUpdatingWithColors(null, true);//true-- check whether or not data is complete
+          this.colorManager.chartUpdatingWithColors(null, true);//true-- check whether or not data is completely
       }
    }, //drawColormap end
     

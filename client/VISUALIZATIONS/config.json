@@ -7,6 +7,9 @@
         { type: 'LineChart',
           path: 'TABLE/LineChart2'
         },
+        { type: 'LineChart_test',
+          path: 'TABLE/LineChart'
+        },
         {
           type: 'ScatterMatrixChart',
           path: 'TABLE/ScatterMatrixChart'
@@ -14,6 +17,10 @@
         {
           type: 'ScatterPlot',
           path: 'TABLE/ScatterPlot2'
+        },
+        {
+          type: 'ScatterPlot_test',
+          path: 'TABLE/ScatterPlot'
         },
         {
           type: 'PieChart',
