@@ -181,8 +181,9 @@ function collector (path) {
   function getColumnsFromPDB(pdb){
     try {
       var columns = [];
-      var command = "cd " + pathLib.dirname(pdb) + ";";
-      command += "pdb2csv -pdb " + pathLib.basename(pdb)+ " -e .schema ";
+      //var command = "cd " + pathLib.dirname(pdb) + ";";
+      var command = "pdb2csv -pdb " + pathLib.dirname(pdb) +'/' + pathLib.basename(pdb)+ " -e .schema ";
+      console.log(command);
       var result = exec(command);
       var schema = decoder.write(result);
       schema.split("(")[1].split(")")[0].split(",").forEach(function(s){
@@ -201,7 +202,7 @@ function collector (path) {
 
 amqp.connect('amqp:'+ config.get('RabbitMQ.server.host')).then(function (conn) {
   return conn.createChannel().then(function (ch) {
-    var core = 16;
+    var core = 2;
     var mqBackend = new (require('../utils/MqBackend'))(ch);
     setInterval(function(){
       var family  = collector(entrance);

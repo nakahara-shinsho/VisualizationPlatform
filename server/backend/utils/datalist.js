@@ -20,7 +20,7 @@ function MyClass () {
     try { 
       var list = fs.readdirSync(dataPath);
       for(var i=0; i<list.length; i++){
-        var fullPath = dataPath + list[i];
+        var fullPath = dataPath + '/'+list[i];
           var st = fs.statSync(fullPath);
           if(st.isDirectory(fullPath)) {
             var tmp = {

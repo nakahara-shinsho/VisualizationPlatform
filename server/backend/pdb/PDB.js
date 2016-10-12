@@ -60,9 +60,9 @@ function PDB (family, core, mode) {
       updateFilter();
 
       var tmpobj = tmp.fileSync({postfix:".json"});
-      var command = "echo '" + JSON.stringify(query) + "' > " + tmpobj.name+  ";cd " + dataPath + ";";
-      command += "pdb2csv -p "+ core +" -conf " + tmpobj.name  +"  -pdb " + dataPath +"/"+ realFile;
-      command += "; rm -f " + tmpobj.name;
+      var command = "cd " + dataPath + "& echo " + JSON.stringify(query) + " | " ;//+ tmpobj.name+  ";cd " + dataPath + ";";
+      command += "pdb2csv -p "+ core +" -conf - -pdb " +  realFile;
+      //command += "; rm -f " + tmpobj.name;
       console.log(command);
       var result = exec(command);
       response._table_ = {};
@@ -83,7 +83,7 @@ function PDB (family, core, mode) {
     // Calc Range for SetInterval
     function calcRange(){
       var stringCols = getStringColumnName();
-      var rangeQuery = { "query":{"select":[],"approx_aggregate": false},"option":{"csv_comma": ","}};
+      var rangeQuery = { "query":{"select":[],"approx_aggregate": true},"option":{"csv_comma": ","}};
       if(query.query.select !== undefined){
         var pushedCols = [];
         query.query.select.forEach(function(col){
@@ -94,9 +94,9 @@ function PDB (family, core, mode) {
           }
         });
         var tmpobj = tmp.fileSync({postfix:".json"});
-        var command = "echo '" + JSON.stringify(rangeQuery) + "' > " + tmpobj.name+  ";cd " + dataPath + ";";
-        command += "pdb2csv -conf " + tmpobj.name  +"  -pdb " + dataPath +"/" + realFile + ";";
-        command += " rm -f " + tmpobj.name;
+        var command = "cd " + dataPath + "&& echo " + JSON.stringify(rangeQuery) + " | ";// + tmpobj.name;// +  ";cd " + dataPath + ";";
+        command += "pdb2csv -conf \"-\" -pdb " + realFile ;
+        //command += " rm -f " + tmpobj.name;
         console.log(command);
         var result = exec(command);
         var index2name = {};
@@ -163,7 +163,7 @@ function PDB (family, core, mode) {
               /***********************
                * HARD CODED FOR TEST *
                ***********************/
-              var pixel = 8;
+              var pixel = 6;
               /***********************/
               // get max/min
               var info = [];
@@ -187,7 +187,7 @@ function PDB (family, core, mode) {
       }
     }
     function getStringColumnName(){
-	var command = "pdb2csv -e .schema  -pdb " + dataPath +"/" + realFile + ";";
+	var command = "pdb2csv -e .schema  -pdb " + dataPath +"/" + realFile ;
         var result = exec(command);
         var list = decoder.write(result).replace(")","").split("(")[1];
 	var cols = [];
