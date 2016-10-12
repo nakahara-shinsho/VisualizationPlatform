@@ -18,7 +18,7 @@ define(['ctrl/COMMON'], function (COMMON) {
      this._MAX_ITEMS_NUM = 50;
      this._defaultTheme = 'd3.category10'; //user inputed value
      this._defalutColor = "#555";
-     this._defaultColorSeparator = [];//[0.2, 0.4, 0.6, 0.8];
+     this._defaultColorSeparator = [0.99];
  };
 
  ColorManager.prototype.clearAll = function() {
@@ -42,7 +42,7 @@ define(['ctrl/COMMON'], function (COMMON) {
      }
      return theme;
   };
-  /*
+  
   ColorManager.prototype.getSeparator = function(){
     var colorSeparator = this._model.get('colorSeparator');
 
@@ -65,7 +65,7 @@ define(['ctrl/COMMON'], function (COMMON) {
     }
     return bDirty;
   };
-  */
+  
 
   //set the use selected theme
   //if return not null, trigger event to chart to inofrm changing of the whole colormap
@@ -101,11 +101,12 @@ define(['ctrl/COMMON'], function (COMMON) {
   //--- trigger event to chart to inform the change of one color in colormap
   ColorManager.prototype.setColor = function(itemName, color) {
     var items = this.getDomain(),
-        itemIndex = items.indexOf(itemName),
+        isNumberDomain = this.isNumberDomain(),
+        itemIndex = (isNumberDomain)? itemName : items.indexOf(itemName),
         colorIndexes = COMMON.makeObject(this._model.get('colorIndexes'),{}),
         theme = this.getTheme(),
         colorIndex = this._themeColors[theme].indexOf(color);
-
+    
     if(itemIndex <0 ) return false;
 
     if(itemIndex != colorIndex) {
@@ -123,25 +124,41 @@ define(['ctrl/COMMON'], function (COMMON) {
   //get color<>item objst to show the current color mapping status in user interface
   ColorManager.prototype.getColormap = function() {
       var colormap = {},
-          items =this.getDomain(),
           colorIndexes = COMMON.makeObject(this._model.get('colorIndexes'),{}),
-          colorDomainName = this.getDomainName(),
-          colorIndex=-1;
+          colorIndex=-1,
+          separator = this.getSeparator().slice(0), //copy
+          items=this.getDomain();
 
      if(!items || items.length <=0 ) return colormap;
 
      var colors = this.getThemeColors();
 
-     items.forEach(function(item, itemIndex) { //the items have been defined
-
-        if(_.isEmpty(colorIndexes) ) { //defalut color setting :colorIndex = itemIndex, user have not defined color
-            colormap[item] = colors[itemIndex % colors.length];
-        } else if((colorIndex = colorIndexes[itemIndex]) >=0 ) { //user defined color<>item mapping
-            colormap[item] = colors[colorIndex];
-        }  else { //colorIndex < 0 : natural number order of the defined color
-            colormap[item] = colors[itemIndex % colors.length];
-        }
-     });
+     if(this.isNumberDomain()){
+         items = separator;
+         //add start and end
+         items.unshift(0);//add 0 to beginning 
+         items.push(1);//add 1 to end
+         items.forEach(function(item, itemIndex) { //the items have been defined
+            if(_.isEmpty(colorIndexes) ) { //defalut color setting :colorIndex = itemIndex, user have not defined color
+                colormap[itemIndex] = colors[itemIndex % colors.length];
+            } else if((colorIndex = colorIndexes[itemIndex]) >=0 ) { //user defined color<>item mapping
+                colormap[itemIndex] = colors[colorIndex];
+            }  else { //colorIndex < 0 : natural number order of the defined color
+                colormap[itemIndex] = colors[itemIndex % colors.length];
+            }
+        });
+     } else {
+        //items =this.getDomain();
+        items.forEach(function(item, itemIndex) { //the items have been defined
+            if(_.isEmpty(colorIndexes) ) { //defalut color setting :colorIndex = itemIndex, user have not defined color
+                colormap[item] = colors[itemIndex % colors.length];
+            } else if((colorIndex = colorIndexes[itemIndex]) >=0 ) { //user defined color<>item mapping
+                colormap[item] = colors[colorIndex];
+            }  else { //colorIndex < 0 : natural number order of the defined color
+                colormap[item] = colors[itemIndex % colors.length];
+            }
+        });
+     }
 
      return colormap;
   };
@@ -311,8 +328,15 @@ define(['ctrl/COMMON'], function (COMMON) {
             return color; //default color
         }
         if(this.isNumberDomain(colorDomainName) && row[colorDomainName]) {//column
-            var value = +row[colorDomainName];
-            for(var i=1; i<domain.length; i++) {
+            var range = (domain && domain.length >1)? (domain[1]-domain[0]) : 1,
+                value = (+row[colorDomainName] -domain[0]) /range,
+                separator = this.getSeparator().slice(0);
+        
+        //add start and end
+        separator.unshift(0);
+        separator.push(1);
+            
+            /*for(var i=1; i<domain.length; i++) {
               if(value >= domain[i-1] && value < domain[i]){
                  colorScale = d3.scale.linear()
                       .domain([domain[i-1], domain[i]])
@@ -326,7 +350,11 @@ define(['ctrl/COMMON'], function (COMMON) {
                 color = colorScale(value);
                 break;
               }
-            }
+            }*/
+            colorScale =  d3.scale.linear()
+                      .domain(separator)
+                      .range(_.values(colormap));
+            color = colorScale(value);
        } else if(row.hasOwnProperty(colorDomainName) ) { //string column
            color = colormap[row[colorDomainName]];
        }

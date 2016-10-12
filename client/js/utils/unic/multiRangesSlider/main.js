@@ -3,26 +3,36 @@ define(['./jquery.limitslider','css!./ranges.css'], function() {
        
    };
   
-   RangesView.prototype.drawSlider = function(ioctrl) {
+   RangesView.prototype.drawSlider = function(manager) {
      var self = this,
-          colorManager = ioctrl.colorManager(),
+          colorManager = manager,
           separator = colorManager.getSeparator(),
           colormap = colorManager.getColormap(),
           domain = colorManager.getDomain();
  
-      var values = [], colors=[],
+      var index, values = [], colors=[],
           $slider = $('<div>',{id: 'slider', class: 'color-ranges'});
-          
-      separator.forEach(function(currSepValue){
+          colorTransform = d3.scale.linear()
+            .domain(separator)
+            .range(["red", "white", "green"]);
+
+     /* separator.forEach(function(currSepValue){
         values.push( Math.floor(currSepValue*100) );
+        colors.push({'background': [colormap[domain[0]], colormap[domain[1]]]});
       });
-      
-      for(var i=1; i<domain.length; i++) {
-        colors.push({'background': [colormap[domain[i-1]], colormap[domain[i]]]});
+     */
+
+      for(index=0; index<separator.length; index++) {
+        values.push( Math.floor(separator[index]*100) );
       }
       
+      for(index=0; index< _.values(colormap).length; index++) {
+        colors.push({'background': [ colormap[index], colormap[index+1] ]});
+      }
+     
       this.slider= $slider.limitslider({
           values: values,
+          ranges: colors,
           gap: 0,
           step : 2,
           label: function(value, index){
@@ -39,8 +49,7 @@ define(['./jquery.limitslider','css!./ranges.css'], function() {
                 });
                 framework.mediator.trigger('color_mapping:update_separator', separator);
             }
-          },
-          ranges: colors
+          }
       });
       
       if(values.length <= 0) {
@@ -50,16 +59,16 @@ define(['./jquery.limitslider','css!./ranges.css'], function() {
       return $slider;
    };
   
-   RangesView.prototype.render =  function($ctrl, ioctrl, parent) {
+   RangesView.prototype.render =  function($ctrl, manager, parent) {
       
-      var $plus = $("<div class='color-plus'> + </div>"),
-          $minus = $("<div class='color-minus'> - </div>");
+     // var $plus = $("<div class='color-plus'> + </div>"),
+     //     $minus = $("<div class='color-minus'> - </div>");
       
       this.$container = $('<div/>');
       
-      this.drawSlider(ioctrl).appendTo(this.$container);
-          $plus.appendTo(this.$container);     
-          $minus.appendTo(this.$container);
+      this.drawSlider(manager).appendTo(this.$container);
+     //     $plus.appendTo(this.$container);     
+     //     $minus.appendTo(this.$container);
       return this.$container;
   };
  

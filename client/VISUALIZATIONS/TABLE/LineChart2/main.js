@@ -212,6 +212,10 @@ define(["util/CustomTooltip",
       this.xConfig.caption.height -
       this.xConfig.label.height -
       this.xConfig.scrollbar.height;
+      
+    if(this.axisHeight  <0) this.axisHeight =0;
+    if(this.axisWidth <0)   this.axisWidth=0;
+    
     this.root_dom  = undefined;
     this.container = undefined;
     this.containerWidth = containerWidth;
@@ -717,11 +721,15 @@ define(["util/CustomTooltip",
       self.xConfig.caption.height -
       self.xConfig.label.height -
       self.xConfig.scrollbar.height;
+    
     self.axisWidth = self.containerWidth -
       self.layout.yaxis.width -
       self.layout.main.margin.right -
       self.xConfig.margin;
-
+      
+    if(self.axisHeight  <0) self.axisHeight =0;
+    if(self.axisWidth <0)   self.axisWidth=0;
+    
     if(self.io.designManager().getValue("autoMappingMode") == "ON") {
       self.autoMapping();
     }
