@@ -9,6 +9,7 @@ function PDB (family, core, mode) {
   //private members ( static variables)
   var fs = require('fs');
   var $  = require('jquery-deferred');
+  var _  = require('underscore');
   var exec = require('child_process').execSync;
   var tmp  = require('tmp');
   var StringDecoder = require('string_decoder').StringDecoder;
@@ -129,9 +130,18 @@ function PDB (family, core, mode) {
      * Filter *
      **********/
     function updateFilter(){
-      if(options._where_ !== undefined &&
-         query.query.where !== undefined){
-        for(var col in options._where_){
+      var mywhere={};
+      if( options._extra_where_ ) {
+        _.each(options._extra_where_, function(conditions, extra_table){
+          mywhere = _.extend(mywhere, conditions);
+        });
+      }
+      if(options._where_){
+        mywhere = _.extend(mywhere, options._where_);
+      }
+      
+      if(!_.isEmpty(mywhere) && query.query.where !== undefined){
+        for(var col in mywhere){
           query.query.where.forEach(function(q){
             if(q.between !== undefined){
               // remove aggregation-type name;
@@ -140,8 +150,8 @@ function PDB (family, core, mode) {
                 realColName = col.split("(")[1].replace(")","");
               }
               if(realColName == q.column){
-                q.between.lower = parseInt(options._where_[col][0]);
-                q.between.upper = parseInt(options._where_[col][1]);
+                q.between.lower = parseInt(mywhere[col][0]);
+                q.between.upper = parseInt(mywhere[col][1]);
               }
             }
           });

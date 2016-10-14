@@ -92,6 +92,8 @@ define(['js/app',
       },
       
       onRightClick: function(e){
+        if(app.session.user.get('id') ==='demo') return;
+        
         var self = this;
         if( e.button == 2 ) {//right click
           e.preventDefault();

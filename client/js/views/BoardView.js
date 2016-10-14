@@ -106,9 +106,11 @@ define([
       "contextmenu": 'onRightClick',
     },
     
-    onRightClick: function(e){
+    onRightClick: function(e) {
         var self = this;
         
+        if(app.session.user.get('id') ==='demo') return;
+
         if( e.button == 2 && self.$el.has(e.target).length>0 ) {//right click
           e.preventDefault();
           e.stopPropagation();
@@ -271,7 +273,8 @@ define([
     
     //Delete chart on window screen
     onDeleteMe: function (ev) {
-      //tigger delete board event
+      if(app.session.user.get('id') ==='demo') return;
+
       var del = confirm("Are you sure for deleting this chart?");
       if (del === true) {
             this.stopListening();//stop listening to all events
@@ -419,6 +422,8 @@ define([
 
     // add this to control panel
     toggleDesignPanel: function (evt) {
+      if(app.session.user.get('id') ==='demo') return;
+
       if (evt instanceof $.Event) { evt.stopPropagation(); }
       framework.mediator.trigger('board:toggle_operation_panel', this);
       this.activeMe(evt); //update design panel
@@ -426,6 +431,8 @@ define([
     
     // add this to control panel
     toggleControlPanel: function (evt) {
+      if(app.session.user.get('id') ==='demo') return;
+
       if (evt instanceof $.Event) { evt.stopPropagation(); }
       framework.mediator.trigger('board:toggle_operation_panel', this, (is_control_panel=true)); //link control flag
       this.activeMe(evt); //update control panel

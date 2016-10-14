@@ -84,8 +84,8 @@ module.exports.tool =function(app, db) {
       res.clearCookie('authority');
       res.send(tool);
     } else {
-      var stmt_select ="SELECT max(authority) as authority FROM access WHERE toolId=$id"; //outer join with access
-      db.get(stmt_select, [tool.id], function(err, row) {
+      var stmt_select ="SELECT max(authority) as authority FROM access WHERE toolId=$id and userId=$uid"; //outer join with access
+      db.get(stmt_select, [tool.id, req.signedCookies.user_id], function(err, row) {
         if(err) {
           res.status(500).send({error: err.message});
         } else {

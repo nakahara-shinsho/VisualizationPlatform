@@ -30,7 +30,7 @@ define(["util/CustomTooltip",
 
     // Data Mapper
     this.io.dataManager().setMapperProps({
-      xaxis: {type: 'number', label: 'X axis', map2: ''},
+      xaxis: {type: 'number', label: 'X axis', map2: '', spk: 'width'},
       yaxis: {type: 'number', label: 'Y axis', map2: '' },
       group: {type: 'string', label: 'Group ', map2: '' }
     });

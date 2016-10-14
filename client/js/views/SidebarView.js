@@ -5,10 +5,10 @@
  * @param {type} SidebarModel SidebarModel class (SidebarModel.js)
  * @returns {SidebarView}
  */
-define(["js/app",
-        "text!templates/sidebar.html",
-        'model/SidebarModel',
-       ], function (app, sidebarTpl, SidebarModel) {
+define(["js/app"
+        ,"text!templates/sidebar.html"
+        //,"model/SidebarModel",
+       ], function (app, sidebarTpl/*, SidebarModel*/) {
   /**
    * Constructor create SidebarView
    * @method SidebarView
@@ -48,21 +48,26 @@ define(["js/app",
         //framework.undoer.redo(); 
       },
       onDownloadSnapshot: function () {
+        if(app.session.user.get('id') ==='demo') return;
         if(this.parent) {
           this.parent.downloadImage();
         }
       },
       onUpdateSnapshot: function() {
+        if(app.session.user.get('id') ==='demo') return;
         if(this.parent) {
           this.parent.updateImage();
         }
       },
       onBookmarkMe: function() {
+       if(app.session.user.get('id') ==='demo') return;
        if(this.parent) {
           this.parent.bookmarkMe();
         }
       },
       OnNewScreen: function() {
+        if(app.session.user.get('id') ==='demo') return;
+
         if(this.parent) {
           this.parent.newScreen();
         }
@@ -85,16 +90,12 @@ define(["js/app",
       },
     
       onToggleCaption: function(evt){
-
-        /*if(!this.caption_invisible) { //undefined or false
-          $(evt.currentTarget).prop("disabled", true);
-        } else { //true
-          $(evt.currentTarget).removeAttr('disabled');
-        }*/
+        if(app.session.user.get('id') ==='demo') return;
         framework.mediator.trigger('board:toggle-caption');
       },
       
       onFitToWindow: function(){
+        if(app.session.user.get('id') ==='demo') return;
         framework.mediator.trigger('boardmanager:fit2window', index=0);
       },
 

@@ -11,7 +11,7 @@ define([
     "js/app",
     "text!templates/header.html",
     "view/SignupView",
-	"view/ManagementPageLoginView"
+	  "view/ManagementPageLoginView"
 ], function(app, headerTpl, SignupView, ManagementPageLoginView){
     /**
      * Constructor create HeaderView
@@ -130,6 +130,7 @@ define([
         },
         // Trigger event when user click vtmanager button
         onVTManagementBtnClicked: function () {
+          if(app.session.user.get('id') ==='demo') return;
           framework.mediator.trigger('middleview:vtmanager');
         },
 		    /**
