@@ -61,7 +61,7 @@ function PDB (family, core, mode) {
       updateFilter();
 
       var tmpobj = tmp.fileSync({postfix:".json"});
-      var command = "cd " + dataPath + "& echo " + JSON.stringify(query) + " | " ;//+ tmpobj.name+  ";cd " + dataPath + ";";
+      var command = "cd " + dataPath + "&& echo " + JSON.stringify(query) + " | " ;//+ tmpobj.name+  ";cd " + dataPath + ";";
       command += "pdb2csv -p "+ core +" -conf - -pdb " +  realFile;
       //command += "; rm -f " + tmpobj.name;
       console.log(command);
@@ -95,7 +95,7 @@ function PDB (family, core, mode) {
           }
         });
         var tmpobj = tmp.fileSync({postfix:".json"});
-        var command = "cd " + dataPath + "&& echo " + JSON.stringify(rangeQuery) + " | ";// + tmpobj.name;// +  ";cd " + dataPath + ";";
+        var command = "cd " + dataPath + " && echo " + JSON.stringify(rangeQuery) + " | ";// + tmpobj.name;// +  ";cd " + dataPath + ";";
         command += "pdb2csv -conf \"-\" -pdb " + realFile ;
         //command += " rm -f " + tmpobj.name;
         console.log(command);

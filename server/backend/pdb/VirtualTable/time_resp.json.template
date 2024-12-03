@@ -1,0 +1,62 @@
+{
+    "query": {
+	"select": 
+	[
+	    {
+		"column": "Timestamp"
+	    },
+	    {
+		"column": "ResponseTime"
+	    },
+	    {   
+		"column": "ResponseTime",
+		"aggregate": "count"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "min"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "max"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "avg"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "sum"
+	    }
+	],
+	"where": [
+	    {
+		"column": "Timestamp",
+		"between": {
+		    "lower": 0,
+		    "upper": -1
+		}
+	    },
+	    {
+		"column": "ResponseTime",
+		"between": {
+		    "lower": 0,
+		    "upper": -1
+		}
+	    }
+	],
+	"group_by": [
+	    {
+		"column": "Timestamp",
+		"sliceInterval": 1000000000
+	    },
+	    {
+		"column": "ResponseTime",
+		"sliceInterval": 1000000
+	    }
+	]
+    },
+    "option": {
+	"csv_comma": ","
+    }
+}

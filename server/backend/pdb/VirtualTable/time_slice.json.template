@@ -1,0 +1,68 @@
+{
+    "query": {
+	"select": 
+	[
+	    {
+		"column": "Timestamp"
+	    },
+	    {
+		"column": "Offset",
+		"aggregate": "avg"
+	    },
+	    {   
+		"column": "Offset",
+		"aggregate": "count"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "min"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "max"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "avg"
+	    },
+	    {   
+		"column": "Size",
+		"aggregate": "sum"
+	    },
+	    {   
+		"column": "ResponseTime",
+		"aggregate": "min"
+	    },
+	    {   
+		"column": "ResponseTime",
+		"aggregate": "max"
+	    },
+	    {   
+		"column": "ResponseTime",
+		"aggregate": "avg"
+	    },
+	    {   
+		"column": "ResponseTime",
+		"aggregate": "sum"
+	    }
+	],
+	"where": [
+	    {
+		"column": "Timestamp",
+		"between": {
+		    "lower": 0,
+		    "upper": -1
+		}
+	    }
+	],
+	"group_by": [
+	    {
+		"column": "Timestamp",
+		"sliceInterval": 60000000000
+	    }
+	]
+    },
+    "option": {
+	"csv_comma": ","
+    }
+}
